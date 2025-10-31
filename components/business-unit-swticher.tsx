@@ -73,7 +73,7 @@ const getBusinessUnitTypeLabel = (name: string): string => {
     return 'Administrative unit'
   }
   if (lowerName.includes('dev') || lowerName.includes('development')) {
-    return 'Development unit'
+    return 'Business Unit'
   }
   if (lowerName.includes('hotel') || lowerName.includes('resort')) {
     return 'Hotel property'
