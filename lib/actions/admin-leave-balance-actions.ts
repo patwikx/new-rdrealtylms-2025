@@ -103,7 +103,12 @@ export async function getAdminLeaveBalances({
     
     const whereClause: Record<string, unknown> = {
       year,
-      user: { businessUnitId },
+      user: { 
+        businessUnitId,
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
+      },
       leaveTypeId: { in: allowedLeaveTypeIds },
       ...(leaveTypeId && { leaveTypeId }),
       ...(userId && { userId }),
@@ -164,7 +169,12 @@ export async function getAdminLeaveBalances({
       
       // Get users in the business unit
       prisma.user.findMany({
-        where: { businessUnitId },
+        where: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         select: {
           id: true,
           name: true,
@@ -223,7 +233,12 @@ export async function updateLeaveBalance(
     const existingBalance = await prisma.leaveBalance.findFirst({
       where: {
         id: balanceId,
-        user: { businessUnitId }
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        }
       },
       include: {
         user: { select: { name: true } },
@@ -272,7 +287,12 @@ export async function bulkUpdateLeaveBalances(
     const existingBalances = await prisma.leaveBalance.findMany({
       where: {
         id: { in: balanceIds },
-        user: { businessUnitId }
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        }
       }
     });
     
@@ -318,7 +338,10 @@ export async function createLeaveBalance(
     const user = await prisma.user.findFirst({
       where: {
         id: userId,
-        businessUnitId
+        businessUnitId,
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
       },
       select: { name: true }
     });
@@ -433,7 +456,12 @@ export async function getReplenishmentPreview(
     
     // Get all users in the business unit
     const users = await prisma.user.findMany({
-      where: { businessUnitId },
+      where: { 
+        businessUnitId,
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
+      },
       select: {
         id: true,
         name: true,
@@ -447,7 +475,12 @@ export async function getReplenishmentPreview(
     const currentBalances = await prisma.leaveBalance.findMany({
       where: {
         year: fromYear,
-        user: { businessUnitId },
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         leaveTypeId: { in: carryOverEligibleTypes.map(lt => lt.id) }
       },
       include: {
@@ -528,7 +561,12 @@ export async function replenishLeaveBalances(
     
     // Get all users in the business unit
     const users = await prisma.user.findMany({
-      where: { businessUnitId },
+      where: { 
+        businessUnitId,
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
+      },
       select: { id: true, name: true }
     });
     
@@ -547,7 +585,12 @@ export async function replenishLeaveBalances(
     const existingTargetBalances = await prisma.leaveBalance.findFirst({
       where: {
         year: toYear,
-        user: { businessUnitId }
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        }
       }
     });
     

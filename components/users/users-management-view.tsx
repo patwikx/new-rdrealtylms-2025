@@ -99,6 +99,11 @@ function getRoleVariant(role: string) {
 //   return isActive ? 'default' : 'secondary';
 // }
 
+const statusOptions = [
+  { value: 'active', label: 'Active', icon: UserCheck },
+  { value: 'inactive', label: 'Inactive', icon: UserX }
+];
+
 const roleOptions = [
   { value: 'ADMIN', label: 'Admin', icon: Shield },
   { value: 'HR', label: 'HR', icon: UserCheck },
@@ -106,10 +111,7 @@ const roleOptions = [
   { value: 'USER', label: 'User', icon: User }
 ];
 
-const statusOptions = [
-  { value: 'active', label: 'Active', icon: UserCheck },
-  { value: 'inactive', label: 'Inactive', icon: UserX }
-];
+
 
 export function UsersManagementView({ 
   usersData, 
@@ -237,35 +239,6 @@ export function UsersManagementView({
           </SelectContent>
         </Select>
 
-        {/* Department Filter */}
-        <Select
-          value={currentFilters.department || ""}
-          onValueChange={(value) => updateFilter('department', value || undefined)}
-        >
-          <SelectTrigger className="w-[150px]">
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="All depts" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all-departments">
-              <div className="flex items-center gap-2">
-                <Building className="h-4 w-4 text-muted-foreground" />
-                <span>All departments</span>
-              </div>
-            </SelectItem>
-            {usersData.departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span>{dept.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         {/* Status Filter */}
         <Select
           value={currentFilters.status || ""}
@@ -297,6 +270,37 @@ export function UsersManagementView({
             })}
           </SelectContent>
         </Select>
+
+        {/* Department Filter */}
+        <Select
+          value={currentFilters.department || ""}
+          onValueChange={(value) => updateFilter('department', value || undefined)}
+        >
+          <SelectTrigger className="w-[150px]">
+            <div className="flex items-center gap-2">
+              <Building className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="All depts" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all-departments">
+              <div className="flex items-center gap-2">
+                <Building className="h-4 w-4 text-muted-foreground" />
+                <span>All departments</span>
+              </div>
+            </SelectItem>
+            {usersData.departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.id}>
+                <div className="flex items-center gap-2">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  <span>{dept.name}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+
       </div>
 
       {/* Results count */}

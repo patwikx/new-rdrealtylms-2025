@@ -90,7 +90,6 @@ export async function getUsers({
   businessUnitId,
   role,
   department,
-  status,
   search,
   page = 1,
   limit = 10
@@ -101,6 +100,9 @@ export async function getUsers({
     // Build where clause
     let whereClause: any = {
       businessUnitId,
+      employeeId: {
+        notIn: ["T-123", "admin"]
+      }
     };
     
     if (role && role !== "all-roles") {
@@ -576,6 +578,9 @@ export async function getAllManagers(): Promise<{ id: string; name: string; empl
         role: {
           in: ["MANAGER", "ADMIN"],
         },
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
       },
       include: {
         businessUnit: {
@@ -611,6 +616,9 @@ export async function getManagersForBusinessUnit(businessUnitId: string): Promis
         role: {
           in: ["MANAGER", "ADMIN"],
         },
+        employeeId: {
+          notIn: ["T-123", "admin"]
+        }
       },
       select: {
         id: true,

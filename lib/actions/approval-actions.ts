@@ -80,8 +80,13 @@ export async function getLeaveRequestForApproval(requestId: string, businessUnit
     const request = await prisma.leaveRequest.findFirst({
       where: {
         id: requestId,
-        // Remove business unit restriction for managers and HR
-        ...(user.role === "ADMIN" && { user: { businessUnitId: businessUnitId } })
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId: businessUnitId })
+        }
       },
       include: {
         user: {
@@ -180,7 +185,12 @@ export async function getPendingLeaveRequests({
     if (user.role === "ADMIN") {
       // Admins can see all pending requests in the business unit
       whereClause = {
-        user: { businessUnitId },
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: status ? status as RequestStatus : {
           in: ["PENDING_MANAGER", "PENDING_HR"],
         },
@@ -189,6 +199,11 @@ export async function getPendingLeaveRequests({
     } else if (user.role === "HR") {
       // HR sees only requests that are pending HR approval AND have been approved by manager first
       whereClause = {
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: "PENDING_HR", // HR only sees PENDING_HR requests
         managerActionBy: { not: null }, // Must be approved by manager first
         ...(leaveTypeId && { leaveTypeId }),
@@ -198,6 +213,9 @@ export async function getPendingLeaveRequests({
       whereClause = {
         user: { 
           approverId: user.id,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
         },
         status: "PENDING_MANAGER", // Managers only see PENDING_MANAGER requests, ignore status filter
         ...(leaveTypeId && { leaveTypeId }),
@@ -302,8 +320,13 @@ export async function approveLeaveRequest(
     const request = await prisma.leaveRequest.findFirst({
       where: {
         id: requestId,
-        // Remove business unit restriction for managers and HR
-        ...(user.role === "ADMIN" && { user: { businessUnitId } })
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId })
+        }
       },
       include: {
         user: true,
@@ -398,8 +421,13 @@ export async function rejectLeaveRequest(
     const request = await prisma.leaveRequest.findFirst({
       where: {
         id: requestId,
-        // Remove business unit restriction for managers and HR
-        ...(user.role === "ADMIN" && { user: { businessUnitId } })
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId })
+        }
       },
       include: {
         user: true,
@@ -559,7 +587,12 @@ export async function getPendingOvertimeRequests({
     if (user.role === "ADMIN") {
       // Admins can see all pending requests in the business unit
       whereClause = {
-        user: { businessUnitId },
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: status ? status as RequestStatus : {
           in: ["PENDING_MANAGER", "PENDING_HR"],
         },
@@ -567,6 +600,11 @@ export async function getPendingOvertimeRequests({
     } else if (user.role === "HR") {
       // HR sees only requests that are pending HR approval AND have been approved by manager first
       whereClause = {
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: "PENDING_HR", // HR only sees PENDING_HR requests
         managerActionBy: { not: null }, // Must be approved by manager first
       };
@@ -575,6 +613,9 @@ export async function getPendingOvertimeRequests({
       whereClause = {
         user: { 
           approverId: user.id,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
         },
         status: "PENDING_MANAGER", // Managers only see PENDING_MANAGER requests, ignore status filter
       };
@@ -654,8 +695,13 @@ export async function approveOvertimeRequest(
     const request = await prisma.overtimeRequest.findFirst({
       where: {
         id: requestId,
-        // Remove business unit restriction for managers and HR
-        ...(user.role === "ADMIN" && { user: { businessUnitId } })
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId })
+        }
       },
       include: {
         user: true,
@@ -745,8 +791,13 @@ export async function rejectOvertimeRequest(
     const request = await prisma.overtimeRequest.findFirst({
       where: {
         id: requestId,
-        // Remove business unit restriction for managers and HR
-        ...(user.role === "ADMIN" && { user: { businessUnitId } })
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId })
+        }
       },
       include: {
         user: true,
@@ -961,9 +1012,21 @@ export async function getApprovalHistory({
       if (user.role === 'MANAGER') {
         // For managers, include requests where they are the action taker OR the approver (for backward compatibility)
         leaveWhereClause.OR = [
-          { managerActionBy: user.id },
           { 
-            user: { approverId: user.id },
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            user: { 
+              approverId: user.id,
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            },
             // Only include if no action tracking is set (backward compatibility) or if manager took action
             OR: [
               { managerActionBy: null, hrActionBy: null }, // No action tracking set
@@ -973,10 +1036,29 @@ export async function getApprovalHistory({
         ];
       } else if (user.role === 'HR') {
         leaveWhereClause.hrActionBy = user.id;
+        leaveWhereClause.user = {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        };
       } else if (user.role === 'ADMIN') {
         leaveWhereClause.OR = [
-          { managerActionBy: user.id },
-          { hrActionBy: user.id }
+          { 
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            hrActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          }
         ];
       }
       
@@ -1070,9 +1152,21 @@ export async function getApprovalHistory({
       if (user.role === 'MANAGER') {
         // For managers, include requests where they are the action taker OR the approver (for backward compatibility)
         overtimeWhereClause.OR = [
-          { managerActionBy: user.id },
           { 
-            user: { approverId: user.id },
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            user: { 
+              approverId: user.id,
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            },
             // Only include if no action tracking is set (backward compatibility) or if manager took action
             OR: [
               { managerActionBy: null, hrActionBy: null }, // No action tracking set
@@ -1082,10 +1176,29 @@ export async function getApprovalHistory({
         ];
       } else if (user.role === 'HR') {
         overtimeWhereClause.hrActionBy = user.id;
+        overtimeWhereClause.user = {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        };
       } else if (user.role === 'ADMIN') {
         overtimeWhereClause.OR = [
-          { managerActionBy: user.id },
-          { hrActionBy: user.id }
+          { 
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            hrActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          }
         ];
       }
       
@@ -1175,7 +1288,6 @@ export async function getApprovalHistory({
     
     // For 'all' type, we need to combine and paginate both types
     if (type === 'all') {
-      const skip = (page - 1) * limit;
       
       // Get both leave and overtime requests with proper pagination
       const leaveWhereClause: Record<string, unknown> = {
@@ -1191,9 +1303,21 @@ export async function getApprovalHistory({
       if (user.role === 'MANAGER') {
         // For managers, include requests where they are the action taker OR the approver (for backward compatibility)
         leaveWhereClause.OR = [
-          { managerActionBy: user.id },
           { 
-            user: { approverId: user.id },
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            user: { 
+              approverId: user.id,
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            },
             OR: [
               { managerActionBy: null, hrActionBy: null },
               { managerActionBy: user.id }
@@ -1201,9 +1325,21 @@ export async function getApprovalHistory({
           }
         ];
         overtimeWhereClause.OR = [
-          { managerActionBy: user.id },
           { 
-            user: { approverId: user.id },
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            user: { 
+              approverId: user.id,
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            },
             OR: [
               { managerActionBy: null, hrActionBy: null },
               { managerActionBy: user.id }
@@ -1212,15 +1348,53 @@ export async function getApprovalHistory({
         ];
       } else if (user.role === 'HR') {
         leaveWhereClause.hrActionBy = user.id;
+        leaveWhereClause.user = {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        };
         overtimeWhereClause.hrActionBy = user.id;
+        overtimeWhereClause.user = {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        };
       } else if (user.role === 'ADMIN') {
         leaveWhereClause.OR = [
-          { managerActionBy: user.id },
-          { hrActionBy: user.id }
+          { 
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            hrActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          }
         ];
         overtimeWhereClause.OR = [
-          { managerActionBy: user.id },
-          { hrActionBy: user.id }
+          { 
+            managerActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          },
+          { 
+            hrActionBy: user.id,
+            user: {
+              employeeId: {
+                notIn: ["T-123", "admin"]
+              }
+            }
+          }
         ];
       }
       
