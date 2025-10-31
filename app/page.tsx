@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState, useEffect } from "react"
 import { useFormStatus } from "react-dom"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions/auth-actions"
 import { AlertCircle, Loader2 } from "lucide-react"
-import Image from "next/image"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -34,6 +33,30 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(loginAction, undefined)
+  const [imageError, setImageError] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+
+  // Load company logo from business unit
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        // Try to get the logo from a known business unit (you can replace with actual business unit ID)
+        const response = await fetch('/api/company-logo');
+        const result = await response.json();
+        
+        if (result.success && result.fileUrl) {
+          setLogoUrl(result.fileUrl);
+        } else {
+          setImageError(true);
+        }
+      } catch (error) {
+        console.error('Error loading company logo:', error);
+        setImageError(true);
+      }
+    };
+
+    loadLogo();
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 dark:from-primary/20 dark:via-primary/10 dark:to-background">
@@ -71,9 +94,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="mx-auto flex items-center justify-center mb-6 relative overflow-hidden">
-              <Image src='/rdrdc-logo.png' alt="logo" width={75} height={75} />
-            </div>
+
             <h1 className="text-3xl font-bold text-primary-foreground mb-3 drop-shadow-lg">RD Realty Group - LMS</h1>
             <p className="text-primary-foreground/90 text-lg font-medium">Sign in to access your dashboard</p>
           </div>

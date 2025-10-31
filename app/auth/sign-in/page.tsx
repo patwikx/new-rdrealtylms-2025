@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState, useEffect } from "react"
 import { useFormStatus } from "react-dom"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions/auth-actions"
 import { AlertCircle, Loader2 } from "lucide-react"
-import Image from "next/image"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -34,6 +33,30 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(loginAction, undefined)
+  const [imageError, setImageError] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+
+  // Load company logo from business unit
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        // Try to get the logo from a known business unit
+        const response = await fetch('/api/company-logo');
+        const result = await response.json();
+        
+        if (result.success && result.fileUrl) {
+          setLogoUrl(result.fileUrl);
+        } else {
+          setImageError(true);
+        }
+      } catch (error) {
+        console.error('Error loading company logo:', error);
+        setImageError(true);
+      }
+    };
+
+    loadLogo();
+  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -74,9 +97,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm sm:max-w-md">
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
-            <div className="mx-auto flex items-center justify-center mb-4 sm:mb-6 relative overflow-hidden">
-              <Image src='/rdrdc-logo.png' alt="logo" width={60} height={60} className="sm:w-[75px] sm:h-[75px]" />
-            </div>
+
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-3 drop-shadow-lg px-2">RD Realty Group - LMS</h1>
             <p className="text-blue-50/95 text-base sm:text-lg font-medium px-2">Sign in to access your dashboard</p>
           </div>

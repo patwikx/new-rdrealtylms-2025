@@ -14,8 +14,8 @@ import { Separator } from '@/components/ui/separator';
 import { DynamicBreadcrumbs } from '@/components/dynamic-breadcurmbs'
 
 export const metadata = {
-  title: "Dashboard | Asset Management System",
-  description: "Asset Management System for TWC",
+  title: "Dashboard | Leave Management System",
+  description: "Leave Management System for RD Realty Group",
 };
 
 // Type guard to ensure we have a complete user session
