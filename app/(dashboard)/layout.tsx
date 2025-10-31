@@ -103,13 +103,34 @@ export default async function DashboardLayout({
       }];
     }
   } else {
-    // Regular users only see their assigned business unit
-    businessUnits = [{
-      id: session.user.businessUnit.id,
-      code: session.user.businessUnit.code,
-      name: session.user.businessUnit.name,
-      image: null, // Regular users don't need the image field, but we include it for type consistency
-    }];
+    // Regular users only see their assigned business unit, but they should still see the logo
+    try {
+      const userBusinessUnit = await prisma.businessUnit.findUnique({
+        where: { id: session.user.businessUnit.id },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          image: true,
+        },
+      });
+
+      businessUnits = [{
+        id: userBusinessUnit?.id || session.user.businessUnit.id,
+        code: userBusinessUnit?.code || session.user.businessUnit.code,
+        name: userBusinessUnit?.name || session.user.businessUnit.name,
+        image: userBusinessUnit?.image || null,
+      }];
+    } catch (error) {
+      console.error("Failed to fetch user's business unit:", error);
+      // Fallback without image
+      businessUnits = [{
+        id: session.user.businessUnit.id,
+        code: session.user.businessUnit.code,
+        name: session.user.businessUnit.name,
+        image: null,
+      }];
+    }
   }
 
   // Fetch complete user data including profile picture
