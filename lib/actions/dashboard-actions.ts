@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole, RequestStatus } from "@prisma/client";
+import { RequestStatus } from "@prisma/client";
 
 // Types for dashboard data (user-specific)
 export interface DashboardStats {
@@ -165,23 +165,14 @@ export async function getDashboardStats(businessUnitId: string): Promise<Dashboa
   }
 }
 
-// Get recent leave requests
+// Get recent leave requests (user's own requests only for personal dashboard)
 export async function getRecentLeaveRequests(businessUnitId: string): Promise<RecentLeaveRequest[]> {
   try {
     const user = await checkBusinessUnitAccess(businessUnitId);
     
-    let whereClause = {};
-    
-    // If user is not admin/HR, only show their own requests
-    if (user.role !== "ADMIN" && user.role !== "HR" && user.role !== "MANAGER") {
-      whereClause = { userId: user.id };
-    } else {
-      // Managers, HR, and Admins see all requests in their business unit
-      whereClause = { user: { businessUnitId } };
-    }
-    
+    // For personal dashboard, always show only the logged-in user's own requests
     const requests = await prisma.leaveRequest.findMany({
-      where: whereClause,
+      where: { userId: user.id },
       include: {
         user: {
           select: {
@@ -208,23 +199,14 @@ export async function getRecentLeaveRequests(businessUnitId: string): Promise<Re
   }
 }
 
-// Get recent overtime requests
+// Get recent overtime requests (user's own requests only for personal dashboard)
 export async function getRecentOvertimeRequests(businessUnitId: string): Promise<RecentOvertimeRequest[]> {
   try {
     const user = await checkBusinessUnitAccess(businessUnitId);
     
-    let whereClause = {};
-    
-    // If user is not admin/HR, only show their own requests
-    if (user.role !== "ADMIN" && user.role !== "HR" && user.role !== "MANAGER") {
-      whereClause = { userId: user.id };
-    } else {
-      // Managers, HR, and Admins see all requests in their business unit
-      whereClause = { user: { businessUnitId } };
-    }
-    
+    // For personal dashboard, always show only the logged-in user's own requests
     const requests = await prisma.overtimeRequest.findMany({
-      where: whereClause,
+      where: { userId: user.id },
       include: {
         user: {
           select: {
