@@ -275,42 +275,66 @@ export async function getPendingApprovals(businessUnitId: string) {
     if (user.role === "ADMIN") {
       // Admins can see all pending requests in the business unit
       leaveWhereClause = {
-        user: { businessUnitId },
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: {
           in: ["PENDING_MANAGER", "PENDING_HR"],
         },
       };
       overtimeWhereClause = {
-        user: { businessUnitId },
+        user: { 
+          businessUnitId,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
         status: {
           in: ["PENDING_MANAGER", "PENDING_HR"],
         },
       };
     } else if (user.role === "HR") {
-      // HR sees requests that are pending HR approval
+      // HR sees only requests that are pending HR approval AND have been approved by manager first
       leaveWhereClause = {
-        user: { businessUnitId },
-        status: "PENDING_HR",
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
+        status: "PENDING_HR", // HR only sees PENDING_HR requests
+        managerActionBy: { not: null }, // Must be approved by manager first
       };
       overtimeWhereClause = {
-        user: { businessUnitId },
-        status: "PENDING_HR",
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
+        },
+        status: "PENDING_HR", // HR only sees PENDING_HR requests
+        managerActionBy: { not: null }, // Must be approved by manager first
       };
     } else if (user.role === "MANAGER") {
-      // Managers see requests from their direct reports that are pending manager approval
+      // Managers see only requests from their direct reports that are pending manager approval (regardless of business unit)
       leaveWhereClause = {
         user: { 
-          businessUnitId,
-          approverId: user.id, // Only requests from their direct reports
+          approverId: user.id,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
         },
-        status: "PENDING_MANAGER",
+        status: "PENDING_MANAGER", // Managers only see PENDING_MANAGER requests
       };
       overtimeWhereClause = {
         user: { 
-          businessUnitId,
-          approverId: user.id, // Only requests from their direct reports
+          approverId: user.id,
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          }
         },
-        status: "PENDING_MANAGER",
+        status: "PENDING_MANAGER", // Managers only see PENDING_MANAGER requests
       };
     }
     
