@@ -7,21 +7,23 @@ import { Progress } from "@/components/ui/progress";
 import { Camera, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
-interface ProfilePictureUploadProps {
+interface BusinessUnitLogoUploadProps {
   currentImageUrl?: string | null;
-  userInitials: string;
-  userName: string;
+  businessUnitInitials: string;
+  businessUnitName: string;
+  businessUnitId: string;
   onUploadSuccess: (imageUrl: string, fileName: string) => void;
   onRemoveSuccess: () => void;
 }
 
-export function ProfilePictureUpload({
+export function BusinessUnitLogoUpload({
   currentImageUrl,
-  userInitials,
-  userName,
+  businessUnitInitials,
+  businessUnitName,
+  businessUnitId,
   onUploadSuccess,
   onRemoveSuccess,
-}: ProfilePictureUploadProps) {
+}: BusinessUnitLogoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
@@ -57,13 +59,14 @@ export function ProfilePictureUpload({
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('businessUnitId', businessUnitId);
 
       // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('/api/upload/profile-picture', {
+      const response = await fetch('/api/upload/business-unit-logo', {
         method: 'POST',
         body: formData,
       });
@@ -78,7 +81,7 @@ export function ProfilePictureUpload({
       }
 
       if (result.success) {
-        toast.success('Profile picture updated successfully');
+        toast.success('Business unit logo updated successfully');
         onUploadSuccess(result.fileUrl, result.fileName);
         setPreviewUrl(result.fileUrl);
       } else {
@@ -104,7 +107,7 @@ export function ProfilePictureUpload({
       // Extract filename from URL if needed
       const fileName = currentImageUrl.split('/').pop();
       
-      const response = await fetch(`/api/upload/profile-picture?fileName=${fileName}`, {
+      const response = await fetch(`/api/upload/business-unit-logo?fileName=${fileName}&businessUnitId=${businessUnitId}`, {
         method: 'DELETE',
       });
 
@@ -115,7 +118,7 @@ export function ProfilePictureUpload({
       }
 
       if (result.success) {
-        toast.success('Profile picture removed successfully');
+        toast.success('Business unit logo removed successfully');
         setPreviewUrl(null);
         onRemoveSuccess();
       } else {
@@ -123,32 +126,32 @@ export function ProfilePictureUpload({
       }
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to remove picture');
+      toast.error(error instanceof Error ? error.message : 'Failed to remove logo');
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Profile Picture Display */}
+      {/* Business Unit Logo Display */}
       <div className="flex justify-center relative">
         <div className="relative">
           <div className="h-32 w-32 border-4 border-background shadow-lg rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden">
             {previewUrl ? (
               <img 
                 src={previewUrl} 
-                alt={userName}
-                className="w-full h-full object-cover"
+                alt={businessUnitName}
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="text-2xl font-semibold text-muted-foreground">
-                {userInitials}
+                {businessUnitInitials}
               </div>
             )}
           </div>
           
           {/* Upload Button */}
           <div className="absolute -bottom-2 -right-2">
-            <label htmlFor="profile-image" className="cursor-pointer">
+            <label htmlFor="business-unit-logo" className="cursor-pointer">
               <div className="bg-primary text-primary-foreground rounded-full p-3 shadow-lg hover:bg-primary/90 transition-colors border-2 border-background">
                 {isUploading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -157,7 +160,7 @@ export function ProfilePictureUpload({
                 )}
               </div>
               <input
-                id="profile-image"
+                id="business-unit-logo"
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}
@@ -182,7 +185,7 @@ export function ProfilePictureUpload({
       {/* Instructions and Actions */}
       <div className="text-center space-y-2">
         <p className="text-xs text-muted-foreground">
-          Click the camera icon to upload a profile picture
+          Click the camera icon to upload a business unit logo
         </p>
         <p className="text-xs text-muted-foreground">
           Maximum size: 5MB • Supported formats: JPG, PNG, WebP, GIF
@@ -197,7 +200,7 @@ export function ProfilePictureUpload({
             className="text-xs gap-1"
           >
             <X className="h-3 w-3" />
-            Remove Picture
+            Remove Logo
           </Button>
         )}
       </div>

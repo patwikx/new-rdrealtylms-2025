@@ -94,12 +94,49 @@ export default function BusinessUnitSwitcher({
   const router = useRouter()
   const { isMobile } = useSidebar()
   const [open, setOpen] = React.useState<boolean>(false)
+  const [logoUrls, setLogoUrls] = React.useState<Record<string, string>>({})
 
   // Type-safe params access
   const businessUnitId = typeof params.businessUnitId === 'string' ? params.businessUnitId : undefined
 
   const isSwitcherActive = items.length > 1
   const currentBusinessUnit = items.find((item) => item.id === businessUnitId)
+
+  // Load business unit logos
+  React.useEffect(() => {
+    const loadLogos = async () => {
+      const logoPromises = items
+        .filter(item => item.image)
+        .map(async (item) => {
+          try {
+            const response = await fetch(`/api/business-unit-logo/${encodeURIComponent(item.image!)}`);
+            const result = await response.json();
+            
+            if (result.success && result.fileUrl) {
+              return { id: item.id, url: result.fileUrl };
+            }
+          } catch (error) {
+            console.error(`Error loading logo for ${item.name}:`, error);
+          }
+          return null;
+        });
+
+      const logoResults = await Promise.all(logoPromises);
+      const logoMap: Record<string, string> = {};
+      
+      logoResults.forEach(result => {
+        if (result) {
+          logoMap[result.id] = result.url;
+        }
+      });
+      
+      setLogoUrls(logoMap);
+    };
+
+    if (items.length > 0) {
+      loadLogos();
+    }
+  }, [items]);
 
   const onBusinessUnitSelect = React.useCallback((selectedBusinessUnitId: string) => {
     setOpen(false)
@@ -117,6 +154,28 @@ export default function BusinessUnitSwitcher({
   const currentUnitName = currentBusinessUnit?.name ?? "No Unit Assigned"
   const currentUnitType = getBusinessUnitTypeLabel(currentBusinessUnit?.name ?? '')
 
+  // Component to render business unit logo or fallback icon
+  const BusinessUnitLogo = ({ businessUnit, size = "size-8", containerSize = "size-8" }: { businessUnit: BusinessUnitItem, size?: string, containerSize?: string }) => {
+    const logoUrl = logoUrls[businessUnit.id]
+    const FallbackIcon = getBusinessUnitIcon(businessUnit.name)
+    
+    if (logoUrl) {
+      return (
+        <img 
+          src={logoUrl} 
+          alt={businessUnit.name}
+          className={cn("object-contain rounded-lg", containerSize)}
+        />
+      )
+    }
+    
+    return (
+      <div className={cn("flex items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground", containerSize)}>
+        <FallbackIcon className={size} />
+      </div>
+    )
+  }
+
   // Static display for single unit users
   if (!isSwitcherActive) {
     return (
@@ -129,9 +188,13 @@ export default function BusinessUnitSwitcher({
               className
             )}
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <CurrentIcon className="size-4" />
-            </div>
+            {currentBusinessUnit ? (
+              <BusinessUnitLogo businessUnit={currentBusinessUnit} size="size-4" containerSize="size-8" />
+            ) : (
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <CurrentIcon className="size-4" />
+              </div>
+            )}
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">
                 {currentUnitName}
@@ -156,9 +219,13 @@ export default function BusinessUnitSwitcher({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <CurrentIcon className="size-4" />
-              </div>
+              {currentBusinessUnit ? (
+                <BusinessUnitLogo businessUnit={currentBusinessUnit} size="size-4" containerSize="size-8" />
+              ) : (
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <CurrentIcon className="size-4" />
+                </div>
+              )}
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
                   {currentUnitName}
@@ -188,9 +255,7 @@ export default function BusinessUnitSwitcher({
                 onClick={() => onBusinessUnitSelect(currentBusinessUnit.id)}
                 className="gap-2 p-2"
               >
-                <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <CurrentIcon className="size-4 shrink-0" />
-                </div>
+                <BusinessUnitLogo businessUnit={currentBusinessUnit} size="size-3" containerSize="size-6" />
                 <div className="flex flex-col gap-0.5 overflow-hidden">
                   <div className="font-medium truncate">
                     {currentBusinessUnit.name}
@@ -208,16 +273,13 @@ export default function BusinessUnitSwitcher({
               .filter((item): item is BusinessUnitItem => item.id !== currentBusinessUnit?.id)
               .slice(0, 5) // Show up to 5 additional units
               .map((item) => {
-                const IconComponent = getBusinessUnitIcon(item.name)
                 return (
                   <DropdownMenuItem
                     key={item.id}
                     onClick={() => onBusinessUnitSelect(item.id)}
                     className="gap-2 p-2"
                   >
-                    <div className="flex size-6 items-center justify-center rounded-sm border">
-                      <IconComponent className="size-4 shrink-0" />
-                    </div>
+                    <BusinessUnitLogo businessUnit={item} size="size-3" containerSize="size-6" />
                     <div className="flex flex-col gap-0.5 overflow-hidden">
                       <div className="font-medium truncate">
                         {item.name}

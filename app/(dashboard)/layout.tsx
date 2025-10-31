@@ -89,6 +89,7 @@ export default async function DashboardLayout({
           id: true,
           code: true,
           name: true,
+          image: true,
         },
       });
     } catch (error) {
@@ -98,6 +99,7 @@ export default async function DashboardLayout({
         id: session.user.businessUnit.id,
         code: session.user.businessUnit.code,
         name: session.user.businessUnit.name,
+        image: null,
       }];
     }
   } else {
@@ -106,6 +108,7 @@ export default async function DashboardLayout({
       id: session.user.businessUnit.id,
       code: session.user.businessUnit.code,
       name: session.user.businessUnit.name,
+      image: null, // Regular users don't need the image field, but we include it for type consistency
     }];
   }
 
