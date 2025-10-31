@@ -15,17 +15,11 @@ export default async function AdminBusinessUnitsPage() {
     redirect("/setup");
   }
 
-  // For global admin access, redirect to the first business unit's admin page
-  // or provide a way to select a business unit
-  const businessUnits = await getBusinessUnits();
-  
-  if (businessUnits.length > 0) {
-    // Redirect to the first business unit's admin page
-    redirect(`/${businessUnits[0].id}/admin/business-units`);
-  }
-
-  // If no business units exist, show the creation interface
-  const unassignedUsers = await getUnassignedUsers();
+  // Show the business unit management interface
+  const [businessUnits, unassignedUsers] = await Promise.all([
+    getBusinessUnits(),
+    getUnassignedUsers()
+  ]);
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">

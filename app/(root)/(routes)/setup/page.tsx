@@ -20,6 +20,8 @@ export default async function SetupPage() {
     redirect(`/${session.user.businessUnit.id}`);
   }
 
+  // Users without business units should wait for admin assignment
+
   // Show setup page for regular users without business unit
   return <SetupPageClient user={session.user} />;
 }

@@ -71,8 +71,6 @@ export async function createBusinessUnit(formData: FormData) {
     });
 
     revalidatePath("/admin/business-units");
-    // Also revalidate the new route structure (we'll keep both for compatibility)
-    revalidatePath("/[businessUnitId]/admin/business-units", "page");
     return { success: "Business unit created successfully!" };
   } catch (error) {
     console.error("Create business unit error:", error);
