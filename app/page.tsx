@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState, useEffect } from "react"
+import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -33,30 +33,6 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(loginAction, undefined)
-  const [imageError, setImageError] = useState(false)
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
-
-  // Load company logo from business unit
-  useEffect(() => {
-    const loadLogo = async () => {
-      try {
-        // Try to get the logo from a known business unit (you can replace with actual business unit ID)
-        const response = await fetch('/api/company-logo');
-        const result = await response.json();
-        
-        if (result.success && result.fileUrl) {
-          setLogoUrl(result.fileUrl);
-        } else {
-          setImageError(true);
-        }
-      } catch (error) {
-        console.error('Error loading company logo:', error);
-        setImageError(true);
-      }
-    };
-
-    loadLogo();
-  }, []);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-primary/80 dark:from-primary/20 dark:via-primary/10 dark:to-background">
