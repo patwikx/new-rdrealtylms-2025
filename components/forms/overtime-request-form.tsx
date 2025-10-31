@@ -49,8 +49,16 @@ export function OvertimeRequestForm({ businessUnitId }: OvertimeRequestFormProps
 
     setIsSubmitting(true);
     
+    // Format date without timezone conversion to avoid date shifting
+    const formatDateLocal = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
     // Combine date and time for both start and end (same date)
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(selectedDate);
     const startDateTime = `${dateStr}T${startTime}`;
     const endDateTime = `${dateStr}T${endTime}`;
     

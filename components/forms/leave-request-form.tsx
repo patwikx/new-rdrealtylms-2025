@@ -150,8 +150,16 @@ export function LeaveRequestForm({ leaveTypes, businessUnitId }: LeaveRequestFor
     // Add selected values to form data
     formData.set("leaveTypeId", selectedLeaveType);
     formData.set("session", selectedSession);
-    formData.set("startDate", startDate.toISOString().split('T')[0]);
-    formData.set("endDate", endDate.toISOString().split('T')[0]);
+    // Format dates without timezone conversion to avoid date shifting
+    const formatDateLocal = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    formData.set("startDate", formatDateLocal(startDate));
+    formData.set("endDate", formatDateLocal(endDate));
     
     const result = await submitLeaveRequest(formData);
     
