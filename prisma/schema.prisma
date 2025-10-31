@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model BusinessUnit {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employees User[]
+}
+
+model User {
+  id                 String                  @id @default(uuid())
+  employeeId         String                  @unique
+  email              String?
+  password           String
+  name               String
+  role               UserRole                @default(USER)
+  classification     EmployeeClassification?
+  deptId             String?
+  approverId         String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  businessUnitId     String?
+  managedDepartments DepartmentManager[]
+  leaveBalances      LeaveBalance[]
+  leaveRequests      LeaveRequest[]
+  overtimeRequests   OvertimeRequest[]
+  approver           User?                   @relation("UserApprover", fields: [approverId], references: [id])
+  reports            User[]                  @relation("UserApprover")
+  businessUnit       BusinessUnit?           @relation(fields: [businessUnitId], references: [id])
+  department         Department?             @relation(fields: [deptId], references: [id])
+}
+
+model Department {
+  id        String              @id @default(cuid())
+  name      String              @unique
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  managers  DepartmentManager[]
+  members   User[]
+}
+
+model DepartmentManager {
+  id           String     @id @default(cuid())
+  departmentId String
+  managerId    String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  manager      User       @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, managerId])
+}
+
+model LeaveType {
+  id                   String         @id @default(cuid())
+  name                 String         @unique
+  defaultAllocatedDays Float          @default(0)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  leaveBalances        LeaveBalance[]
+  leaveRequests        LeaveRequest[]
+}
+
+model LeaveRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  leaveTypeId     String
+  startDate       DateTime      @db.Date
+  endDate         DateTime      @db.Date
+  reason          String
+  status          RequestStatus @default(PENDING_MANAGER)
+  session         LeaveSession  @default(FULL_DAY)
+  managerActionBy String?
+  managerActionAt DateTime?
+  managerComments String?
+  hrActionBy      String?
+  hrActionAt      DateTime?
+  hrComments      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  leaveType       LeaveType     @relation(fields: [leaveTypeId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OvertimeRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  startTime       DateTime
+  endTime         DateTime
+  reason          String
+  status          RequestStatus @default(PENDING_MANAGER)
+  managerActionBy String?
+  managerActionAt DateTime?
+  managerComments String?
+  hrActionBy      String?
+  hrActionAt      DateTime?
+  hrComments      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeaveBalance {
+  id            String    @id @default(cuid())
+  userId        String
+  leaveTypeId   String
+  year          Int
+  allocatedDays Float
+  usedDays      Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leaveTypeId, year])
+}
+
+enum UserRole {
+  USER
+  MANAGER
+  HR
+  ADMIN
+}
+
+enum EmployeeClassification {
+  RDRDC
+  RDHFSI
+  TWC
+}
+
+enum RequestStatus {
+  PENDING_MANAGER
+  PENDING_HR
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveSession {
+  FULL_DAY
+  MORNING
+  AFTERNOON
+}
