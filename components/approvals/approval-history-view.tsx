@@ -395,7 +395,7 @@ export function ApprovalHistoryView({
                           <User className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs font-medium">Manager:</span>
                           {request.managerComments !== null ? (
-                            <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'outline'} className="text-xs">
+                            <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'default'} className="text-xs">
                               {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}
                             </Badge>
                           ) : (
@@ -410,7 +410,7 @@ export function ApprovalHistoryView({
                           ) : request.hrComments !== null ? (
                             <Badge variant="outline" className="text-xs">Approved</Badge>
                           ) : request.status === 'APPROVED' ? (
-                            <Badge variant="outline" className="text-xs">Approved</Badge>
+                            <Badge className="text-xs">Approved</Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">Pending</span>
                           )}
@@ -420,7 +420,7 @@ export function ApprovalHistoryView({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {request.actionTaken === 'APPROVED' ? (
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
