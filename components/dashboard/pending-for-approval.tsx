@@ -50,9 +50,8 @@ export function PendingForApproval({
           )}
         </CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/${businessUnitId}/approvals`}>
-            View All
-            <ArrowRight className="h-4 w-4 ml-1" />
+          <Link href={`/${businessUnitId}/approvals/leave/pending`}>
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
       </CardHeader>
@@ -87,7 +86,7 @@ export function PendingForApproval({
                   </div>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/${businessUnitId}/approvals/leave/${request.id}`}>
+                  <Link href={`/${businessUnitId}/approvals/leave/pending/${request.id}`}>
                     Review
                   </Link>
                 </Button>

@@ -4,14 +4,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole, RequestStatus } from "@prisma/client";
 
-// Types for dashboard data
+// Types for dashboard data (user-specific)
 export interface DashboardStats {
-  totalEmployees: number;
-  totalLeaveRequests: number;
-  pendingLeaveRequests: number;
-  totalOvertimeRequests: number;
-  pendingOvertimeRequests: number;
-  totalDepartments: number;
+  totalEmployees: number; // For regular users: 1, for managers: team size, for admins: all employees
+  totalLeaveRequests: number; // User's own leave requests
+  pendingLeaveRequests: number; // User's pending leave requests
+  totalOvertimeRequests: number; // User's own overtime requests
+  pendingOvertimeRequests: number; // User's pending overtime requests
+  totalDepartments: number; // For regular users: 1, for admins: all departments
 }
 
 export interface RecentLeaveRequest {
@@ -82,10 +82,10 @@ async function checkBusinessUnitAccess(businessUnitId: string) {
   return session.user;
 }
 
-// Get dashboard statistics
+// Get dashboard statistics (user-specific for personal dashboard)
 export async function getDashboardStats(businessUnitId: string): Promise<DashboardStats> {
   try {
-    await checkBusinessUnitAccess(businessUnitId);
+    const user = await checkBusinessUnitAccess(businessUnitId);
     
     const [
       totalEmployees,
@@ -95,53 +95,53 @@ export async function getDashboardStats(businessUnitId: string): Promise<Dashboa
       pendingOvertimeRequests,
       totalDepartments,
     ] = await Promise.all([
-      // Total employees in business unit
-      prisma.user.count({
-        where: { businessUnitId },
+      // For regular users: show 1 (themselves), for managers/admins: show team size
+      user.role === "ADMIN" || user.role === "HR" 
+        ? prisma.user.count({ where: { businessUnitId } })
+        : user.role === "MANAGER"
+        ? prisma.user.count({ where: { approverId: user.id } }).then(count => count + 1) // +1 for themselves
+        : Promise.resolve(1), // Regular users see just themselves
+      
+      // User's own leave requests
+      prisma.leaveRequest.count({
+        where: { userId: user.id },
       }),
       
-      // Total leave requests in business unit
+      // User's pending leave requests
       prisma.leaveRequest.count({
         where: {
-          user: { businessUnitId },
-        },
-      }),
-      
-      // Pending leave requests
-      prisma.leaveRequest.count({
-        where: {
-          user: { businessUnitId },
+          userId: user.id,
           status: {
             in: ["PENDING_MANAGER", "PENDING_HR"],
           },
         },
       }),
       
-      // Total overtime requests
+      // User's own overtime requests
       prisma.overtimeRequest.count({
-        where: {
-          user: { businessUnitId },
-        },
+        where: { userId: user.id },
       }),
       
-      // Pending overtime requests
+      // User's pending overtime requests
       prisma.overtimeRequest.count({
         where: {
-          user: { businessUnitId },
+          userId: user.id,
           status: {
             in: ["PENDING_MANAGER", "PENDING_HR"],
           },
         },
       }),
       
-      // Total departments with employees in this business unit
-      prisma.department.count({
-        where: {
-          members: {
-            some: { businessUnitId },
-          },
-        },
-      }),
+      // User's department (1) or total departments for admins
+      user.role === "ADMIN" || user.role === "HR"
+        ? prisma.department.count({
+            where: {
+              members: {
+                some: { businessUnitId },
+              },
+            },
+          })
+        : Promise.resolve(1), // Regular users see their own department
     ]);
 
     return {

@@ -80,8 +80,7 @@ export function RecentRequests({
           </CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/${businessUnitId}/leave-requests`}>
-              View All
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </CardHeader>
@@ -125,8 +124,7 @@ export function RecentRequests({
           </CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href={`/${businessUnitId}/overtime-requests`}>
-              View All
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
         </CardHeader>

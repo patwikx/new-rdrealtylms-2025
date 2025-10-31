@@ -35,14 +35,11 @@ export function LeaveBalanceCard({ balances, businessUnitId }: LeaveBalanceProps
           <Calendar className="h-5 w-5" />
           Leave Balance ({new Date().getFullYear()})
         </CardTitle>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href={`/${businessUnitId}/leave-balances`}>
-              View All
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/${businessUnitId}/leave-balances`}>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {filteredBalances.length === 0 ? (
