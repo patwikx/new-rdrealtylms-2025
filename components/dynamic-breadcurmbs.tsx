@@ -11,7 +11,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Users, FileText, ChartBar as BarChart3, Settings, Building2, FolderOpen, UserCheck, Activity, Home, Calculator, Calendar, Plus, Eye, UserPlus } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Users, FileText, ChartBar as BarChart3, Settings, Building2, FolderOpen, UserCheck, Activity, Home, Calculator, Calendar, Plus, Eye, UserPlus, HelpCircle, Mail, Phone, User } from 'lucide-react';
 
 interface DynamicBreadcrumbsProps {
   businessUnitId: string;
@@ -116,31 +128,97 @@ export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) 
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={index}>
-            <BreadcrumbItem className={crumb.isCurrentPage ? "" : "hidden md:block"}>
-              {crumb.isCurrentPage ? (
-                <BreadcrumbPage className="flex items-center gap-2">
-                  {crumb.icon && <crumb.icon className="h-4 w-4" />}
-                  {crumb.label}
-                </BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink asChild>
-                  <Link href={crumb.href!} className="flex items-center gap-2">
+    <div className="flex items-center justify-between w-full">
+      <Breadcrumb>
+        <BreadcrumbList>
+          {breadcrumbs.map((crumb, index) => (
+            <React.Fragment key={index}>
+              <BreadcrumbItem className={crumb.isCurrentPage ? "" : "hidden md:block"}>
+                {crumb.isCurrentPage ? (
+                  <BreadcrumbPage className="flex items-center gap-2">
                     {crumb.icon && <crumb.icon className="h-4 w-4" />}
                     {crumb.label}
-                  </Link>
-                </BreadcrumbLink>
+                  </BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link href={crumb.href!} className="flex items-center gap-2">
+                      {crumb.icon && <crumb.icon className="h-4 w-4" />}
+                      {crumb.label}
+                    </Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {index < breadcrumbs.length - 1 && (
+                <BreadcrumbSeparator className="hidden md:block" />
               )}
-            </BreadcrumbItem>
-            {index < breadcrumbs.length - 1 && (
-              <BreadcrumbSeparator className="hidden md:block" />
-            )}
-          </React.Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+            </React.Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
+      
+      {/* Developer Info Button */}
+      <TooltipProvider>
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <HelpCircle className="h-4 w-4" />
+                  <span className="sr-only">Developer Information</span>
+                </Button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Developer Information</p>
+            </TooltipContent>
+          </Tooltip>
+        <PopoverContent className="w-80" align="end">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h4 className="font-medium leading-none flex items-center gap-2">
+                <User className="h-4 w-4" />
+                System Developer
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                RDRDC Group Leave Management System
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Developer:</span>
+                <span>Patrick L. Miranda</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Email:</span>
+                <a 
+                  href="mailto:patricklacapmiranda@gmail.com" 
+                  className="text-blue-600 hover:underline"
+                >
+                  patricklacapmiranda@gmail.com
+                </a>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Contact:</span>
+                <a 
+                  href="tel:+639273623310" 
+                  className="text-blue-600 hover:underline"
+                >
+                  +63 927 362 3310
+                </a>
+              </div>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                For technical support or system inquiries
+              </p>
+            </div>
+          </div>
+        </PopoverContent>
+        </Popover>
+      </TooltipProvider>
+    </div>
   );
 }

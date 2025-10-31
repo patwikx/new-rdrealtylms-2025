@@ -48,6 +48,7 @@ interface NavUserProps {
     position: string
     businessUnit: string
     role: string
+    profilePicture?: string | null
   }
 }
 
@@ -66,6 +67,35 @@ export function NavUser({ user }: NavUserProps) {
   const { setTheme } = useTheme()
   const pathname = usePathname()
   const businessUnitId = pathname.split('/')[1]
+  const [profileImageUrl, setProfileImageUrl] = React.useState<string | null>(null)
+  const [mounted, setMounted] = React.useState(false)
+
+  // Handle hydration
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Load profile picture on mount
+  React.useEffect(() => {
+    if (!mounted) return
+
+    const loadProfilePicture = async () => {
+      if (user.profilePicture) {
+        try {
+          const response = await fetch(`/api/profile-picture/${encodeURIComponent(user.profilePicture)}`);
+          const result = await response.json();
+          
+          if (result.success && result.fileUrl) {
+            setProfileImageUrl(result.fileUrl);
+          }
+        } catch (error) {
+          console.error('Error loading profile picture in nav:', error);
+        }
+      }
+    };
+
+    loadProfilePicture();
+  }, [user.profilePicture, mounted]);
 
   const handleSignOut = React.useCallback(async () => {
     try {
@@ -79,6 +109,24 @@ export function NavUser({ user }: NavUserProps) {
   }, [])
 
   const userInitials = React.useMemo(() => getUserInitials(user.name), [user.name])
+  const avatarSrc = mounted ? (profileImageUrl || user.avatar) : user.avatar
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="h-8 w-8 rounded-lg bg-muted animate-pulse" />
+            <div className="flex-1 space-y-1">
+              <div className="h-4 bg-muted rounded animate-pulse" />
+              <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+            </div>
+          </div>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
 
   return (
     <SidebarMenu>
@@ -90,7 +138,7 @@ export function NavUser({ user }: NavUserProps) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={avatarSrc} alt={user.name} />
                 <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                   {userInitials}
                 </AvatarFallback>
@@ -113,7 +161,7 @@ export function NavUser({ user }: NavUserProps) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={avatarSrc} alt={user.name} />
                   <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                     {userInitials}
                   </AvatarFallback>

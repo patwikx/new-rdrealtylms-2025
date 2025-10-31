@@ -25,6 +25,7 @@ model User {
   name               String
   role               UserRole                @default(USER)
   classification     EmployeeClassification?
+  profilePicture     String?
   deptId             String?
   approverId         String?
   createdAt          DateTime                @default(now())

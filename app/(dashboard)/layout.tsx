@@ -6,7 +6,8 @@ import { prisma } from '@/lib/prisma';
 import "../globals.css";
 import { Toaster } from 'sonner';
 import { BusinessUnitProvider } from '@/context/business-unit-context';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarWrapper } from '@/components/sidebar/sidebar-wrapper';
 import type { Session } from 'next-auth';
 import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { Separator } from '@/components/ui/separator';
@@ -108,12 +109,53 @@ export default async function DashboardLayout({
     }];
   }
 
+  // Fetch complete user data including profile picture
+  let completeUserData = null;
+  try {
+    completeUserData = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        employeeId: true,
+        role: true,
+        classification: true,
+        profilePicture: true,
+        businessUnit: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to fetch complete user data:", error);
+  }
+
+  // Create enhanced session with profile picture
+  const enhancedSession = {
+    ...session,
+    user: {
+      ...session.user,
+      profilePicture: completeUserData?.profilePicture || null,
+    },
+  };
+
   return (
-    <SidebarProvider>
+    <SidebarWrapper>
       <div className="min-h-screen flex w-full">
         {/* App Sidebar */}
         <AppSidebar 
-          session={session}
+          session={enhancedSession}
           businessUnits={businessUnits}
           currentBusinessUnitId={businessUnitId}
         />
@@ -138,6 +180,6 @@ export default async function DashboardLayout({
         {/* Toast Notifications */}
         <Toaster />
       </div>
-    </SidebarProvider>
+    </SidebarWrapper>
   )
 }

@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Users, Calendar, Settings, ChartBar as BarChart3, FileText, Shield, ClipboardList, Building2, CheckSquare, Clock, UserCheck } from "lucide-react"
+import { Users, Calendar, Settings, ChartBar as BarChart3, FileText, Shield, CheckSquare, Clock } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -22,12 +22,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentBusinessUnitId: string
 }
 
-// Helper function to check if user is an approver
-const isApprover = (userRole: string) => {
-  // Users who can be approvers based on your Prisma UserRole enum
-  const approverRoles = ['ADMIN', 'MANAGER', 'HR']
-  return approverRoles.includes(userRole)
-}
+
 
 // Define navigation items based on your leave management system
 const getNavigationItems = (businessUnitId: string, userRole: string) => {
@@ -171,10 +166,6 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
         title: "Profile",
         url: `/${businessUnitId}/profile`,
       },
-      {
-        title: "Preferences",
-        url: `/${businessUnitId}/settings/preferences`,
-      },
     ],
   });
 
@@ -204,6 +195,7 @@ export function AppSidebar({
     position: session.user.classification ?? 'Employee', // Use classification as position
     businessUnit: session.user.businessUnit?.name ?? 'No Business Unit',
     role: session.user.role, // Role is already a string enum value
+    profilePicture: (session.user as any).profilePicture || null,
   }), [session.user])
 
   return (
