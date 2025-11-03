@@ -111,7 +111,7 @@ export function PendingForApproval({
                   </div>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/${businessUnitId}/approvals/pending/overtime/${request.id}`}>
+                  <Link href={`/${businessUnitId}/approvals/overtime/pending/${request.id}`}>
                     Review
                   </Link>
                 </Button>

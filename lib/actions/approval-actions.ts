@@ -169,6 +169,95 @@ export async function getLeaveRequestForApproval(requestId: string, businessUnit
   }
 }
 
+// Get overtime request details for approval
+export async function getOvertimeRequestForApproval(requestId: string, businessUnitId: string) {
+  try {
+    const user = await checkApprovalPermissions(businessUnitId);
+    
+    const request = await prisma.overtimeRequest.findFirst({
+      where: {
+        id: requestId,
+        user: {
+          employeeId: {
+            notIn: ["T-123", "admin"]
+          },
+          // Remove business unit restriction for managers and HR
+          ...(user.role === "ADMIN" && { businessUnitId: businessUnitId })
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true,
+            email: true,
+            role: true,
+            approver: {
+              select: {
+                id: true,
+                name: true,
+                employeeId: true,
+              }
+            },
+            department: {
+              select: {
+                id: true,
+                name: true,
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!request) {
+      return null;
+    }
+
+    // Check if user has permission to approve this specific request
+    if (user.role === "MANAGER") {
+      if (request.user.approver?.id !== user.id) {
+        throw new Error("You can only approve requests from your direct reports");
+      }
+      if (request.status !== "PENDING_MANAGER") {
+        throw new Error("This request is not pending manager approval");
+      }
+    } else if (user.role === "HR") {
+      if (request.status !== "PENDING_HR") {
+        throw new Error("This request is not pending HR approval");
+      }
+    }
+
+    // Calculate hours
+    const startTime = new Date(request.startTime);
+    const endTime = new Date(request.endTime);
+    const timeDifference = endTime.getTime() - startTime.getTime();
+    const calculatedHours = Math.round((timeDifference / (1000 * 60 * 60)) * 100) / 100;
+
+    return {
+      id: request.id,
+      startTime: request.startTime,
+      endTime: request.endTime,
+      reason: request.reason,
+      status: request.status,
+      hours: calculatedHours,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+      managerActionBy: request.managerActionBy,
+      managerActionAt: request.managerActionAt,
+      managerComments: request.managerComments,
+      hrActionBy: request.hrActionBy,
+      hrActionAt: request.hrActionAt,
+      hrComments: request.hrComments,
+      user: request.user
+    };
+  } catch (error) {
+    console.error("Error fetching overtime request for approval:", error);
+    throw error;
+  }
+}
+
 // Get pending leave requests for approval
 export async function getPendingLeaveRequests({
   businessUnitId,

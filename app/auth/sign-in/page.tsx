@@ -1,7 +1,9 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
 import { useFormStatus } from "react-dom"
+import { useSearchParams } from "next/navigation"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -9,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/lib/actions/auth-actions"
 import { AlertCircle, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -33,6 +36,46 @@ function SubmitButton() {
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(loginAction, undefined)
+  const searchParams = useSearchParams()
+
+  // Handle force logout scenarios
+  useEffect(() => {
+    const error = searchParams.get('error')
+    const shouldLogout = searchParams.get('logout') === 'true'
+
+    if (shouldLogout && error) {
+      const performLogout = async () => {
+        let message = "Session expired. Please sign in again."
+        
+        switch (error) {
+          case 'InvalidAccess':
+            message = "Invalid access detected. Please sign in again."
+            break
+          case 'InvalidBusinessUnit':
+            message = "Invalid business unit access. Please sign in again."
+            break
+          case 'UnauthorizedAccess':
+            message = "Unauthorized access detected. Please sign in again."
+            break
+          case 'SessionInvalid':
+            message = "Your session is invalid. Please sign in again."
+            break
+          case 'SecurityViolation':
+            message = "Security violation detected. Please sign in again."
+            break
+        }
+
+        try {
+          toast.error(message)
+          await signOut({ redirect: false })
+        } catch (error) {
+          console.error("Logout error:", error)
+        }
+      }
+
+      performLogout()
+    }
+  }, [searchParams])
 
   return (
     <div className="min-h-screen relative overflow-hidden">

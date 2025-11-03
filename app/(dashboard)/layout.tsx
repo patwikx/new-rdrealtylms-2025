@@ -11,7 +11,8 @@ import { SidebarWrapper } from '@/components/sidebar/sidebar-wrapper';
 import type { Session } from 'next-auth';
 import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { Separator } from '@/components/ui/separator';
-import { DynamicBreadcrumbs } from '@/components/dynamic-breadcurmbs'
+import { DynamicBreadcrumbs } from '@/components/dynamic-breadcurmbs';
+import { SecurityMonitor } from '@/components/auth/security-monitor';
 
 export const metadata = {
   title: "Dashboard | Leave Management System",
@@ -60,10 +61,14 @@ export default async function DashboardLayout({
     redirect("/auth/sign-in?error=IncompleteProfile");
   }
 
-  // If no business unit is in the URL, redirect to the user's assigned unit
+  // Force logout if no business unit in URL - this indicates a malformed URL or tampering
   if (!businessUnitId) {
-    const defaultUnitId = session.user.businessUnit.id;
-    redirect(`/${defaultUnitId}`);
+    redirect("/auth/sign-in?error=InvalidAccess&logout=true");
+  }
+
+  // Validate that the business unit ID is a valid format (basic validation)
+  if (businessUnitId.length < 10 || !businessUnitId.startsWith('cm')) {
+    redirect("/auth/sign-in?error=InvalidBusinessUnit&logout=true");
   }
 
   // Check if user is admin based on their role
@@ -73,9 +78,9 @@ export default async function DashboardLayout({
   // Admins can access any unit, regular users can only access their assigned unit
   const isAuthorizedForUnit = isAdmin || session.user.businessUnit.id === businessUnitId;
 
-  // If the user is not authorized for the requested unit, redirect them
+  // Force logout if user is not authorized for the requested unit
   if (!isAuthorizedForUnit) {
-    redirect(`/${session.user.businessUnit.id}`);
+    redirect("/auth/sign-in?error=UnauthorizedAccess&logout=true");
   }
 
   let businessUnits: BusinessUnitItem[] = [];
@@ -176,6 +181,12 @@ export default async function DashboardLayout({
 
   return (
     <SidebarWrapper>
+      {/* Security Monitor - Client-side security checks */}
+      <SecurityMonitor 
+        userBusinessUnitId={session.user.businessUnit.id}
+        userRole={session.user.role}
+      />
+      
       <div className="min-h-screen flex w-full">
         {/* App Sidebar */}
         <AppSidebar 
