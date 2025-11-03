@@ -24,6 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Users, FileText, ChartBar as BarChart3, Settings, Building2, FolderOpen, UserCheck, Activity, Home, Calculator, Calendar, Plus, Eye, UserPlus, HelpCircle, Mail, Phone, User } from 'lucide-react';
+import { SystemUpdateNotes } from "@/components/ui/system-update-notes";
 
 interface DynamicBreadcrumbsProps {
   businessUnitId: string;
@@ -156,69 +157,73 @@ export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) 
         </BreadcrumbList>
       </Breadcrumb>
       
-      {/* Developer Info Button */}
-      <TooltipProvider>
-        <Popover>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <HelpCircle className="h-4 w-4" />
-                  <span className="sr-only">Developer Information</span>
-                </Button>
-              </PopoverTrigger>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Developer Information</p>
-            </TooltipContent>
-          </Tooltip>
-        <PopoverContent className="w-80" align="end">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h4 className="font-medium leading-none flex items-center gap-2">
-                <User className="h-4 w-4" />
-                System Developer
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                RDRDC Group Leave Management System
-              </p>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Developer:</span>
-                <span>Patrick L. Miranda</span>
+      {/* Version & Developer Info */}
+      <div className="flex items-center gap-2">
+        <SystemUpdateNotes />
+        
+        <TooltipProvider>
+          <Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <HelpCircle className="h-4 w-4" />
+                    <span className="sr-only">Developer Information</span>
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Developer Information</p>
+              </TooltipContent>
+            </Tooltip>
+          <PopoverContent className="w-80" align="end">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium leading-none flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  System Developer
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  RDRDC Group Leave Management System
+                </p>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Email:</span>
-                <a 
-                  href="mailto:patricklacapmiranda@gmail.com" 
-                  className="text-blue-600 hover:underline"
-                >
-                  patricklacapmiranda@gmail.com
-                </a>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Developer:</span>
+                  <span>Patrick L. Miranda</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Email:</span>
+                  <a 
+                    href="mailto:patricklacapmiranda@gmail.com" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    patricklacapmiranda@gmail.com
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Contact:</span>
+                  <a 
+                    href="tel:+639273623310" 
+                    className="text-blue-600 hover:underline"
+                  >
+                    +63 927 362 3310
+                  </a>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Contact:</span>
-                <a 
-                  href="tel:+639273623310" 
-                  className="text-blue-600 hover:underline"
-                >
-                  +63 927 362 3310
-                </a>
+              <div className="pt-2 border-t">
+                <p className="text-xs text-muted-foreground">
+                  For technical support or system inquiries
+                </p>
               </div>
             </div>
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                For technical support or system inquiries
-              </p>
-            </div>
-          </div>
-        </PopoverContent>
-        </Popover>
-      </TooltipProvider>
+          </PopoverContent>
+          </Popover>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

@@ -216,6 +216,11 @@ function SignInContent() {
               </Link>
               .
             </p>
+            <div className="mt-3 flex justify-center">
+              <span className="text-xs font-mono text-white/60 bg-white/10 px-2 py-1 rounded">
+                v2.1.0
+              </span>
+            </div>
           </div>
         </div>
       </div>
