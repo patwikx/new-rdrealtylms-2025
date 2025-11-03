@@ -16,13 +16,20 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { LeaveRequestWithDetails, cancelLeaveRequest } from "@/lib/actions/leave-request-actions";
+import { EditLeaveRequestForm } from "./edit-leave-request-form";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+interface LeaveType {
+  id: string;
+  name: string;
+}
+
 interface LeaveRequestDetailsPageProps {
   request: LeaveRequestWithDetails;
+  leaveTypes: LeaveType[];
   businessUnitId: string;
 }
 
@@ -99,7 +106,7 @@ function getApprovalStatusBadge(status: 'APPROVED' | 'REJECTED' | 'PENDING') {
   );
 }
 
-export function LeaveRequestDetailsPage({ request, businessUnitId }: LeaveRequestDetailsPageProps) {
+export function LeaveRequestDetailsPage({ request, leaveTypes, businessUnitId }: LeaveRequestDetailsPageProps) {
   const router = useRouter();
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -124,7 +131,13 @@ export function LeaveRequestDetailsPage({ request, businessUnitId }: LeaveReques
   };
 
   const canCancel = request.status.includes('PENDING');
+  const canEdit = request.status.includes('PENDING') && !request.managerActionBy;
   const isMultiDay = request.startDate.getTime() !== request.endDate.getTime();
+
+  const handleEditSuccess = () => {
+    // Refresh the page to show updated data
+    router.refresh();
+  };
 
   return (
     <div className="space-y-6">
@@ -139,16 +152,27 @@ export function LeaveRequestDetailsPage({ request, businessUnitId }: LeaveReques
           </div>
         </div>
         
-        {canCancel && (
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isCancelling}
-          >
-            <X className="h-4 w-4 mr-2" />
-            {isCancelling ? 'Cancelling...' : 'Cancel Request'}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <EditLeaveRequestForm
+              request={request}
+              leaveTypes={leaveTypes}
+              businessUnitId={businessUnitId}
+              onSuccess={handleEditSuccess}
+            />
+          )}
+          
+          {canCancel && (
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isCancelling}
+            >
+              <X className="h-4 w-4 mr-2" />
+              {isCancelling ? 'Cancelling...' : 'Cancel Request'}
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -74,15 +74,35 @@ export function LeaveRequestForm({ leaveTypes, businessUnitId }: LeaveRequestFor
     return selectedType?.name.toLowerCase().includes('vacation') || false;
   };
 
+  // Helper function to check if the selected leave type allows past dates
+  const allowsPastDates = () => {
+    if (!selectedLeaveType) return false;
+    const selectedType = leaveTypes.find(type => type.id === selectedLeaveType);
+    if (!selectedType) return false;
+    
+    const lowerName = selectedType.name.toLowerCase();
+    return lowerName.includes('emergency') || 
+           lowerName.includes('cto') || 
+           lowerName.includes('sick');
+  };
+
   // Helper function to get minimum allowed date based on leave type
   const getMinimumDate = () => {
     const today = new Date();
+    
+    if (allowsPastDates()) {
+      // For emergency, CTO, and sick leave, allow any past date (no restriction)
+      // Set to a very old date to effectively disable the restriction
+      return new Date(1900, 0, 1);
+    }
+    
     if (isVacationLeave()) {
       // For vacation leave, minimum date is 3 days from today
       const minDate = new Date(today);
       minDate.setDate(today.getDate() + 3);
       return minDate;
     }
+    
     // For other leave types, minimum date is today
     return today;
   };
@@ -133,7 +153,7 @@ export function LeaveRequestForm({ leaveTypes, businessUnitId }: LeaveRequestFor
       return;
     }
 
-    // Validate 3-day advance notice for vacation leave
+    // Validate 3-day advance notice for vacation leave only
     if (isVacationLeave()) {
       const today = new Date();
       const threeDaysFromNow = new Date(today);
@@ -141,6 +161,17 @@ export function LeaveRequestForm({ leaveTypes, businessUnitId }: LeaveRequestFor
       
       if (startDate < threeDaysFromNow) {
         toast.error("Vacation leave must be filed at least 3 days in advance");
+        return;
+      }
+    }
+
+    // For non-emergency/CTO/sick leave types, validate that dates are not in the past
+    if (!allowsPastDates() && !isVacationLeave()) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+      
+      if (startDate < today) {
+        toast.error("Leave dates cannot be in the past");
         return;
       }
     }

@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getLeaveRequestById } from "@/lib/actions/leave-request-actions";
+import { getLeaveTypes } from "@/lib/actions/request-actions";
 import { LeaveRequestDetailsPage } from "@/components/leave-requests/leave-request-details-page";
 
 interface LeaveRequestPageProps {
@@ -20,7 +21,10 @@ export default async function LeaveRequestPage({ params }: LeaveRequestPageProps
   const { businessUnitId, id } = await params;
   
   try {
-    const request = await getLeaveRequestById(id, session.user.id);
+    const [request, leaveTypes] = await Promise.all([
+      getLeaveRequestById(id, session.user.id),
+      getLeaveTypes()
+    ]);
     
     if (!request) {
       redirect(`/${businessUnitId}/leave-requests`);
@@ -30,6 +34,7 @@ export default async function LeaveRequestPage({ params }: LeaveRequestPageProps
       <div className="space-y-6">
         <LeaveRequestDetailsPage 
           request={request}
+          leaveTypes={leaveTypes}
           businessUnitId={businessUnitId}
         />
       </div>

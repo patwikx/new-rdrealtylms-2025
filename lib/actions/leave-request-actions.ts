@@ -17,6 +17,7 @@ export interface LeaveRequestWithDetails {
     id: string;
     name: string;
   };
+  managerActionBy?: string | null;
   managerComments?: string | null;
   hrComments?: string | null;
 }
@@ -189,6 +190,7 @@ export async function getLeaveRequestById(
       days: calculatedDays,
       createdAt: request.createdAt,
       leaveType: request.leaveType,
+      managerActionBy: request.managerActionBy,
       managerComments: request.managerComments,
       hrComments: request.hrComments
     };
@@ -234,5 +236,83 @@ export async function cancelLeaveRequest(
   } catch (error) {
     console.error("Error cancelling leave request:", error);
     return { error: "Failed to cancel leave request" };
+  }
+}
+
+export async function updateLeaveRequest(
+  requestId: string,
+  data: {
+    leaveTypeId: string;
+    startDate: string;
+    endDate: string;
+    session: string;
+    reason: string;
+  }
+): Promise<{ success?: string; error?: string }> {
+  try {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return { error: "Not authenticated" };
+    }
+
+    // Check if request exists and belongs to user
+    const request = await prisma.leaveRequest.findFirst({
+      where: {
+        id: requestId,
+        userId: session.user.id
+      }
+    });
+
+    if (!request) {
+      return { error: "Leave request not found" };
+    }
+
+    // Check if request can be edited (only pending requests that haven't been approved by manager)
+    if (!request.status.includes('PENDING') || request.managerActionBy) {
+      return { error: "This request cannot be edited as it has already been processed by a manager" };
+    }
+
+    // Validate dates
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    
+    if (start > end) {
+      return { error: "End date must be after start date" };
+    }
+
+    // Check if leave type exists
+    const leaveType = await prisma.leaveType.findUnique({
+      where: { id: data.leaveTypeId }
+    });
+
+    if (!leaveType) {
+      return { error: "Invalid leave type" };
+    }
+
+    // Update leave request
+    await prisma.leaveRequest.update({
+      where: {
+        id: requestId
+      },
+      data: {
+        leaveTypeId: data.leaveTypeId,
+        startDate: start,
+        endDate: end,
+        session: data.session as "FULL_DAY" | "MORNING" | "AFTERNOON",
+        reason: data.reason,
+        updatedAt: new Date()
+      }
+    });
+
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath(`/${session.user.businessUnit?.id}/leave-requests`);
+    revalidatePath(`/${session.user.businessUnit?.id}/leave-requests/${requestId}`);
+
+    return { success: "Leave request updated successfully" };
+  } catch (error) {
+    console.error("Error updating leave request:", error);
+    return { error: "Failed to update leave request" };
   }
 }
