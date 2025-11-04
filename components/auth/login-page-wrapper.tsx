@@ -215,7 +215,7 @@ function LoginContent() {
             </p>
             <div className="mt-3 flex justify-center">
               <span className="text-xs font-mono text-primary-foreground/60 bg-primary-foreground/10 px-2 py-1 rounded">
-                v2.1.0
+                v2.1.1
               </span>
             </div>
           </div>

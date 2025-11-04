@@ -15,6 +15,19 @@ import { Info, CheckCircle, AlertCircle, Zap } from "lucide-react"
 
 const systemUpdates = [
   {
+    version: "2.1.1",
+    date: "2024-11-04",
+    type: "patch" as const,
+    title: "Critical Security Patch",
+    changes: [
+      "🔒 CRITICAL: Fixed password storage vulnerability - all passwords now properly hashed with bcryptjs",
+      "🔒 Enhanced password security in user creation and password reset functions",
+      "🔒 Implemented consistent 8-character minimum password requirement",
+      "🔒 Added proper salt rounds (12) for maximum security",
+      "✅ Verified all user management functions use secure password hashing"
+    ]
+  },
+  {
     version: "2.1.0",
     date: "2024-11-03",
     type: "major" as const,
