@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 
 export async function resetUserPassword(
   userId: string,
@@ -25,10 +26,14 @@ export async function resetUserPassword(
       return { error: "Password must be at least 8 characters long" };
     }
 
-    // Update the password (in a real app, you'd hash this)
+    // Hash the password before storing
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update the password with hashed version
     await prisma.user.update({
       where: { id: userId },
-      data: { password: newPassword },
+      data: { password: hashedPassword },
     });
 
     return { success: "Password reset successfully" };

@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 export interface UserWithDetails {
   id: string;
@@ -256,6 +257,15 @@ export async function createUser(data: {
       }
     }
     
+    // Validate password strength
+    if (data.password.length < 8) {
+      return { error: "Password must be at least 8 characters long" };
+    }
+
+    // Hash the password before storing
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+
     // Create the user
     await prisma.user.create({
       data: {
@@ -265,7 +275,7 @@ export async function createUser(data: {
         role: data.role,
         businessUnitId: data.businessUnitId,
         approverId: data.approverId || null,
-        password: data.password,
+        password: hashedPassword,
         deptId: data.departmentId || null,
       },
     });
@@ -495,10 +505,19 @@ export async function resetUserPassword(
 
     await checkUserManagementPermissions(user.businessUnitId);
 
-    // Update password (in a real app, you'd hash this)
+    // Validate password strength
+    if (newPassword.length < 8) {
+      return { error: "Password must be at least 8 characters long" };
+    }
+
+    // Hash the password before storing
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password with hashed version
     await prisma.user.update({
       where: { id: userId },
-      data: { password: newPassword },
+      data: { password: hashedPassword },
     });
 
     return { success: "Password reset successfully" };

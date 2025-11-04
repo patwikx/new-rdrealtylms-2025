@@ -178,8 +178,8 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters long");
+    if (passwordData.newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
@@ -451,7 +451,7 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
                   <DialogHeader>
                     <DialogTitle>Change Password</DialogTitle>
                     <DialogDescription>
-                      Enter your new password below. Make sure it's at least 6 characters long.
+                      Enter your new password below. Make sure it's at least 8 characters long.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
