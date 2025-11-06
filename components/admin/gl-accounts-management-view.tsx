@@ -52,6 +52,7 @@ import {
 
 interface GLAccountsManagementViewProps {
   accountsData: GLAccountsResponse
+  businessUnitId: string
   currentFilters: {
     accountType?: AccountType
     isActive?: boolean
@@ -101,6 +102,7 @@ function getNormalBalanceIcon(balance: DebitCredit) {
 
 export function GLAccountsManagementView({ 
   accountsData, 
+  businessUnitId,
   currentFilters 
 }: GLAccountsManagementViewProps) {
   const router = useRouter()
@@ -111,20 +113,8 @@ export function GLAccountsManagementView({
   const [deletingAccount, setDeletingAccount] = useState<GLAccount | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const filteredAccounts = useMemo(() => {
-    let filtered = accountsData.accounts
-
-    // Apply search term filter (client-side for better UX)
-    if (searchTerm && searchTerm !== currentFilters.search) {
-      filtered = filtered.filter(account => 
-        account.accountCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (account.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-
-    return filtered
-  }, [accountsData.accounts, searchTerm, currentFilters.search])
+  // Use server-side filtered accounts directly
+  const filteredAccounts = accountsData.accounts
 
   const updateFilter = (key: string, value: string | undefined) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -136,9 +126,11 @@ export function GLAccountsManagementView({
     }
     
     // Reset to first page when filters change
-    params.delete('page')
+    if (key !== 'page') {
+      params.delete('page')
+    }
     
-    router.push(`/admin/gl-accounts?${params.toString()}`)
+    router.push(`/${businessUnitId}/admin/gl-accounts?${params.toString()}`)
   }
 
   const handleSearch = () => {
@@ -485,6 +477,55 @@ export function GLAccountsManagementView({
           })
         )}
       </div>
+
+      {/* Pagination */}
+      {accountsData.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {((currentFilters.page - 1) * 20) + 1} to {Math.min(currentFilters.page * 20, accountsData.totalCount)} of {accountsData.totalCount} accounts
+          </p>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateFilter('page', (currentFilters.page - 1).toString())}
+              disabled={currentFilters.page <= 1}
+            >
+              Previous
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, accountsData.totalPages) }, (_, i) => {
+                const pageNum = Math.max(1, Math.min(
+                  accountsData.totalPages - 4,
+                  currentFilters.page - 2
+                )) + i
+                
+                if (pageNum > accountsData.totalPages) return null
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === currentFilters.page ? "default" : "outline"}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={() => updateFilter('page', pageNum.toString())}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => updateFilter('page', (currentFilters.page + 1).toString())}
+              disabled={currentFilters.page >= accountsData.totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Create Account Dialog */}
       <CreateGLAccountDialog

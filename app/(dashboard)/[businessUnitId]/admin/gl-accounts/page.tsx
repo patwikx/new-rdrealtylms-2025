@@ -44,6 +44,7 @@ export default async function AdminGLAccountsPage({ params, searchParams }: Admi
       <div className="space-y-6">
         <GLAccountsManagementView 
           accountsData={accountsData}
+          businessUnitId={businessUnitId}
           currentFilters={{
             accountType,
             isActive: isActive ? isActive === 'true' : undefined,

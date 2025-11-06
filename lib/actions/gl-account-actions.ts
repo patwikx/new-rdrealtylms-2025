@@ -19,6 +19,8 @@ export interface GLAccount {
 export interface GLAccountsResponse {
   accounts: GLAccount[]
   totalCount: number
+  totalPages: number
+  currentPage: number
   accountTypes: { type: AccountType; count: number }[]
 }
 
@@ -75,9 +77,13 @@ export async function getGLAccounts(filters: GLAccountFilters = {}): Promise<GLA
       count: item._count.accountType
     }))
 
+    const totalPages = Math.ceil(totalCount / limit)
+
     return {
       accounts,
       totalCount,
+      totalPages,
+      currentPage: page,
       accountTypes
     }
   } catch (error) {
@@ -117,7 +123,7 @@ export async function createGLAccount(data: CreateGLAccountData) {
       }
     })
 
-    revalidatePath("/admin/gl-accounts")
+    revalidatePath("/[businessUnitId]/admin/gl-accounts", "page")
     return { success: "GL Account created successfully" }
   } catch (error) {
     console.error("Error creating GL account:", error)
@@ -146,7 +152,7 @@ export async function updateGLAccount(accountId: string, data: UpdateGLAccountDa
       }
     })
 
-    revalidatePath("/admin/gl-accounts")
+    revalidatePath("/[businessUnitId]/admin/gl-accounts", "page")
     return { success: "GL Account updated successfully" }
   } catch (error) {
     console.error("Error updating GL account:", error)
@@ -186,7 +192,7 @@ export async function deleteGLAccount(accountId: string) {
       where: { id: accountId }
     })
 
-    revalidatePath("/admin/gl-accounts")
+    revalidatePath("/[businessUnitId]/admin/gl-accounts", "page")
     return { success: "GL Account deleted successfully" }
   } catch (error) {
     console.error("Error deleting GL account:", error)
@@ -201,7 +207,7 @@ export async function toggleGLAccountStatus(accountId: string, isActive: boolean
       data: { isActive }
     })
 
-    revalidatePath("/admin/gl-accounts")
+    revalidatePath("/[businessUnitId]/admin/gl-accounts", "page")
     return { success: `GL Account ${isActive ? 'activated' : 'deactivated'} successfully` }
   } catch (error) {
     console.error("Error toggling GL account status:", error)
