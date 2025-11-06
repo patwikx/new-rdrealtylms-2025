@@ -341,8 +341,10 @@ export function CreateUserView({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="USER">User</SelectItem>
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
+                  <SelectItem value="MANAGER">Approver</SelectItem>
+                  <SelectItem value="HR">PMD</SelectItem>
+                  <SelectItem value="PURCHASER">Purchaser</SelectItem>
+                  <SelectItem value="MRS_COORDINATOR">MRS Coordinator</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
