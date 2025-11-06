@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,6 @@ import {
   User, 
   Mail, 
   Building, 
-  Shield, 
   Calendar, 
   Edit, 
   Save, 
@@ -97,7 +96,7 @@ function getRoleColor(role: string): "default" | "secondary" | "destructive" | "
   }
 }
 
-export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
+export function ProfileView({ user }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -324,9 +323,9 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Profile Card */}
-        <Card className="md:col-span-1">
-          <CardHeader className="text-center">
+        {/* Profile Section */}
+        <div className="md:col-span-1 space-y-6">
+          <div className="text-center space-y-4">
             {/* Profile Picture Section */}
             <ProfilePictureUpload
               currentImageUrl={profileImageUrl}
@@ -335,60 +334,60 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
               onUploadSuccess={handleProfilePictureUpload}
               onRemoveSuccess={handleProfilePictureRemove}
             />
-            <CardTitle className="text-xl">{user.name}</CardTitle>
-            <CardDescription className="space-y-2">
-              <div className="flex items-center justify-center gap-2">
+            <div>
+              <h2 className="text-xl font-semibold">{user.name}</h2>
+              <div className="flex items-center justify-center gap-2 mt-2">
                 <Badge variant={getRoleColor(user.role)}>
                   {formatRole(user.role)}
                 </Badge>
               </div>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-                              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{user.employeeId || 'No ID'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{user.email || 'No email'}</span>
-              </div>
-              
-              {user.businessUnit && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{user.businessUnit.name}</span>
-                </div>
-              )}
-              
-              {user.department && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{user.department.name}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Joined {formatDate(user.createdAt)}</span>
-              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="truncate">{user.employeeId || 'No ID'}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="truncate">{user.email || 'No email'}</span>
+            </div>
+            
+            {user.businessUnit && (
+              <div className="flex items-center gap-2 text-sm">
+                <Building className="h-4 w-4 text-muted-foreground" />
+                <span className="truncate">{user.businessUnit.name}</span>
+              </div>
+            )}
+            
+            {user.department && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <span className="truncate">{user.department.name}</span>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span>Joined {formatDate(user.createdAt)}</span>
+            </div>
+          </div>
+        </div>
 
         {/* Personal Information */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <div className="md:col-span-2 space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
               <User className="h-5 w-5" />
               Personal Information
-            </CardTitle>
-            <CardDescription>
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
               Update your personal details and contact information
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            </p>
+          </div>
+          
+          <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -473,8 +472,8 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
         
         {/* Assigned Assets */}
         <AssignedAssetsSection userId={user.id} />

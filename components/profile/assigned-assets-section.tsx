@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -56,47 +56,46 @@ export function AssignedAssetsSection({ userId }: AssignedAssetsSectionProps) {
 
   if (isLoading) {
     return (
-      <Card className="md:col-span-3">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <div className="md:col-span-3 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
             <Package className="h-5 w-5" />
             Assigned Assets
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Loading assigned assets...</div>
-          </div>
-        </CardContent>
-      </Card>
+          </h3>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-muted-foreground">Loading assigned assets...</div>
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="md:col-span-3">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+    <div className="md:col-span-3 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
             <Package className="h-5 w-5" />
             Assigned Assets
-            {activeDeployments.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {activeDeployments.length} Active
-              </Badge>
-            )}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? "Show Active Only" : "Show All History"}
-            </Button>
-          </div>
+          </h3>
+          {activeDeployments.length > 0 && (
+            <Badge variant="secondary">
+              {activeDeployments.length} Active
+            </Badge>
+          )}
         </div>
-      </CardHeader>
-      <CardContent>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "Show Active Only" : "Show All History"}
+          </Button>
+        </div>
+      </div>
+      
+      <div>
         {deployments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Package className="h-12 w-12 text-muted-foreground mb-4" />
@@ -182,83 +181,81 @@ export function AssignedAssetsSection({ userId }: AssignedAssetsSectionProps) {
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
               {deployments.map((deployment) => (
-                <Card key={deployment.id} className="border-l-4 border-l-primary">
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">{deployment.asset.description}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {deployment.asset.itemCode}
+                <div key={deployment.id} className="border-l-4 border-l-primary bg-muted/30 rounded-r-lg p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h4 className="font-medium">{deployment.asset.description}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {deployment.asset.itemCode}
+                        </p>
+                        {deployment.asset.brand && (
+                          <p className="text-xs text-muted-foreground">
+                            {deployment.asset.brand}
+                            {deployment.asset.modelNumber && ` - ${deployment.asset.modelNumber}`}
                           </p>
-                          {deployment.asset.brand && (
-                            <p className="text-xs text-muted-foreground">
-                              {deployment.asset.brand}
-                              {deployment.asset.modelNumber && ` - ${deployment.asset.modelNumber}`}
-                            </p>
-                          )}
-                        </div>
-                        <Badge variant={getDeploymentStatusColor(deployment.status)}>
-                          {formatDeploymentStatus(deployment.status)}
-                        </Badge>
+                        )}
                       </div>
+                      <Badge variant={getDeploymentStatusColor(deployment.status)}>
+                        {formatDeploymentStatus(deployment.status)}
+                      </Badge>
+                    </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Category:</span>
-                          <div className="mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {deployment.asset.category.name}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Serial Number:</span>
-                          <p className="font-mono text-xs mt-1">
-                            {deployment.asset.serialNumber || "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Deployed:</span>
-                          <p className="mt-1">
-                            {deployment.deployedDate 
-                              ? format(new Date(deployment.deployedDate), "MMM dd, yyyy")
-                              : "Not deployed"
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Expected Return:</span>
-                          <p className="mt-1">
-                            {deployment.expectedReturnDate 
-                              ? format(new Date(deployment.expectedReturnDate), "MMM dd, yyyy")
-                              : "No return date"
-                            }
-                          </p>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Category:</span>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {deployment.asset.category.name}
+                          </Badge>
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            Transmittal: {deployment.transmittalNumber}
-                          </span>
-                          {deployment.deploymentNotes && (
-                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                              <FileText className="h-3 w-3 mr-1" />
-                              Notes
-                            </Button>
-                          )}
-                        </div>
+                      <div>
+                        <span className="text-muted-foreground">Serial Number:</span>
+                        <p className="font-mono text-xs mt-1">
+                          {deployment.asset.serialNumber || "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Deployed:</span>
+                        <p className="mt-1">
+                          {deployment.deployedDate 
+                            ? format(new Date(deployment.deployedDate), "MMM dd, yyyy")
+                            : "Not deployed"
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Expected Return:</span>
+                        <p className="mt-1">
+                          {deployment.expectedReturnDate 
+                            ? format(new Date(deployment.expectedReturnDate), "MMM dd, yyyy")
+                            : "No return date"
+                          }
+                        </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Transmittal: {deployment.transmittalNumber}
+                        </span>
+                        {deployment.deploymentNotes && (
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Notes
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
