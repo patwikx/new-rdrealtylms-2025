@@ -339,7 +339,7 @@ export async function getPendingLeaveRequests({
             },
           },
         },
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
@@ -351,7 +351,7 @@ export async function getPendingLeaveRequests({
           name: true
         },
         orderBy: {
-          name: 'asc'
+          name: 'desc'
         }
       })
     ]);
