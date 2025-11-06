@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { getUserById, getAllManagers, getAllBusinessUnits, getAllDepartments } from "@/lib/actions/user-management-actions";
+import { getAllRoles } from "@/lib/actions/role-actions";
 import { EditUserForm } from "@/components/users/edit-user-form";
 
 interface EditUserPageProps {
@@ -26,11 +27,12 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   
   try {
     // Fetch user data and related data in parallel
-    const [user, managers, businessUnits, departments] = await Promise.all([
+    const [user, managers, businessUnits, departments, roles] = await Promise.all([
       getUserById(id),
       getAllManagers(),
       getAllBusinessUnits(),
-      getAllDepartments()
+      getAllDepartments(),
+      getAllRoles()
     ]);
     
     if (!user) {
@@ -59,6 +61,7 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
           managers={managers}
           businessUnits={businessUnits}
           departments={departments}
+          roles={roles}
           isAdmin={session.user.role === "ADMIN"}
         />
       </div>

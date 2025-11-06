@@ -11,6 +11,7 @@ export interface UserWithDetails {
   email: string | null;
   employeeId: string;
   role: UserRole;
+  roleId: string | null;
   createdAt: Date;
   businessUnit: {
     id: string;
@@ -226,13 +227,15 @@ export async function getUsers({
 // Create a new user
 export async function createUser(data: {
   name: string;
-  email: string;
+  email?: string;
   employeeId: string;
   password: string;
   role: UserRole;
+  roleId?: string;
   businessUnitId: string;
   departmentId?: string;
   approverId?: string;
+  isActive?: boolean;
 }): Promise<{ success?: string; error?: string }> {
   try {
     await checkUserManagementPermissions(data.businessUnitId);
@@ -258,8 +261,8 @@ export async function createUser(data: {
     }
     
     // Validate password strength
-    if (data.password.length < 8) {
-      return { error: "Password must be at least 8 characters long" };
+    if (data.password.length < 6) {
+      return { error: "Password must be at least 6 characters long" };
     }
 
     // Hash the password before storing
@@ -273,10 +276,13 @@ export async function createUser(data: {
         email: data.email && data.email.trim() ? data.email : null,
         employeeId: data.employeeId,
         role: data.role,
+        roleId: data.roleId || null,
         businessUnitId: data.businessUnitId,
         approverId: data.approverId || null,
         password: hashedPassword,
         deptId: data.departmentId || null,
+        // Note: isActive field not yet implemented in schema
+        // isActive: data.isActive ?? true,
       },
     });
     
@@ -293,6 +299,7 @@ export async function createUser(data: {
 }
 
 // Update a user
+
 export async function updateUser(
   userId: string,
   data: {
@@ -300,6 +307,7 @@ export async function updateUser(
     email?: string;
     employeeId?: string;
     role?: UserRole;
+    roleId?: string;
     departmentId?: string;
     approverId?: string;
     isActive?: boolean;
@@ -356,6 +364,7 @@ export async function updateUser(
         ...(data.email && { email: data.email }),
         ...(data.employeeId && { employeeId: data.employeeId }),
         ...(data.role && { role: data.role }),
+        ...(data.roleId !== undefined && { roleId: data.roleId || null }),
         ...(data.approverId !== undefined && { approverId: data.approverId || null }),
         ...(data.departmentId !== undefined && { deptId: data.departmentId || null }),
         // Note: isActive field not yet implemented in schema

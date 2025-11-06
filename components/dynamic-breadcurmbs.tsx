@@ -23,7 +23,33 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Users, FileText, ChartBar as BarChart3, Settings, Building2, FolderOpen, UserCheck, Activity, Home, Calculator, Calendar, Plus, Eye, UserPlus, HelpCircle, Mail, Phone, User } from 'lucide-react';
+import { 
+  Users, 
+  FileText, 
+  ChartBar as BarChart3, 
+  Settings, 
+  Building2, 
+  FolderOpen, 
+  UserCheck, 
+  Activity, 
+  Home, 
+  Calculator, 
+  Calendar, 
+  Plus, 
+  Eye, 
+  UserPlus, 
+  HelpCircle, 
+  Mail, 
+  Phone, 
+  User,
+  Package,
+  ClipboardCheck,
+  Clock,
+  CheckCircle2,
+  Edit,
+  UserCog,
+  Shield
+} from 'lucide-react';
 import { SystemUpdateNotes } from "@/components/ui/system-update-notes";
 
 interface DynamicBreadcrumbsProps {
@@ -39,12 +65,20 @@ interface BreadcrumbItem {
 
 const routeConfig: Record<string, { label: string; icon?: React.ComponentType<{ className?: string }> }> = {
   '': { label: 'Dashboard', icon: Home },
+  
+  // Employee Management
   'employees': { label: 'Employees', icon: Users },
   'employees/create': { label: 'Create Employee', icon: UserPlus },
+  
+  // Department Management
   'departments': { label: 'Departments', icon: Building2 },
   'departments/create': { label: 'Create Department', icon: Plus },
+  
+  // Business Unit Management
   'business-units': { label: 'Business Units', icon: Building2 },
   'business-units/create': { label: 'Create Business Unit', icon: Plus },
+  
+  // Leave Management
   'leave-requests': { label: 'Leave Requests', icon: Calendar },
   'leave-requests/create': { label: 'Submit Leave Request', icon: Plus },
   'overtime-requests': { label: 'Overtime Requests', icon: Activity },
@@ -52,16 +86,74 @@ const routeConfig: Record<string, { label: string; icon?: React.ComponentType<{ 
   'leave-types': { label: 'Leave Types', icon: FolderOpen },
   'leave-types/create': { label: 'Create Leave Type', icon: Plus },
   'leave-balances': { label: 'Leave Balances', icon: Calculator },
+  
+  // Material Request System (MRS)
+  'material-requests': { label: 'Material Requests', icon: Package },
+  'material-requests/create': { label: 'Create Material Request', icon: Plus },
+  
+  // MRS Coordinator
+  'mrs-coordinator': { label: 'MRS Coordinator', icon: UserCog },
+  'mrs-coordinator/posted': { label: 'Posted Requests', icon: CheckCircle2 },
+  'mrs-coordinator/acknowledgement': { label: 'Create Acknowledgements', icon: FileText },
+  'mrs-coordinator/done-requests': { label: 'Done Requests', icon: CheckCircle2 },
+  
+  // Approvals
+  'approvals': { label: 'Approvals', icon: ClipboardCheck },
+  'approvals/leave': { label: 'Leave Approvals', icon: Calendar },
+  'approvals/leave/pending': { label: 'Pending Leave Approvals', icon: Clock },
+  'approvals/overtime': { label: 'Overtime Approvals', icon: Activity },
+  'approvals/overtime/pending': { label: 'Pending Overtime Approvals', icon: Clock },
+  'approvals/material-requests': { label: 'Material Request Approvals', icon: Package },
+  'approvals/material-requests/pending': { label: 'Pending Material Request Approvals', icon: Clock },
+  
+  // Reports
   'reports': { label: 'Reports', icon: FileText },
   'reports/leave': { label: 'Leave Reports', icon: FileText },
   'reports/overtime': { label: 'Overtime Reports', icon: FileText },
   'reports/employees': { label: 'Employee Reports', icon: FileText },
+  'reports/depreciation': { label: 'Depreciation Reports', icon: Calculator },
+  'reports/depreciation/schedule': { label: 'Depreciation Schedule', icon: Calendar },
+  'reports/depreciation/schedule/preview': { label: 'Schedule Preview', icon: Eye },
+  'reports/depreciation/netbook': { label: 'Net Book Value', icon: BarChart3 },
+  'reports/depreciation/netbook/preview': { label: 'Net Book Value Preview', icon: Eye },
+  'reports/depreciation/damaged-loss': { label: 'Damaged & Loss', icon: FileText },
+  'reports/depreciation/damaged-loss/preview': { label: 'Damaged & Loss Preview', icon: Eye },
+  
+  // Analytics
   'analytics': { label: 'Analytics', icon: BarChart3 },
+  
+  // Asset Management
+  'asset-management': { label: 'Asset Management', icon: Package },
+  'asset-management/assets': { label: 'All Assets', icon: Package },
+  'asset-management/assets/create': { label: 'Create Asset', icon: Plus },
+  'asset-management/deployments': { label: 'Deployments', icon: User },
+  'asset-management/returns': { label: 'Asset Returns', icon: Package },
+  'asset-management/asset-printing': { label: 'Asset QR Printing', icon: Package },
+  'asset-management/asset-printing/preview': { label: 'QR Code Preview', icon: Eye },
+  'asset-management/transfers': { label: 'Transfers', icon: Package },
+  'asset-management/retirements': { label: 'Retirements', icon: Package },
+  'asset-management/disposals': { label: 'Disposals', icon: Package },
+  'asset-management/categories': { label: 'Categories', icon: FolderOpen },
+  'asset-management/depreciation': { label: 'Depreciation', icon: Calculator },
+  'asset-management/inventory': { label: 'Inventory Verification', icon: ClipboardCheck },
+  'asset-management/inventory/create': { label: 'Create Verification', icon: Plus },
+
+  // Administration
   'admin': { label: 'Administration', icon: Settings },
   'admin/users': { label: 'User Management', icon: Users },
+  'admin/users/create': { label: 'Create User', icon: UserPlus },
   'admin/departments': { label: 'Department Management', icon: Building2 },
+  'admin/department-approvers': { label: 'Department Approvers', icon: UserCog },
   'admin/business-units': { label: 'Business Unit Management', icon: Building2 },
   'admin/leave-types': { label: 'Leave Type Management', icon: FolderOpen },
+  'admin/gl-accounts': { label: 'GL Accounts', icon: Calculator },
+  'admin/system-settings': { label: 'System Settings', icon: Settings },
+
+  // Roles Management
+  'roles': { label: 'Roles', icon: Shield },
+  'roles/create': { label: 'Create Role', icon: Plus },
+  
+  // Profile & Settings
   'profile': { label: 'Profile', icon: UserCheck },
   'settings': { label: 'Settings', icon: Settings },
   'settings/profile': { label: 'Profile Settings', icon: UserCheck },
@@ -92,10 +184,12 @@ export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) 
       // Build the actual path (including UUIDs)
       actualPath = actualPath ? `${actualPath}/${segment}` : segment;
       
-      // Check if this is a dynamic route (UUID pattern)
-      const isUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment);
+      // Check if this is a dynamic route (UUID or CUID pattern)
+      const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      const cuidPattern = /^c[a-z0-9]{24}$/i
+      const isIdPattern = uuidPattern.test(segment) || cuidPattern.test(segment);
       
-      if (isUuidPattern) {
+      if (isIdPattern) {
         // For UUID segments, use the parent route's label + "Details"
         const parentPath = currentPath;
         const parentConfig = routeConfig[parentPath];

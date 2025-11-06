@@ -48,6 +48,7 @@ import {
   assignManagerToDepartment,
   removeManagerFromDepartment 
 } from "@/lib/actions/department-actions";
+import { DepartmentApproversCard } from "./department-approvers-card";
 
 interface DepartmentWithDetails {
   id: string;
@@ -264,34 +265,12 @@ export function EditDepartmentForm({
 
         {/* Right Column - Quick Stats & Management */}
         <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Quick Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Members:</span>
-                <span className="font-medium">{department.members.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Managers:</span>
-                <span className="font-medium">{department.managers.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Created:</span>
-                <span className="font-medium text-right">
-                  {new Date(department.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Last Updated:</span>
-                <span className="font-medium text-right">
-                  {new Date(department.updatedAt).toLocaleDateString()}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+
+          {/* Department Approvers */}
+          <DepartmentApproversCard 
+            departmentId={department.id}
+            departmentName={department.name}
+          />
 
           {/* Department Managers */}
           <Card>
@@ -463,6 +442,36 @@ export function EditDepartmentForm({
               )}
             </CardContent>
           </Card>
+
+                    {/* Quick Stats */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Quick Info</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Members:</span>
+                <span className="font-medium">{department.members.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Managers:</span>
+                <span className="font-medium">{department.managers.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Created:</span>
+                <span className="font-medium text-right">
+                  {new Date(department.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Last Updated:</span>
+                <span className="font-medium text-right">
+                  {new Date(department.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
     </div>

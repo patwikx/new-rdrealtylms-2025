@@ -15,6 +15,27 @@ import { Info, CheckCircle, AlertCircle, Zap } from "lucide-react"
 
 const systemUpdates = [
   {
+    version: "2.2.0",
+    date: "2024-11-06",
+    type: "major" as const,
+    title: "Asset Management & MRS Online System Integration",
+    changes: [
+      "✅ NEW: Complete Depreciation Reports system with Schedule, Net Book Value, and Damaged & Loss reports",
+      "✅ NEW: Professional print-ready report formats matching accounting standards",
+      "🏢 ENHANCED: MRS Coordinator workflow with proper acknowledgement management",
+      "✅ NEW: Cpreate Acknowledgements page for e-signature management",
+      "✅ NEW: Done Requests page for completed material requests tracking",
+      "🔄 IMPROVED: Material Request workflow separation and status management",
+      "✅ NEW: MRS database functions - getApprovedRequestsForAcknowledgement() and getDoneRequests()",
+      "🔍 ENHANCED: Smart filtering logic for request status and e-signature management",
+      "🎨 IMPROVED: Removed card containers from detail pages for cleaner UI",
+      "🧭 ENHANCED: Dynamic breadcrumbs with all new report and coordinator routes",
+      "📱 IMPROVED: Mobile-responsive design across all new pages",
+      "🔧 FIXED: TypeScript issues and proper data type handling for reports",
+      "🗄️ UPDATED: MaterialRequest type definition with supplier and processing fields"
+    ]
+  },
+  {
     version: "2.1.1",
     date: "2024-11-04",
     type: "patch" as const,

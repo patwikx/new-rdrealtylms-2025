@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -27,14 +25,13 @@ import {
   Edit, 
   Save, 
   X,
-  Phone,
-  MapPin,
   Briefcase,
   Key
 } from "lucide-react";
 import { toast } from "sonner";
 import { resetUserPassword, updateUserProfile } from "@/lib/actions/profile-actions";
 import { ProfilePictureUpload } from "./profile-picture-upload";
+import { AssignedAssetsSection } from "./assigned-assets-section";
 
 interface ProfileViewProps {
   user: {
@@ -106,7 +103,7 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
-  const [profileImageFileName, setProfileImageFileName] = useState<string | null>(user.profilePicture);
+  const [, setProfileImageFileName] = useState<string | null>(user.profilePicture);
   const [passwordData, setPasswordData] = useState({
     newPassword: '',
     confirmPassword: '',
@@ -244,6 +241,7 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
               <Edit className="h-4 w-4" />
               Edit Profile
             </Button>
+            
           ) : (
             <div className="flex items-center gap-2">
               <Button 
@@ -265,6 +263,63 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
               </Button>
             </div>
           )}
+
+                        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Key className="h-4 w-4" />
+                    Change Password
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                      Enter your new password below. Make sure it's at least 8 characters long.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="Enter new password"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="Confirm new password"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setPasswordData({ newPassword: '', confirmPassword: '' });
+                        setIsPasswordDialogOpen(false);
+                      }}
+                      disabled={isResettingPassword}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleResetPassword}
+                      disabled={isResettingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                    >
+                      {isResettingPassword ? "Changing..." : "Change Password"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
         </div>
       </div>
 
@@ -420,149 +475,9 @@ export function ProfileView({ user, businessUnitId }: ProfileViewProps) {
             </div>
           </CardContent>
         </Card>
-
-        {/* Security Settings */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Security Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your account security and password
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="space-y-1">
-                <h4 className="text-sm font-medium">Password</h4>
-                <p className="text-sm text-muted-foreground">
-                  Change your password to maintain account security
-                </p>
-              </div>
-              <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Key className="h-4 w-4" />
-                    Change Password
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Change Password</DialogTitle>
-                    <DialogDescription>
-                      Enter your new password below. Make sure it's at least 8 characters long.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                        placeholder="Enter new password"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        placeholder="Confirm new password"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setPasswordData({ newPassword: '', confirmPassword: '' });
-                        setIsPasswordDialogOpen(false);
-                      }}
-                      disabled={isResettingPassword}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleResetPassword}
-                      disabled={isResettingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-                    >
-                      {isResettingPassword ? "Changing..." : "Change Password"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-
-          </CardContent>
-        </Card>
-
-        {/* System Information */}
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              System Information
-            </CardTitle>
-            <CardDescription>
-              Read-only system information about your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-muted-foreground">Employee ID</Label>
-                <div className="px-3 py-2 bg-muted rounded-md text-sm font-mono">
-                  {user.employeeId}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-muted-foreground">Role</Label>
-                <div className="px-3 py-2 bg-muted rounded-md text-sm">
-                  {formatRole(user.role)}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-muted-foreground">Classification</Label>
-                <div className="px-3 py-2 bg-muted rounded-md text-sm">
-                  {user.classification || 'Not specified'}
-                </div>
-              </div>
-
-              {user.businessUnit && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Business Unit</Label>
-                  <div className="px-3 py-2 bg-muted rounded-md text-sm">
-                    {user.businessUnit.name} ({user.businessUnit.code})
-                  </div>
-                </div>
-              )}
-
-              {user.department && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Department</Label>
-                  <div className="px-3 py-2 bg-muted rounded-md text-sm">
-                    {user.department.name}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-muted-foreground">Account Created</Label>
-                <div className="px-3 py-2 bg-muted rounded-md text-sm">
-                  {formatDate(user.createdAt)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        
+        {/* Assigned Assets */}
+        <AssignedAssetsSection userId={user.id} />
       </div>
     </div>
   );

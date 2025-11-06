@@ -39,9 +39,9 @@ export default async function EditDepartmentPage({ params }: EditDepartmentPageP
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit Department</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Department Management</h1>
             <p className="text-muted-foreground">
-              Update department information and manage members
+              Update department information, manage members, and configure approvers
             </p>
           </div>
         </div>

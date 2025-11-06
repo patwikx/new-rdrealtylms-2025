@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Users, Calendar, Settings, ChartBar as BarChart3, FileText, Shield, CheckSquare, Clock } from "lucide-react"
+import { Users, Calendar, Settings, ChartBar as BarChart3, FileText, Shield, CheckSquare, Clock, Package, ClipboardList, Truck } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -24,15 +24,35 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 
 
-// Define navigation items based on your leave management system
+// Helper function to check if user is an approver
+const isApprover = (userRole: string) => {
+  // Users who can be approvers (this should match your department approver logic)
+  const approverRoles = ['ADMIN', 'MANAGER', 'HR', 'SUPERVISOR', 'DEPARTMENT_HEAD']
+  return approverRoles.includes(userRole)
+}
+
+// Define navigation items based on your hybrid LMS + Asset Management system
 const getNavigationItems = (businessUnitId: string, userRole: string) => {
-  // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Settings)
+  // Define roles that can access MRS Coordinator functions
+  const mrsCoordinatorRoles = ['ADMIN', 'MANAGER', 'PURCHASER', 'MRS_COORDINATOR']
+  
+  // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
   const baseItems = [
     {
       title: "Dashboard",
       url: `/${businessUnitId}`,
       icon: BarChart3,
       isActive: true,
+      items: [
+        {
+          title: "Overview",
+          url: `/${businessUnitId}`,
+        },
+        {
+          title: "Analytics",
+          url: `/${businessUnitId}/analytics`,
+        },
+      ],
     },
     {
       title: "Leave Requests",
@@ -68,10 +88,25 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
         },
       ],
     },
+    {
+      title: "Material Requests",
+      url: `/${businessUnitId}/material-requests`,
+      icon: ClipboardList,
+      items: [
+        {
+          title: "My Requests",
+          url: `/${businessUnitId}/material-requests`,
+        },
+        {
+          title: "Create Request",
+          url: `/${businessUnitId}/material-requests/create`,
+        },
+      ],
+    },
   ];
 
-  // Add approvals for MANAGER and ADMIN roles
-  if (userRole === "MANAGER" || userRole === "ADMIN" || userRole === "HR") {
+  // Add approver-specific items (Leave, Overtime, Asset, MRS approvals)
+  if (isApprover(userRole)) {
     baseItems.push({
       title: "Approvals",
       url: `/${businessUnitId}/approvals`,
@@ -85,29 +120,86 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
           title: "Pending Overtime",
           url: `/${businessUnitId}/approvals/overtime/pending`,
         },
-        {
-          title: "Approval History",
-          url: `/${businessUnitId}/approvals/history`,
+              {
+          title: "Material Requests",
+          url: `/${businessUnitId}/approvals/material-requests/pending`,
         },
       ],
     });
   }
 
-  // Add additional items for ADMIN role only
-  if (userRole === "ADMIN" ||  userRole === "HR") {
+  // Add MRS Coordinator section for authorized roles
+  if (mrsCoordinatorRoles.includes(userRole)) {
+    baseItems.push({
+      title: "MRS Coordinator",
+      url: `/${businessUnitId}/mrs-coordinator`,
+      icon: Truck,
+      items: [
+        {
+          title: "Acknowledgments",
+          url: `/${businessUnitId}/mrs-coordinator/acknowledgement`,
+        },
+        {
+          title: "Posted Requests",
+          url: `/${businessUnitId}/mrs-coordinator/posted`,
+        },
+        {
+          title: "Done Requests",
+          url: `/${businessUnitId}/mrs-coordinator/done-requests`,
+        }
+      ],
+    });
+  }
+
+  
+
+  // Add management items for ADMIN and HR roles
+  if (userRole === "ADMIN" || userRole === "HR") {
     baseItems.push(
       {
-        title: "Employees",
-        url: `/${businessUnitId}/employees`,
-        icon: Users,
+        title: "Asset Management",
+        url: `/${businessUnitId}/asset-management`,
+        icon: Package,
         items: [
           {
-            title: "All Employees",
-            url: `/${businessUnitId}/employees`,
+            title: "All Assets",
+            url: `/${businessUnitId}/asset-management/assets`,
           },
           {
-            title: "Departments",
-            url: `/${businessUnitId}/departments`,
+            title: "Deployments",
+            url: `/${businessUnitId}/asset-management/deployments`,
+          },
+                    {
+            title: "Asset Return",
+            url: `/${businessUnitId}/asset-management/returns`,
+          },
+                    {
+            title: "Asset QR Printing",
+            url: `/${businessUnitId}/asset-management/asset-printing`,
+          },
+          {
+            title: "Transfers",
+            url: `/${businessUnitId}/asset-management/transfers`,
+          },
+          {
+            title: "Retirements",
+            url: `/${businessUnitId}/asset-management/retirements`,
+          },
+          {
+            title: "Disposals",
+            url: `/${businessUnitId}/asset-management/disposals`,
+          },
+          {
+            title: "Categories",
+            url: `/${businessUnitId}/asset-management/categories`,
+          },
+          {
+            title: "Depreciation",
+            url: `/${businessUnitId}/asset-management/depreciation`,
+          },
+          {
+            title: "Inventory Verification",
+            url: `/${businessUnitId}/asset-management/inventory`,
           },
         ],
       },
@@ -125,35 +217,72 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
             url: `/${businessUnitId}/reports/overtime`,
           },
           {
+            title: "Asset Reports",
+            url: `/${businessUnitId}/reports/assets`,
+          },
+                    {
+            title: "Depreciation Reports",
+            url: `/${businessUnitId}/reports/depreciation`,
+          },
+          {
+            title: "Deployment Reports",
+            url: `/${businessUnitId}/reports/deployments`,
+          },
+          {
+            title: "MRS Reports",
+            url: `/${businessUnitId}/reports/material-requests`,
+          },
+          {
             title: "Employee Reports",
             url: `/${businessUnitId}/reports/employees`,
           },
-        ],
-      },
-      {
-        title: "Administration",
-        url: `/${businessUnitId}/admin`,
-        icon: Shield,
-        items: [
           {
-            title: "Leave Types",
-            url: `/${businessUnitId}/admin/leave-types`,
-          },
-          {
-            title: "Leave Balances",
-            url: `/${businessUnitId}/admin/leave-balances`,
-          },
-          {
-            title: "Business Units",
-            url: `/${businessUnitId}/admin/business-units`,
-          },
-          {
-            title: "User Management",
-            url: `/${businessUnitId}/admin/users`,
+            title: "Audit Logs",
+            url: `/${businessUnitId}/audit-logs`,
           },
         ],
       }
     );
+  }
+
+  // Add admin-only items
+  const adminRoles = ['ADMIN']
+  if (adminRoles.includes(userRole)) {
+    baseItems.push({
+      title: "Administration",
+      url: `/${businessUnitId}/admin`,
+      icon: Shield,
+      items: [
+        {
+          title: "Leave Types",
+          url: `/${businessUnitId}/admin/leave-types`,
+        },
+        {
+          title: "Leave Balances",
+          url: `/${businessUnitId}/admin/leave-balances`,
+        },
+        {
+          title: "Business Units",
+          url: `/${businessUnitId}/admin/business-units`,
+        },
+        {
+          title: "User Management",
+          url: `/${businessUnitId}/admin/users`,
+        },
+        {
+            title: "Departments",
+            url: `/${businessUnitId}/departments`,
+          },
+          {
+            title: "System Permissions",
+            url: `/${businessUnitId}/admin/system-permissions`,
+          },
+        {
+          title: "GL Accounts",
+          url: `/${businessUnitId}/admin/gl-accounts`,
+        },
+      ],
+    });
   }
 
   // Settings for all users

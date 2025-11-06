@@ -13,12 +13,15 @@ import {
 import Link from "next/link";
 
 interface ReportsPageProps {
-  params: {
+  params: Promise<{
     businessUnitId: string;
-  };
+  }>;
 }
 
 export default async function ReportsPage({ params }: ReportsPageProps) {
+  // Await the params Promise
+  const { businessUnitId } = await params;
+  
   const session = await auth();
   
   if (!session?.user) {
@@ -27,7 +30,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
   
   // Only admins and HR can access reports
   if (session.user.role !== "ADMIN" && session.user.role !== "HR") {
-    redirect(`/${params.businessUnitId}`);
+    redirect(`/${businessUnitId}`);
   }
 
   const reportCards = [
@@ -35,7 +38,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
       title: "Leave Reports",
       description: "View approved leave requests, analytics, and trends",
       icon: Calendar,
-      href: `/${params.businessUnitId}/reports/leave`,
+      href: `/${businessUnitId}/reports/leave`,
       color: "text-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-950/20"
     },
@@ -43,7 +46,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
       title: "Overtime Reports",
       description: "Track approved overtime hours and employee overtime patterns",
       icon: Clock,
-      href: `/${params.businessUnitId}/reports/overtime`,
+      href: `/${businessUnitId}/reports/overtime`,
       color: "text-green-600",
       bgColor: "bg-green-50 dark:bg-green-950/20"
     },
@@ -51,7 +54,7 @@ export default async function ReportsPage({ params }: ReportsPageProps) {
       title: "Employee Leave Balances",
       description: "Export and analyze employee leave balances across all leave types",
       icon: Users,
-      href: `/${params.businessUnitId}/reports/employees`,
+      href: `/${businessUnitId}/reports/employees`,
       color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950/20"
     }

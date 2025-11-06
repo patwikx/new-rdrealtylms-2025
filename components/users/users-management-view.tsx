@@ -35,7 +35,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UsersResponse, UserWithDetails } from "@/lib/actions/user-management-actions";
-import { CreateUserDialog } from "@/components/users/create-user-dialog";
+
 
 interface UsersManagementViewProps {
   usersData: UsersResponse;
@@ -181,13 +181,10 @@ export function UsersManagementView({
             {pageType === "employees" ? "Manage employees, roles, and permissions" : "Manage users, roles, and permissions"}
           </p>
         </div>
-        <CreateUserDialog 
-          businessUnitId={businessUnitId}
-          departments={usersData.departments}
-          managers={usersData.managers}
-          businessUnits={usersData.businessUnits}
-          isAdmin={isAdmin}
-        />
+        <Button onClick={() => router.push(`/${businessUnitId}/admin/users/create`)}>
+          <Users className="h-4 w-4 mr-2" />
+          Add User
+        </Button>
       </div>
 
       {/* Search and Filters */}
@@ -374,9 +371,13 @@ export function UsersManagementView({
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                              <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>

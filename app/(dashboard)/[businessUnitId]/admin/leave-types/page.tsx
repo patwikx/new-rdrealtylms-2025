@@ -4,9 +4,9 @@ import { getLeaveTypes } from "@/lib/actions/leave-type-actions";
 import { LeaveTypesManagementView } from "@/components/admin/leave-types-management-view";
 
 interface LeaveTypesPageProps {
-  params: {
+  params: Promise<{
     businessUnitId: string;
-  };
+  }>;
   searchParams: Promise<{
     page?: string;
     search?: string;
@@ -17,6 +17,9 @@ export default async function LeaveTypesPage({
   params, 
   searchParams 
 }: LeaveTypesPageProps) {
+  // Await the params Promise
+  const { businessUnitId } = await params;
+  
   const session = await auth();
   
   if (!session?.user) {
@@ -25,7 +28,7 @@ export default async function LeaveTypesPage({
   
   // Only admins can access leave types management
   if (session.user.role !== "ADMIN") {
-    redirect(`/${params.businessUnitId}`);
+    redirect(`/${businessUnitId}`);
   }
   
   const resolvedSearchParams = await searchParams;
@@ -34,7 +37,7 @@ export default async function LeaveTypesPage({
   
   try {
     const leaveTypesData = await getLeaveTypes({
-      businessUnitId: params.businessUnitId,
+      businessUnitId: businessUnitId,
       page,
       search,
       limit: 20
@@ -43,13 +46,13 @@ export default async function LeaveTypesPage({
     return (
       <LeaveTypesManagementView
         leaveTypesData={leaveTypesData}
-        businessUnitId={params.businessUnitId}
+        businessUnitId={businessUnitId}
         currentPage={page}
         searchTerm={search}
       />
     );
   } catch (error) {
     console.error("Error loading leave types:", error);
-    redirect(`/${params.businessUnitId}`);
+    redirect(`/${businessUnitId}`);
   }
 }

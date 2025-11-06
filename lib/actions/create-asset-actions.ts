@@ -1,0 +1,335 @@
+"use server"
+
+import { prisma } from "@/lib/prisma"
+import { DepreciationMethod, AssetStatus } from "@prisma/client"
+import { revalidatePath } from "next/cache"
+import { generateQRCode } from "@/lib/utils/qr-code-generator"
+
+export interface CreateAssetData {
+  // Basic Information
+  itemCode: string
+  description: string
+  serialNumber?: string
+  modelNumber?: string
+  brand?: string
+  specifications?: Record<string, unknown>
+  categoryId: string
+  departmentId?: string
+  quantity: number
+  location?: string
+  notes?: string
+  
+  // Purchase Information
+  purchaseDate?: Date
+  purchasePrice?: number
+  warrantyExpiry?: Date
+  
+  // Financial Configuration
+  assetAccountId?: string
+  depreciationExpenseAccountId?: string
+  accumulatedDepAccountId?: string
+  
+  // Depreciation Configuration
+  depreciationMethod?: DepreciationMethod
+  usefulLifeYears?: number
+  usefulLifeMonths?: number
+  salvageValue?: number
+  depreciationStartDate?: Date
+  
+  // Units of Production specific
+  totalExpectedUnits?: number
+  
+  // Declining Balance specific
+  depreciationRate?: number
+  
+  // Status
+  status: AssetStatus
+  isActive: boolean
+}
+
+export async function getAssetCategories(businessUnitId: string) {
+  try {
+    const categories = await prisma.assetCategory.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        defaultAssetAccountId: true,
+        defaultDepreciationExpenseAccountId: true,
+        defaultAccumulatedDepAccountId: true,
+        defaultAssetAccount: {
+          select: {
+            id: true,
+            accountCode: true,
+            accountName: true
+          }
+        },
+        defaultDepExpAccount: {
+          select: {
+            id: true,
+            accountCode: true,
+            accountName: true
+          }
+        },
+        defaultAccDepAccount: {
+          select: {
+            id: true,
+            accountCode: true,
+            accountName: true
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+    
+    return categories
+  } catch (error) {
+    console.error("Error fetching asset categories:", error)
+    throw new Error("Failed to fetch asset categories")
+  }
+}
+
+export async function getDepartments() {
+  try {
+    const departments = await prisma.department.findMany({
+      where: { 
+        isActive: true 
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true
+      },
+      orderBy: { name: 'asc' }
+    })
+    
+    return departments
+  } catch (error) {
+    console.error("Error fetching departments:", error)
+    throw new Error("Failed to fetch departments")
+  }
+}
+
+export async function getGLAccounts() {
+  try {
+    const accounts = await prisma.gLAccount.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        accountCode: true,
+        accountName: true,
+        accountType: true
+      },
+      orderBy: { accountCode: 'asc' }
+    })
+    
+    return accounts
+  } catch (error) {
+    console.error("Error fetching GL accounts:", error)
+    throw new Error("Failed to fetch GL accounts")
+  }
+}
+
+export async function generateItemCode(categoryId: string) {
+  try {
+    const category = await prisma.assetCategory.findUnique({
+      where: { id: categoryId },
+      select: { code: true }
+    })
+    
+    if (!category) {
+      throw new Error("Category not found")
+    }
+    
+    // Get the last asset with this category code
+    const lastAsset = await prisma.asset.findFirst({
+      where: {
+        itemCode: {
+          startsWith: category.code
+        }
+      },
+      orderBy: {
+        itemCode: 'desc'
+      },
+      select: {
+        itemCode: true
+      }
+    })
+    
+    let nextNumber = 1
+    if (lastAsset) {
+      // Extract the number part from the item code
+      const numberPart = lastAsset.itemCode.replace(category.code, '')
+      const currentNumber = parseInt(numberPart) || 0
+      nextNumber = currentNumber + 1
+    }
+    
+    // Format with leading zeros (e.g., IT001, IT002, etc.)
+    const formattedNumber = nextNumber.toString().padStart(3, '0')
+    return `${category.code}${formattedNumber}`
+    
+  } catch (error) {
+    console.error("Error generating item code:", error)
+    throw new Error("Failed to generate item code")
+  }
+}
+
+export async function createAsset(data: CreateAssetData, businessUnitId: string) {
+  try {
+    // Get current user from auth
+    const { auth } = await import("@/auth")
+    const session = await auth()
+    
+    if (!session?.user?.id) {
+      return { error: "Unauthorized" }
+    }
+    // Check if item code already exists
+    const existingAsset = await prisma.asset.findUnique({
+      where: { itemCode: data.itemCode }
+    })
+    
+    if (existingAsset) {
+      return { error: "Item code already exists" }
+    }
+    
+    // Calculate depreciation values if depreciation is configured
+    let calculatedValues = {}
+    
+    if (data.depreciationMethod && data.purchasePrice && data.usefulLifeYears) {
+      const purchasePrice = data.purchasePrice
+      const salvageValue = data.salvageValue || 0
+      const depreciableAmount = purchasePrice - salvageValue
+      
+      switch (data.depreciationMethod) {
+        case 'STRAIGHT_LINE':
+          const totalMonths = (data.usefulLifeYears * 12) + (data.usefulLifeMonths || 0)
+          calculatedValues = {
+            monthlyDepreciation: totalMonths > 0 ? depreciableAmount / totalMonths : 0,
+            currentBookValue: purchasePrice
+          }
+          break
+          
+        case 'DECLINING_BALANCE':
+          if (data.depreciationRate) {
+            const annualDepreciation = purchasePrice * (data.depreciationRate / 100)
+            calculatedValues = {
+              monthlyDepreciation: annualDepreciation / 12,
+              currentBookValue: purchasePrice,
+              depreciationRate: data.depreciationRate
+            }
+          }
+          break
+          
+        case 'UNITS_OF_PRODUCTION':
+          if (data.totalExpectedUnits && data.totalExpectedUnits > 0) {
+            calculatedValues = {
+              depreciationPerUnit: depreciableAmount / data.totalExpectedUnits,
+              totalExpectedUnits: data.totalExpectedUnits,
+              currentBookValue: purchasePrice
+            }
+          }
+          break
+          
+        case 'SUM_OF_YEARS_DIGITS':
+          const totalYears = data.usefulLifeYears
+          const sumOfYears = (totalYears * (totalYears + 1)) / 2
+          const firstYearDepreciation = (depreciableAmount * totalYears) / sumOfYears
+          calculatedValues = {
+            monthlyDepreciation: firstYearDepreciation / 12,
+            currentBookValue: purchasePrice
+          }
+          break
+      }
+    }
+    
+    // Set next depreciation date if depreciation start date is provided
+    let nextDepreciationDate = null
+    if (data.depreciationStartDate) {
+      nextDepreciationDate = new Date(data.depreciationStartDate)
+      nextDepreciationDate.setMonth(nextDepreciationDate.getMonth() + 1)
+    }
+    
+    // Create the asset first to get the ID
+    const asset = await prisma.asset.create({
+      data: {
+        itemCode: data.itemCode,
+        description: data.description,
+        serialNumber: data.serialNumber || null,
+        modelNumber: data.modelNumber || null,
+        brand: data.brand || null,
+        specifications: data.specifications ? JSON.parse(JSON.stringify(data.specifications)) : null,
+        purchaseDate: data.purchaseDate || null,
+        purchasePrice: data.purchasePrice || null,
+        warrantyExpiry: data.warrantyExpiry || null,
+        categoryId: data.categoryId,
+        businessUnitId,
+        departmentId: data.departmentId || null,
+        quantity: data.quantity,
+        status: data.status,
+        location: data.location || null,
+        notes: data.notes || null,
+        createdById: session.user.id,
+        isActive: data.isActive,
+        
+        // Financial Configuration
+        assetAccountId: data.assetAccountId || null,
+        depreciationExpenseAccountId: data.depreciationExpenseAccountId || null,
+        accumulatedDepAccountId: data.accumulatedDepAccountId || null,
+        
+        // Depreciation Configuration
+        depreciationMethod: data.depreciationMethod || null,
+        usefulLifeYears: data.usefulLifeYears || null,
+        usefulLifeMonths: data.usefulLifeMonths || null,
+        salvageValue: data.salvageValue || 0,
+        depreciationStartDate: data.depreciationStartDate || null,
+        nextDepreciationDate,
+        
+        // QR Code - will be generated after asset creation
+        barcodeValue: null,
+        barcodeType: 'QR_CODE',
+        barcodeGenerated: null,
+        
+        // Calculated values
+        ...calculatedValues
+      }
+    })
+
+    // Generate QR code and store it in the database
+    let qrCodeDataURL = null
+    try {
+      qrCodeDataURL = await generateQRCode({
+        itemCode: data.itemCode,
+        description: data.description,
+        serialNumber: data.serialNumber,
+        businessUnitId,
+        assetId: asset.id
+      })
+
+      // Update the asset with the QR code data
+      await prisma.asset.update({
+        where: { id: asset.id },
+        data: {
+          barcodeValue: qrCodeDataURL,
+          barcodeGenerated: new Date()
+        }
+      })
+    } catch (error) {
+      console.error("Error generating QR code:", error)
+      // Continue without QR code - can be generated later
+    }
+    
+    revalidatePath(`/${businessUnitId}/asset-management/assets`)
+    return { 
+      success: "Asset created successfully", 
+      data: { 
+        id: asset.id, 
+        qrCode: qrCodeDataURL 
+      } 
+    }
+    
+  } catch (error) {
+    console.error("Error creating asset:", error)
+    return { error: "Failed to create asset" }
+  }
+}
