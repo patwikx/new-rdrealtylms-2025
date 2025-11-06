@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Search, 
@@ -12,11 +13,12 @@ import {
   CheckSquare,
   X,
   Package,
-  Users,
   Calendar,
   User,
-  MapPin,
-  DollarSign
+  Hash,
+  Tag,
+  FileText,
+  Clock
 } from "lucide-react"
 import {
   Select,
@@ -26,20 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { DeployedAssetsResponse, DeployedAssetData } from "@/lib/actions/asset-return-actions"
+import { DeployedAssetsResponse } from "@/lib/actions/asset-return-actions"
 import { AssetReturnDialog } from "./asset-return-dialog"
 import { toast } from "sonner"
 import { format } from "date-fns"
 
-// Helper function for currency formatting
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount)
-}
+
 
 interface AssetReturnViewProps {
   deployedAssetsData: DeployedAssetsResponse
@@ -231,8 +225,8 @@ export function AssetReturnView({
         )}
       </div>
 
-      {/* Assets Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="rounded-md border hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -358,6 +352,132 @@ export function AssetReturnView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-4">
+        {filteredAssets.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Package className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "No assets match your search criteria" : "No deployed assets found"}
+              </p>
+              <p className="text-sm text-muted-foreground text-center mt-1">
+                Try adjusting your search criteria or employee filter
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAssets.map((asset) => {
+            const isOverdue = asset.currentDeployment.expectedReturnDate && 
+              new Date(asset.currentDeployment.expectedReturnDate) < new Date()
+            
+            return (
+              <Card 
+                key={asset.id} 
+                className={`cursor-pointer transition-colors ${selectedAssets.has(asset.id) ? 'bg-muted/50 border-primary' : ''}`}
+                onClick={() => handleSelectAsset(asset.id, !selectedAssets.has(asset.id))}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Hash className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-base font-mono">{asset.itemCode}</CardTitle>
+                      </div>
+                      <p className="text-sm font-medium">{asset.description}</p>
+                      {asset.brand && (
+                        <p className="text-xs text-muted-foreground">{asset.brand}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${isOverdue ? 'bg-red-500' : 'bg-yellow-500'}`}></div>
+                        <Badge variant={isOverdue ? "destructive" : "secondary"} className="text-xs">
+                          {isOverdue ? "Overdue" : "Deployed"}
+                        </Badge>
+                      </div>
+                      <Checkbox
+                        checked={selectedAssets.has(asset.id)}
+                        onCheckedChange={(checked) => handleSelectAsset(asset.id, checked === true)}
+                        aria-label={`Select ${asset.itemCode}`}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline">
+                      {asset.category.name}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{asset.currentDeployment.employee.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ID: {asset.currentDeployment.employee.employeeId}
+                          {asset.currentDeployment.employee.department && (
+                            <span> • {asset.currentDeployment.employee.department.name}</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Serial Number:</span>
+                      <p className="font-mono text-xs mt-1">
+                        {asset.serialNumber || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Deployed Date:</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <p className="text-xs">{format(new Date(asset.currentDeployment.deployedDate!), 'MMM dd, yyyy')}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Expected Return:</span>
+                      {asset.currentDeployment.expectedReturnDate ? (
+                        <div className={`flex items-center gap-1 mt-1 ${isOverdue ? 'text-destructive' : ''}`}>
+                          <Clock className="h-3 w-3" />
+                          <p className="text-xs">{format(new Date(asset.currentDeployment.expectedReturnDate), 'MMM dd, yyyy')}</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-1">Not set</p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Transmittal:</span>
+                      <p className="font-mono text-xs mt-1">
+                        {asset.currentDeployment.transmittalNumber}
+                      </p>
+                    </div>
+                  </div>
+
+                  {asset.currentDeployment.deploymentNotes && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          Notes: {asset.currentDeployment.deploymentNotes}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
       </div>
 
       {/* Pagination */}

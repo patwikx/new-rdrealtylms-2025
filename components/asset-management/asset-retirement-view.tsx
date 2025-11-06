@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,12 +13,13 @@ import {
   CheckSquare,
   X,
   Package,
-  Clock,
   DollarSign,
   Calendar,
-  AlertTriangle,
-  MapPin,
-  User
+  User,
+  Hash,
+  Tag,
+  TrendingDown,
+  Clock
 } from "lucide-react"
 import {
   Select,
@@ -28,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { RetirableAssetsResponse, RetirableAssetData } from "@/lib/actions/asset-retirement-actions"
+import { RetirableAssetsResponse } from "@/lib/actions/asset-retirement-actions"
 import { AssetRetirementDialog } from "./asset-retirement-dialog"
 import { toast } from "sonner"
 import { format } from "date-fns"
@@ -65,11 +66,6 @@ function getStatusLabel(status: string): string {
 
 interface AssetRetirementViewProps {
   retirableAssetsData: RetirableAssetsResponse
-  businessUnit: {
-    id: string
-    name: string
-    code: string
-  }
   businessUnitId: string
   currentFilters: {
     categoryId?: string
@@ -80,7 +76,6 @@ interface AssetRetirementViewProps {
 
 export function AssetRetirementView({ 
   retirableAssetsData, 
-  businessUnit,
   businessUnitId, 
   currentFilters 
 }: AssetRetirementViewProps) {
@@ -152,15 +147,7 @@ export function AssetRetirementView({
     router.refresh()
   }
 
-  // Separate assets by retirement readiness
-  const fullyDepreciatedAssets = filteredAssets.filter(asset => asset.isFullyDepreciated)
-  const nearEndOfLifeAssets = filteredAssets.filter(asset => {
-    if (!asset.purchaseDate || !asset.usefulLifeYears) return false
-    const purchaseYear = new Date(asset.purchaseDate).getFullYear()
-    const currentYear = new Date().getFullYear()
-    const assetAge = currentYear - purchaseYear
-    return assetAge >= asset.usefulLifeYears - 1 && !asset.isFullyDepreciated
-  })
+
 
   return (
     <div className="flex-1 space-y-6 px-2 sm:px-0">
@@ -261,8 +248,8 @@ export function AssetRetirementView({
         )}
       </div>
 
-      {/* Assets Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="rounded-md border hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -408,6 +395,153 @@ export function AssetRetirementView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-4">
+        {filteredAssets.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Archive className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "No assets match your search criteria" : "No assets available for retirement"}
+              </p>
+              <p className="text-sm text-muted-foreground text-center mt-1">
+                Assets must be available, deployed, in maintenance, or damaged to be retired
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAssets.map((asset) => {
+            const getAssetAge = () => {
+              if (!asset.purchaseDate) return null
+              const purchaseYear = new Date(asset.purchaseDate).getFullYear()
+              const currentYear = new Date().getFullYear()
+              return currentYear - purchaseYear
+            }
+            
+            const assetAge = getAssetAge()
+            const isNearEndOfLife = assetAge && asset.usefulLifeYears && assetAge >= asset.usefulLifeYears - 1
+            const isFullyDepreciated = asset.currentBookValue === 0
+            
+            return (
+              <Card 
+                key={asset.id} 
+                className={`cursor-pointer transition-colors ${selectedAssets.has(asset.id) ? 'bg-muted/50 border-primary' : ''}`}
+                onClick={() => handleSelectAsset(asset.id, !selectedAssets.has(asset.id))}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Hash className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-base font-mono">{asset.itemCode}</CardTitle>
+                      </div>
+                      <p className="text-sm font-medium">{asset.description}</p>
+                      {asset.brand && (
+                        <p className="text-xs text-muted-foreground">{asset.brand}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusColor(asset.status)}>
+                        {getStatusLabel(asset.status)}
+                      </Badge>
+                      <Checkbox
+                        checked={selectedAssets.has(asset.id)}
+                        onCheckedChange={(checked) => handleSelectAsset(asset.id, checked === true)}
+                        aria-label={`Select ${asset.itemCode}`}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline">
+                      {asset.category.name}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Serial Number:</span>
+                      <p className="font-mono text-xs mt-1">
+                        {asset.serialNumber || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Book Value:</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <TrendingDown className="h-3 w-3 text-muted-foreground" />
+                        <p className={`text-xs ${isFullyDepreciated ? 'text-red-600 font-medium' : ''}`}>
+                          {asset.currentBookValue !== null ? formatCurrency(Number(asset.currentBookValue)) : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Purchase Info:</span>
+                      <div className="mt-1">
+                        {asset.purchasePrice && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3 text-muted-foreground" />
+                            <p className="text-xs">{formatCurrency(Number(asset.purchasePrice))}</p>
+                          </div>
+                        )}
+                        {asset.purchaseDate && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <p className="text-xs">{format(new Date(asset.purchaseDate), 'MMM dd, yyyy')}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Age / Life:</span>
+                      <div className="mt-1">
+                        {assetAge && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <p className={`text-xs ${isNearEndOfLife ? 'text-yellow-600 font-medium' : ''}`}>
+                              {assetAge} years old
+                            </p>
+                          </div>
+                        )}
+                        {asset.usefulLifeYears && (
+                          <p className="text-xs text-muted-foreground">
+                            Useful life: {asset.usefulLifeYears} years
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {asset.assignedEmployee && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs">
+                          Assigned to: {asset.assignedEmployee.name}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {(isFullyDepreciated || isNearEndOfLife) && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <Archive className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {isFullyDepreciated ? "Fully depreciated - Ready for retirement" : "Near end of useful life"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
       </div>
 
       {/* Pagination */}

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Search, 
@@ -15,7 +16,9 @@ import {
   QrCode,
   MapPin,
   User,
-  DollarSign
+  Hash,
+  Tag,
+  Activity
 } from "lucide-react"
 import {
   Select,
@@ -25,19 +28,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { AssetsResponse, AssetWithDetails } from "@/lib/actions/asset-management-actions"
+import { AssetsResponse } from "@/lib/actions/asset-management-actions"
 import { AssetStatus } from "@prisma/client"
 import { toast } from "sonner"
 
 // Helper functions
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount)
-}
 
 function getAssetStatusColor(status: AssetStatus): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
@@ -246,8 +241,8 @@ export function AssetPrintingView({
         )}
       </div>
 
-      {/* Assets Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="rounded-md border hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -361,6 +356,112 @@ export function AssetPrintingView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-4">
+        {filteredAssets.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <QrCode className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "No assets match your search criteria" : "No assets found"}
+              </p>
+              <p className="text-sm text-muted-foreground text-center mt-1">
+                Try adjusting your search criteria or category filter
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAssets.map((asset) => (
+            <Card 
+              key={asset.id} 
+              className={`cursor-pointer transition-colors ${selectedAssets.has(asset.id) ? 'bg-muted/50 border-primary' : ''}`}
+              onClick={() => handleSelectAsset(asset.id, !selectedAssets.has(asset.id))}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-base font-mono">{asset.itemCode}</CardTitle>
+                    </div>
+                    <p className="text-sm font-medium">{asset.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <QrCode className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="text-xs">
+                        Ready to Print
+                      </Badge>
+                    </div>
+                    <Checkbox
+                      checked={selectedAssets.has(asset.id)}
+                      onCheckedChange={(checked) => handleSelectAsset(asset.id, checked === true)}
+                      aria-label={`Select ${asset.itemCode}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <Badge variant="outline">
+                    {asset.category.name}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getAssetStatusColor(asset.status)}>
+                      {formatAssetStatus(asset.status)}
+                    </Badge>
+                    {!asset.isActive && (
+                      <Badge variant="secondary" className="text-xs">
+                        Inactive
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Serial Number:</span>
+                    <p className="font-mono text-xs mt-1">
+                      {asset.serialNumber || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Brand:</span>
+                    <p className="font-medium mt-1">
+                      {asset.brand || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Location:</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs">{asset.location || "Not specified"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Assigned To:</span>
+                    {asset.currentDeployment ? (
+                      <div className="flex items-center gap-1 mt-1">
+                        <User className="h-3 w-3 text-muted-foreground" />
+                        <p className="text-xs">{asset.currentDeployment.employee.name}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">Unassigned</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Pagination */}

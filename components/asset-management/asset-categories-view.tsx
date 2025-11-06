@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Search, 
@@ -14,7 +15,10 @@ import {
   Trash2,
   Eye,
   Power,
-  Package
+  Package,
+  Hash,
+  Calendar,
+  FileText
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -175,8 +179,8 @@ export function AssetCategoriesView({
         Showing {filteredCategories.length} of {categoriesData.totalCount} categories
       </div>
 
-      {/* Categories Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="rounded-md border hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -241,7 +245,7 @@ export function AssetCategoriesView({
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                                        <Button
+                        <Button
                           size="sm"
                           variant="outline"
                           className="h-8 w-8 p-0"
@@ -284,6 +288,114 @@ export function AssetCategoriesView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-4">
+        {filteredCategories.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Package className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "No categories match your search criteria" : "No categories found"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredCategories.map((category) => (
+            <Card key={category.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-base">{category.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-3 w-3 text-muted-foreground" />
+                      <Badge variant="outline" className="font-mono text-xs">
+                        {category.code}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(category.isActive)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingCategory(category)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        {category._count.assets > 0 && (
+                          <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/asset-management/categories/${category.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Assets ({category._count.assets})
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem 
+                          onClick={() => handleToggleStatus(category)}
+                          disabled={isLoading}
+                        >
+                          <Power className="mr-2 h-4 w-4" />
+                          {category.isActive ? 'Deactivate' : 'Activate'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => setDeletingCategory(category)}
+                          className="text-red-600"
+                          disabled={category._count.assets > 0}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {category.description && (
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <p className="text-sm text-muted-foreground">{category.description}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Assets:</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-medium">{category._count.assets}</span>
+                      {category._count.assets > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/${businessUnitId}/asset-management/categories/${category.id}`)}
+                          className="h-6 px-2 text-xs"
+                        >
+                          View
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Created:</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs">{format(new Date(category.createdAt), 'MMM dd, yyyy')}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Pagination */}

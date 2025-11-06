@@ -347,7 +347,9 @@ function DepreciationOverview({ data, businessUnitId, currentFilters, searchTerm
       {/* Method Breakdown Table */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Depreciation Methods</h3>
-        <div className="rounded-md border">
+        
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-md border">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -416,12 +418,73 @@ function DepreciationOverview({ data, businessUnitId, currentFilters, searchTerm
             </table>
           </div>
         </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {data.summary.byMethod.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="flex flex-col items-center gap-2">
+                <BarChart3 className="h-8 w-8 text-muted-foreground" />
+                <p className="text-muted-foreground">No depreciation methods found</p>
+              </div>
+            </div>
+          ) : (
+            data.summary.byMethod.map((method: any) => {
+              const percentage = data.summary.totalAssets > 0 ? (method.count / data.summary.totalAssets) * 100 : 0
+              const avgBookValue = method.count > 0 ? method.totalBookValue / method.count : 0
+              
+              return (
+                <div key={method.method} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{method.method.replace('_', ' ')}</span>
+                    </div>
+                    <span className="text-2xl font-bold">{method.count}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-muted-foreground text-xs">Total Book Value</div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-mono">{formatCurrency(method.totalBookValue)}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Avg Book Value</div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-mono">{formatCurrency(avgBookValue)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Percentage</span>
+                      <span className="font-medium">{percentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 rounded-full h-2 transition-all duration-300"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
 
       {/* Category Breakdown Table */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">By Category</h3>
-        <div className="rounded-md border">
+        
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-md border">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -504,6 +567,80 @@ function DepreciationOverview({ data, businessUnitId, currentFilters, searchTerm
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {data.summary.byCategory.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="flex flex-col items-center gap-2">
+                <Package className="h-8 w-8 text-muted-foreground" />
+                <p className="text-muted-foreground">No categories found</p>
+              </div>
+            </div>
+          ) : (
+            data.summary.byCategory.map((category: any) => {
+              const totalValue = category.totalBookValue + category.totalDepreciation
+              const depreciationRate = totalValue > 0 ? (category.totalDepreciation / totalValue) * 100 : 0
+              const avgAssetValue = category.count > 0 ? category.totalBookValue / category.count : 0
+              
+              return (
+                <div key={category.categoryId} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium">{category.categoryName}</div>
+                        <div className="text-xs text-muted-foreground">{category.count} assets</div>
+                      </div>
+                    </div>
+                    <span className="text-lg font-bold">{category.count}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-muted-foreground text-xs">Total Book Value</div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 text-green-500" />
+                        <span className="font-mono">{formatCurrency(category.totalBookValue)}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Total Depreciation</div>
+                      <div className="flex items-center gap-1">
+                        <TrendingDown className="h-3 w-3 text-red-500" />
+                        <span className="font-mono text-red-600">{formatCurrency(category.totalDepreciation)}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Avg Asset Value</div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-mono">{formatCurrency(avgAssetValue)}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-xs">Depreciation Rate</div>
+                      <span className="font-medium">{depreciationRate.toFixed(1)}%</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`rounded-full h-2 transition-all duration-300 ${
+                          depreciationRate >= 90 ? 'bg-red-500' : 
+                          depreciationRate >= 70 ? 'bg-orange-500' : 
+                          'bg-blue-500'
+                        }`}
+                        style={{ width: `${Math.min(depreciationRate, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
       </div>
     </div>
@@ -602,8 +739,8 @@ function DepreciationSchedule({
         )}
       </div>
 
-      {/* Assets Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -753,6 +890,134 @@ function DepreciationSchedule({
           </table>
         </div>
       </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {data.assets.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center gap-2">
+              <Calculator className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {searchTerm ? "No assets match your search criteria" : "No assets found for depreciation"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          data.assets.map((asset: any) => {
+            const needsDepreciation = asset.nextDepreciationDate && new Date(asset.nextDepreciationDate) <= new Date()
+            const depreciationProgress = asset.purchasePrice > 0 
+              ? (asset.accumulatedDepreciation / asset.purchasePrice) * 100 
+              : 0
+            
+            return (
+              <div 
+                key={asset.id}
+                className={`border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 ${selectedAssets.has(asset.id) ? 'bg-muted/50 border-primary' : ''}`}
+                onClick={() => handleSelectAsset(asset.id, !selectedAssets.has(asset.id))}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedAssets.has(asset.id)}
+                      onCheckedChange={(checked) => handleSelectAsset(asset.id, checked === true)}
+                      aria-label={`Select ${asset.itemCode}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div>
+                      <div className="font-mono text-sm font-medium">{asset.itemCode}</div>
+                      <div className="font-medium text-sm">{asset.description}</div>
+                      {asset.brand && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {asset.brand}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant="outline" className="text-xs">
+                      {asset.category.name}
+                    </Badge>
+                    {asset.isFullyDepreciated ? (
+                      <Badge variant="destructive" className="text-xs">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Fully Depreciated
+                      </Badge>
+                    ) : needsDepreciation ? (
+                      <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Due
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="text-xs">
+                        <TrendingDown className="h-3 w-3 mr-1" />
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-muted-foreground text-xs">Purchase Price</div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono">{formatCurrency(Number(asset.purchasePrice || 0))}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Current Book Value</div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono">{formatCurrency(Number(asset.currentBookValue || 0))}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Accumulated Depreciation</div>
+                    <div className="flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3 text-red-500" />
+                      <span className="font-mono text-red-600">{formatCurrency(Number(asset.accumulatedDepreciation || 0))}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Monthly Depreciation</div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono">{formatCurrency(Number(asset.monthlyDepreciation || 0))}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Depreciation Progress</span>
+                    <span className="font-medium">{depreciationProgress.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className={`rounded-full h-2 transition-all duration-300 ${
+                        depreciationProgress >= 100 ? 'bg-red-500' : 
+                        depreciationProgress >= 75 ? 'bg-orange-500' : 
+                        'bg-blue-500'
+                      }`}
+                      style={{ width: `${Math.min(depreciationProgress, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                {asset.nextDepreciationDate && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Next Depreciation</span>
+                    <div className={`flex items-center gap-1 ${needsDepreciation ? 'text-orange-600' : ''}`}>
+                      <Clock className="h-3 w-3" />
+                      <span>{format(new Date(asset.nextDepreciationDate), 'MMM dd, yyyy')}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+      </div>
     </div>
   )
 }
@@ -834,8 +1099,8 @@ function DepreciationHistory({ data, businessUnitId, currentFilters, searchTerm,
         Showing {data.history.length} depreciation records
       </div>
 
-      {/* History Table */}
-      <div className="rounded-md border">
+      {/* Desktop History Table */}
+      <div className="hidden md:block rounded-md border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -938,6 +1203,93 @@ function DepreciationHistory({ data, businessUnitId, currentFilters, searchTerm,
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile History Cards */}
+      <div className="md:hidden space-y-4">
+        {data.history.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center gap-2">
+              <History className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {searchTerm ? "No history matches your search criteria" : "No depreciation history found"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          data.history.map((record: any) => (
+            <div key={record.id} className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {record.asset.itemCode}
+                    </Badge>
+                    {record.isAdjustment ? (
+                      <Badge variant="secondary" className="text-xs">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Adjustment
+                      </Badge>
+                    ) : (
+                      <Badge variant="default" className="text-xs">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Regular
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="font-medium text-sm">{record.asset.description}</div>
+                  {record.asset.category && (
+                    <div className="text-xs text-muted-foreground">
+                      {record.asset.category.name}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-sm">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    <span>{format(new Date(record.depreciationDate), 'MMM dd, yyyy')}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Calculator className="h-3 w-3" />
+                    <span>{record.method.replace('_', ' ')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground text-xs">Book Value Start</div>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-mono">{formatCurrency(record.bookValueStart)}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">Book Value End</div>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-3 w-3 text-muted-foreground" />
+                    <span className="font-mono">{formatCurrency(record.bookValueEnd)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-muted-foreground text-xs">Depreciation Amount</div>
+                <div className="flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3 text-red-500" />
+                  <span className="font-mono text-red-600 font-medium">-{formatCurrency(record.depreciationAmount)}</span>
+                </div>
+              </div>
+
+              {record.notes && (
+                <div>
+                  <div className="text-muted-foreground text-xs">Notes</div>
+                  <div className="text-sm">{record.notes}</div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

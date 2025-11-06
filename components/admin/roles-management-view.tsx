@@ -129,9 +129,9 @@ export function RolesManagementView({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Role Management</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">System Permissions Management</h1>
           <p className="text-sm text-muted-foreground">
-            Manage user roles and permissions for {businessUnit.name}
+            Manage user system permissions for {businessUnit.name}
           </p>
         </div>
         
@@ -268,120 +268,208 @@ export function RolesManagementView({
             </p>
           </div>
         ) : (
-          <div className="rounded-md border">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-3 w-[50px]">
-                      <Checkbox
-                        checked={rolesData.roles.length > 0 && selectedRoles.size === rolesData.roles.length}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all roles"
-                      />
-                    </th>
-                    <th className="text-left p-3 font-medium">Role Name</th>
-                    <th className="text-left p-3 font-medium">Description</th>
-                    <th className="text-left p-3 font-medium">Type</th>
-                    <th className="text-left p-3 font-medium">Employees</th>
-                    <th className="text-left p-3 font-medium">Created Date</th>
-                    <th className="text-left p-3 font-medium">Last Updated</th>
-                    <th className="text-left p-3 w-[50px]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rolesData.roles.map((role) => (
-                    <tr 
-                      key={role.id}
-                      className={`border-b cursor-pointer hover:bg-muted/50 ${selectedRoles.has(role.id) ? 'bg-muted/50' : ''}`}
-                      onClick={() => handleViewRole(role.id)}
-                    >
-                      <td className="p-3">
+          <>
+            {/* Desktop Table */}
+            <div className="hidden md:block rounded-md border">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left p-3 w-[50px]">
                         <Checkbox
-                          checked={selectedRoles.has(role.id)}
-                          onCheckedChange={(checked) => handleSelectRole(role.id, checked === true)}
-                          aria-label={`Select ${role.name}`}
-                          onClick={(e) => e.stopPropagation()}
+                          checked={rolesData.roles.length > 0 && selectedRoles.size === rolesData.roles.length}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Select all roles"
                         />
-                      </td>
-                      <td className="p-3">
+                      </th>
+                      <th className="text-left p-3 font-medium">Role Name</th>
+                      <th className="text-left p-3 font-medium">Description</th>
+                      <th className="text-left p-3 font-medium">Type</th>
+                      <th className="text-left p-3 font-medium">Employees</th>
+                      <th className="text-left p-3 font-medium">Created Date</th>
+                      <th className="text-left p-3 font-medium">Last Updated</th>
+                      <th className="text-left p-3 w-[50px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rolesData.roles.map((role) => (
+                      <tr 
+                        key={role.id}
+                        className={`border-b cursor-pointer hover:bg-muted/50 ${selectedRoles.has(role.id) ? 'bg-muted/50' : ''}`}
+                        onClick={() => handleViewRole(role.id)}
+                      >
+                        <td className="p-3">
+                          <Checkbox
+                            checked={selectedRoles.has(role.id)}
+                            onCheckedChange={(checked) => handleSelectRole(role.id, checked === true)}
+                            aria-label={`Select ${role.name}`}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium">{role.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="max-w-[300px]">
+                            {role.description ? (
+                              <span className="text-sm text-muted-foreground">
+                                {role.description}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground italic">
+                                No description
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={role.isActive ? "default" : "secondary"}>
+                            {role.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-medium">{role._count.employees}</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(role.createdAt), 'MMM dd, yyyy')}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(role.updatedAt), 'MMM dd, yyyy')}
+                          </span>
+                        </td>
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                         <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewRole(role.id)}>
+                                <Shield className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditRole(role.id)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Role
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteRole(role.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Role
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {rolesData.roles.map((role) => (
+                <div 
+                  key={role.id}
+                  className={`border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 ${selectedRoles.has(role.id) ? 'bg-muted/50 border-primary' : ''}`}
+                  onClick={() => handleViewRole(role.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedRoles.has(role.id)}
+                        onCheckedChange={(checked) => handleSelectRole(role.id, checked === true)}
+                        aria-label={`Select ${role.name}`}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div>
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium">{role.name}</div>
+                          <div className="font-medium">{role.name}</div>
+                        </div>
+                        {role.description && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {role.description}
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="max-w-[300px]">
-                          {role.description ? (
-                            <span className="text-sm text-muted-foreground">
-                              {role.description}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground italic">
-                              No description
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant={role.isActive ? "default" : "secondary"}>
-                          {role.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">{role._count.employees}</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(role.createdAt), 'MMM dd, yyyy')}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(role.updatedAt), 'MMM dd, yyyy')}
-                        </span>
-                      </td>
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                       <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewRole(role.id)}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditRole(role.id)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Role
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteRole(role.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Role
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant={role.isActive ? "default" : "secondary"}>
+                        {role.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleViewRole(role.id)}>
+                            <Shield className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditRole(role.id)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Role
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteRole(role.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Role
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-medium">{role._count.employees}</span>
+                      <span className="text-muted-foreground">employees</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm pt-2 border-t">
+                    <div>
+                      <div className="text-muted-foreground text-xs">Created</div>
+                      <div>{format(new Date(role.createdAt), 'MMM dd, yyyy')}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-muted-foreground text-xs">Updated</div>
+                      <div>{format(new Date(role.updatedAt), 'MMM dd, yyyy')}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          </>
         )}
       </div>
 

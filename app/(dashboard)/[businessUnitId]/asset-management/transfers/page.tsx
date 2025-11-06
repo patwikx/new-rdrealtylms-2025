@@ -50,7 +50,6 @@ export default async function AssetTransferPage({ params, searchParams }: AssetT
       <div className="space-y-6">
         <AssetTransferView 
           deployedAssetsData={deployedAssetsData}
-          businessUnit={businessUnit}
           businessUnitId={businessUnitId}
           currentFilters={{
             employeeId,

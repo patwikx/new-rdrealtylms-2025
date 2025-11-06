@@ -50,7 +50,6 @@ export default async function AssetRetirementPage({ params, searchParams }: Asse
       <div className="space-y-6">
         <AssetRetirementView 
           retirableAssetsData={retirableAssetsData}
-          businessUnit={businessUnit}
           businessUnitId={businessUnitId}
           currentFilters={{
             categoryId,

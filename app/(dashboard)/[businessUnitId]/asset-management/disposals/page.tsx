@@ -50,7 +50,6 @@ export default async function AssetDisposalPage({ params, searchParams }: AssetD
       <div className="space-y-6">
         <AssetDisposalView 
           disposableAssetsData={disposableAssetsData}
-          businessUnit={businessUnit}
           businessUnitId={businessUnitId}
           currentFilters={{
             categoryId,

@@ -173,8 +173,8 @@ export function LeaveTypesManagementView({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg">
+      {/* Desktop Table */}
+      <div className="hidden md:block border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
@@ -258,6 +258,90 @@ export function LeaveTypesManagementView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {leaveTypes.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center gap-2">
+              <Calendar className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {searchTerm ? "No leave types match your search criteria" : "No leave types found"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          leaveTypes.map((leaveType) => (
+            <div key={leaveType.id} className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-medium text-lg">{leaveType.name}</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Created {new Date(leaveType.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono">
+                  {leaveType.defaultAllocatedDays} days
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-muted-foreground text-xs">Active Balances</div>
+                    <div className="font-medium">{leaveType._count.leaveBalances}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="text-muted-foreground text-xs">Total Requests</div>
+                    <div className="font-medium">{leaveType._count.leaveRequests}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleEdit({
+                    id: leaveType.id,
+                    name: leaveType.name,
+                    defaultAllocatedDays: leaveType.defaultAllocatedDays
+                  })}
+                >
+                  <Edit className="h-3 w-3 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleDelete({
+                    id: leaveType.id,
+                    name: leaveType.name,
+                    defaultAllocatedDays: leaveType.defaultAllocatedDays
+                  })}
+                  disabled={leaveType._count.leaveRequests > 0}
+                >
+                  <Trash2 className="h-3 w-3 mr-2" />
+                  Delete
+                </Button>
+              </div>
+
+              {leaveType._count.leaveRequests > 0 && (
+                <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>Cannot delete - has active requests</span>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination */}

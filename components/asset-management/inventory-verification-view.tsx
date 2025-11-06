@@ -226,7 +226,9 @@ function VerificationOverview({ data, businessUnitId, currentFilters, searchTerm
       {/* Status Breakdown Table */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Verification Status</h3>
-        <div className="rounded-md border">
+        
+        {/* Desktop Table */}
+        <div className="hidden md:block rounded-md border">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -292,6 +294,63 @@ function VerificationOverview({ data, businessUnitId, currentFilters, searchTerm
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {[
+            { status: 'PLANNED', count: data.summary.planned, icon: Clock, color: 'text-blue-500' },
+            { status: 'IN_PROGRESS', count: data.summary.inProgress, icon: Play, color: 'text-yellow-500' },
+            { status: 'COMPLETED', count: data.summary.completed, icon: CheckCircle, color: 'text-green-500' },
+            { status: 'CANCELLED', count: data.summary.cancelled, icon: XCircle, color: 'text-red-500' }
+          ].map((item) => {
+            const percentage = data.summary.total > 0 ? (item.count / data.summary.total) * 100 : 0
+            const totalAssets = data.verifications
+              .filter((v: any) => v.status === item.status)
+              .reduce((sum: number, v: any) => sum + v.totalAssets, 0)
+            const avgProgress = item.count > 0 
+              ? (data.verifications
+                  .filter((v: any) => v.status === item.status)
+                  .reduce((sum: number, v: any) => sum + v.progress, 0) / item.count).toFixed(1)
+              : 0
+            const Icon = item.icon
+            
+            return (
+              <div key={item.status} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${item.color}`} />
+                    <span className="font-medium">{item.status.replace('_', ' ')}</span>
+                  </div>
+                  <span className="text-2xl font-bold">{item.count}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-muted-foreground text-xs">Total Assets</div>
+                    <div className="font-medium">{totalAssets}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Avg Progress</div>
+                    <div className="font-medium">{avgProgress}%</div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Percentage</span>
+                    <span className="font-medium">{percentage.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 rounded-full h-2 transition-all duration-300"
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -395,8 +454,8 @@ function ActiveVerifications({
         )}
       </div>
 
-      {/* Verifications Table */}
-      <div className="rounded-md border">
+      {/* Desktop Verifications Table */}
+      <div className="hidden md:block rounded-md border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -497,6 +556,93 @@ function ActiveVerifications({
           </table>
         </div>
       </div>
+
+      {/* Mobile Verification Cards */}
+      <div className="md:hidden space-y-4">
+        {activeVerifications.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center gap-2">
+              <ClipboardList className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {searchTerm ? "No verifications match your search criteria" : "No active verifications found"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          activeVerifications.map((verification: any) => (
+            <div 
+              key={verification.id}
+              className={`border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 ${selectedVerifications.has(verification.id) ? 'bg-muted/50 border-primary' : ''}`}
+              onClick={() => handleViewDetails(verification.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedVerifications.has(verification.id)}
+                    onCheckedChange={(checked) => handleSelectVerification(verification.id, checked === true)}
+                    aria-label={`Select ${verification.verificationName}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div>
+                    <div className="font-medium">{verification.verificationName}</div>
+                    {verification.description && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {verification.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Badge variant={getStatusVariant(verification.status)}>
+                  {getStatusLabel(verification.status)}
+                </Badge>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium">{verification.progress.toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 rounded-full h-2 transition-all duration-300"
+                    style={{ width: `${Math.min(verification.progress, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground text-xs">Total Assets</div>
+                  <div className="font-medium">{verification.totalAssets}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">Scanned</div>
+                  <div className="font-medium">{verification.scannedAssets}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">Verified</div>
+                  <div className="font-medium text-green-600">{verification.verifiedAssets}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs">Discrepancies</div>
+                  <div className="font-medium text-red-600">{verification.discrepancies}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-sm pt-2 border-t">
+                <div>
+                  <div className="text-muted-foreground text-xs">Created By</div>
+                  <div>{verification.createdByEmployee.name}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-muted-foreground text-xs">Created Date</div>
+                  <div>{format(new Date(verification.createdAt), 'MMM dd, yyyy')}</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }
@@ -561,8 +707,8 @@ function CompletedVerifications({
         Showing {completedVerifications.length} completed verifications
       </div>
 
-      {/* Completed Verifications Table */}
-      <div className="rounded-md border">
+      {/* Desktop Completed Verifications Table */}
+      <div className="hidden md:block rounded-md border">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -653,6 +799,91 @@ function CompletedVerifications({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Completed Verification Cards */}
+      <div className="md:hidden space-y-4">
+        {completedVerifications.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center gap-2">
+              <CheckCircle className="h-8 w-8 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {searchTerm ? "No completed verifications match your search" : "No completed verifications found"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          completedVerifications.map((verification: any) => {
+            const completionRate = verification.totalAssets > 0 
+              ? (verification.verifiedAssets / verification.totalAssets) * 100 
+              : 0
+            
+            return (
+              <div 
+                key={verification.id}
+                className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50"
+                onClick={() => handleViewDetails(verification.id)}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-medium">{verification.verificationName}</div>
+                    {verification.description && (
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {verification.description}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant={getStatusVariant(verification.status)}>
+                    {getStatusLabel(verification.status)}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Completion Rate</span>
+                    <span className="font-medium">{completionRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div 
+                      className={`rounded-full h-2 transition-all duration-300 ${
+                        completionRate >= 95 ? 'bg-green-500' : 
+                        completionRate >= 80 ? 'bg-yellow-500' : 
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min(completionRate, 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-muted-foreground text-xs">Total Assets</div>
+                    <div className="font-medium">{verification.totalAssets}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Verified</div>
+                    <div className="font-medium text-green-600">{verification.verifiedAssets}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Discrepancies</div>
+                    <div className="font-medium text-red-600">{verification.discrepancies}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs">Created By</div>
+                    <div className="font-medium">{verification.createdByEmployee.name}</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end text-sm pt-2 border-t">
+                  <div className="text-right">
+                    <div className="text-muted-foreground text-xs">Completed Date</div>
+                    <div>{format(new Date(verification.updatedAt), 'MMM dd, yyyy')}</div>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
     </div>
   )

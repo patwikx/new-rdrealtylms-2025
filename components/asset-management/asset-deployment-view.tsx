@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Search, 
@@ -12,9 +13,10 @@ import {
   CheckSquare,
   X,
   Package,
-  Users,
   MapPin,
-  DollarSign
+  Hash,
+  Tag,
+  Wrench
 } from "lucide-react"
 import {
   Select,
@@ -24,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { AssetsResponse, AssetWithDetails } from "@/lib/actions/asset-management-actions"
+import { AssetsResponse } from "@/lib/actions/asset-management-actions"
 import { AssetDeploymentDialog } from "./asset-deployment-dialog"
 import { toast } from "sonner"
 
@@ -226,8 +228,8 @@ export function AssetDeploymentView({
         )}
       </div>
 
-      {/* Assets Table */}
-      <div className="rounded-md border">
+      {/* Desktop Table */}
+      <div className="rounded-md border hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -327,6 +329,107 @@ export function AssetDeploymentView({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden space-y-4">
+        {filteredAssets.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Package className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground text-center">
+                {searchTerm ? "No assets match your search criteria" : "No available assets found for deployment"}
+              </p>
+              <p className="text-sm text-muted-foreground text-center mt-1">
+                Assets must be ACTIVE and not currently deployed to appear here
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredAssets.map((asset) => (
+            <Card 
+              key={asset.id} 
+              className={`cursor-pointer transition-colors ${selectedAssets.has(asset.id) ? 'bg-muted/50 border-primary' : ''}`}
+              onClick={() => handleSelectAsset(asset.id, !selectedAssets.has(asset.id))}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-base font-mono">{asset.itemCode}</CardTitle>
+                    </div>
+                    <p className="text-sm font-medium">{asset.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                      <Badge variant="default" className="text-xs">
+                        Available
+                      </Badge>
+                    </div>
+                    <Checkbox
+                      checked={selectedAssets.has(asset.id)}
+                      onCheckedChange={(checked) => handleSelectAsset(asset.id, checked === true)}
+                      aria-label={`Select ${asset.itemCode}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <Badge variant="outline">
+                    {asset.category.name}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Serial Number:</span>
+                    <p className="font-mono text-xs mt-1">
+                      {asset.serialNumber || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Brand:</span>
+                    <p className="font-medium mt-1">
+                      {asset.brand || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Location:</span>
+                    <div className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs">{asset.location || "Not specified"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Purchase Price:</span>
+                    <p className="font-medium mt-1">
+                      {asset.purchasePrice ? formatCurrency(Number(asset.purchasePrice)) : "Not specified"}
+                    </p>
+                  </div>
+                </div>
+
+                {(asset.modelNumber || asset.brand) && (
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {asset.brand && asset.modelNumber 
+                          ? `${asset.brand} - ${asset.modelNumber}`
+                          : asset.brand || asset.modelNumber
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
       {/* Pagination */}
