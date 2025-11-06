@@ -115,9 +115,8 @@ export function OvertimeRequestForm({ businessUnitId }: OvertimeRequestFormProps
                   selected={selectedDate}
                   captionLayout="dropdown"
                   onSelect={handleDateCalendarSelect}
-                  disabled={(date) => date < new Date()}
-                  fromYear={new Date().getFullYear()}
-                  toYear={new Date().getFullYear() + 10}
+                  fromYear={new Date().getFullYear() - 1}
+                  toYear={new Date().getFullYear() + 1}
                 />
               </PopoverContent>
             </Popover>
