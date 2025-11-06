@@ -199,7 +199,7 @@ export function CreateRoleView({ businessUnit, businessUnitId }: CreateRoleViewP
       }
 
       toast.success("Role created successfully")
-      router.push(`/${businessUnitId}/roles`)
+      router.push(`/${businessUnitId}/admin/system-permissions`)
     } catch (error) {
       console.error('Error creating role:', error)
       toast.error(error instanceof Error ? error.message : "Failed to create role")
@@ -209,7 +209,7 @@ export function CreateRoleView({ businessUnit, businessUnitId }: CreateRoleViewP
   }
 
   const handleCancel = () => {
-    router.push(`/${businessUnitId}/roles`)
+    router.push(`/${businessUnitId}/admin/system-permissions`)
   }
 
   return (
