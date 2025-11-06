@@ -79,19 +79,19 @@ export function RolesManagementView({
     const params = new URLSearchParams()
     if (searchTerm) params.set('search', searchTerm)
     
-    router.push(`/${businessUnitId}/roles?${params.toString()}`)
+    router.push(`/${businessUnitId}/admin/system-permissions?${params.toString()}`)
   }
 
   const handleCreateNew = () => {
-    router.push(`/${businessUnitId}/roles/create`)
+    router.push(`/${businessUnitId}/admin/system-permissions/create`)
   }
 
   const handleEditRole = (roleId: string) => {
-    router.push(`/${businessUnitId}/roles/${roleId}/edit`)
+    router.push(`/${businessUnitId}/admin/system-permissions/${roleId}/edit`)
   }
 
   const handleViewRole = (roleId: string) => {
-    router.push(`/${businessUnitId}/roles/${roleId}`)
+    router.push(`/${businessUnitId}/admin/system-permissions/${roleId}`)
   }
 
   const handleSelectRole = (roleId: string, checked: boolean) => {
@@ -400,7 +400,7 @@ export function RolesManagementView({
                 const params = new URLSearchParams()
                 if (searchTerm) params.set('search', searchTerm)
                 params.set('page', String(rolesData.pagination.page - 1))
-                router.push(`/${businessUnitId}/roles?${params.toString()}`)
+                router.push(`/${businessUnitId}/admin/system-permissions?${params.toString()}`)
               }}
             >
               Previous
@@ -413,7 +413,7 @@ export function RolesManagementView({
                 const params = new URLSearchParams()
                 if (searchTerm) params.set('search', searchTerm)
                 params.set('page', String(rolesData.pagination.page + 1))
-                router.push(`/${businessUnitId}/roles?${params.toString()}`)
+                router.push(`/${businessUnitId}/admin/system-permissions?${params.toString()}`)
               }}
             >
               Next

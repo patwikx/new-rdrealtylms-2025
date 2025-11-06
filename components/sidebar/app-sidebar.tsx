@@ -34,7 +34,7 @@ const isApprover = (userRole: string) => {
 // Define navigation items based on your hybrid LMS + Asset Management system
 const getNavigationItems = (businessUnitId: string, userRole: string) => {
   // Define roles that can access MRS Coordinator functions
-  const mrsCoordinatorRoles = ['ADMIN', 'MANAGER', 'PURCHASER', 'MRS_COORDINATOR']
+  const mrsCoordinatorRoles = ['ADMIN', 'PURCHASER', 'MRS_COORDINATOR']
   
   // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
   const baseItems = [
