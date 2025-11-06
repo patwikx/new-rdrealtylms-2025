@@ -101,7 +101,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
       try {
         const [categoriesData, departmentsData, accountsData] = await Promise.all([
           getAssetCategories(businessUnitId),
-          getDepartments(),
+          getDepartments(businessUnitId),
           getGLAccounts()
         ])
         

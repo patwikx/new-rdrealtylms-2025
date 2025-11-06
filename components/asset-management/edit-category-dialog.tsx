@@ -115,7 +115,7 @@ export function EditCategoryDialog({
         defaultAccumulatedDepAccountId: data.defaultAccumulatedDepAccountId === "none" ? undefined : data.defaultAccumulatedDepAccountId
       }
       
-      const result = await updateAssetCategory(category.id, processedData)
+      const result = await updateAssetCategory(category.id, processedData, businessUnitId)
       
       if (result.error) {
         toast.error(result.error)

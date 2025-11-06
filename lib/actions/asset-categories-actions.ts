@@ -7,6 +7,7 @@ export interface AssetCategoryData {
   name: string
   code: string
   description?: string
+  businessUnitId?: string
   defaultAssetAccountId?: string | null
   defaultDepreciationExpenseAccountId?: string | null
   defaultAccumulatedDepAccountId?: string | null
@@ -18,6 +19,7 @@ export interface AssetCategoryWithDetails {
   name: string
   code: string
   description: string | null
+  businessUnitId: string | null
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -52,10 +54,12 @@ export interface CategoriesResponse {
 }
 
 export async function getAssetCategories({
+  businessUnitId,
   search,
   page = 1,
   limit = 20
 }: {
+  businessUnitId: string
   search?: string
   page?: number
   limit?: number
@@ -64,6 +68,7 @@ export async function getAssetCategories({
     const skip = (page - 1) * limit
 
     const where = {
+      businessUnitId,
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' as const } },
@@ -125,7 +130,7 @@ export async function getAssetCategories({
   }
 }
 
-export async function createAssetCategory(data: AssetCategoryData) {
+export async function createAssetCategory(data: AssetCategoryData, businessUnitId: string) {
   try {
     const { auth } = await import("@/auth")
     const session = await auth()
@@ -134,13 +139,16 @@ export async function createAssetCategory(data: AssetCategoryData) {
       return { error: "Unauthorized" }
     }
 
-    // Check if code already exists
-    const existingCategory = await prisma.assetCategory.findUnique({
-      where: { code: data.code }
+    // Check if code already exists within the same business unit
+    const existingCategory = await prisma.assetCategory.findFirst({
+      where: { 
+        code: data.code,
+        businessUnitId
+      }
     })
 
     if (existingCategory) {
-      return { error: "Category code already exists" }
+      return { error: "Category code already exists in this business unit" }
     }
 
     const category = await prisma.assetCategory.create({
@@ -148,6 +156,7 @@ export async function createAssetCategory(data: AssetCategoryData) {
         name: data.name,
         code: data.code.toUpperCase(),
         description: data.description || null,
+        businessUnitId,
         defaultAssetAccountId: data.defaultAssetAccountId || null,
         defaultDepreciationExpenseAccountId: data.defaultDepreciationExpenseAccountId || null,
         defaultAccumulatedDepAccountId: data.defaultAccumulatedDepAccountId || null,
@@ -155,7 +164,7 @@ export async function createAssetCategory(data: AssetCategoryData) {
       }
     })
 
-    revalidatePath("/asset-management/categories")
+    revalidatePath(`/[businessUnitId]/asset-management/categories`)
     return { success: "Category created successfully", data: category }
   } catch (error) {
     console.error("Error creating category:", error)
@@ -163,7 +172,7 @@ export async function createAssetCategory(data: AssetCategoryData) {
   }
 }
 
-export async function updateAssetCategory(id: string, data: AssetCategoryData) {
+export async function updateAssetCategory(id: string, data: AssetCategoryData, businessUnitId: string) {
   try {
     const { auth } = await import("@/auth")
     const session = await auth()
@@ -172,16 +181,17 @@ export async function updateAssetCategory(id: string, data: AssetCategoryData) {
       return { error: "Unauthorized" }
     }
 
-    // Check if code already exists (excluding current category)
+    // Check if code already exists within the same business unit (excluding current category)
     const existingCategory = await prisma.assetCategory.findFirst({
       where: { 
         code: data.code,
+        businessUnitId,
         NOT: { id }
       }
     })
 
     if (existingCategory) {
-      return { error: "Category code already exists" }
+      return { error: "Category code already exists in this business unit" }
     }
 
     const category = await prisma.assetCategory.update({
@@ -197,7 +207,7 @@ export async function updateAssetCategory(id: string, data: AssetCategoryData) {
       }
     })
 
-    revalidatePath("/asset-management/categories")
+    revalidatePath(`/[businessUnitId]/asset-management/categories`)
     return { success: "Category updated successfully", data: category }
   } catch (error) {
     console.error("Error updating category:", error)
@@ -227,7 +237,7 @@ export async function deleteAssetCategory(id: string) {
       where: { id }
     })
 
-    revalidatePath("/asset-management/categories")
+    revalidatePath(`/[businessUnitId]/asset-management/categories`)
     return { success: "Category deleted successfully" }
   } catch (error) {
     console.error("Error deleting category:", error)
@@ -258,7 +268,7 @@ export async function toggleCategoryStatus(id: string) {
       data: { isActive: !category.isActive }
     })
 
-    revalidatePath("/asset-management/categories")
+    revalidatePath(`/[businessUnitId]/asset-management/categories`)
     return { 
       success: `Category ${updatedCategory.isActive ? 'activated' : 'deactivated'} successfully`,
       data: updatedCategory
@@ -269,13 +279,17 @@ export async function toggleCategoryStatus(id: string) {
   }
 }
 
-export async function getCategoryAssets(categoryId: string, page = 1, limit = 10) {
+export async function getCategoryAssets(categoryId: string, businessUnitId?: string, page = 1, limit = 10) {
   try {
     const skip = (page - 1) * limit
 
+    const whereClause = businessUnitId 
+      ? { categoryId, businessUnitId }
+      : { categoryId }
+
     const [assets, totalCount] = await Promise.all([
       prisma.asset.findMany({
-        where: { categoryId },
+        where: whereClause,
         include: {
           department: {
             select: {
@@ -294,7 +308,7 @@ export async function getCategoryAssets(categoryId: string, page = 1, limit = 10
         skip,
         take: limit
       }),
-      prisma.asset.count({ where: { categoryId } })
+      prisma.asset.count({ where: whereClause })
     ])
 
     const totalPages = Math.ceil(totalCount / limit)
@@ -331,10 +345,14 @@ export async function getGLAccountsForCategories() {
   }
 }
 
-export async function getCategoryDetails(categoryId: string) {
+export async function getCategoryDetails(categoryId: string, businessUnitId?: string) {
   try {
+    const whereClause = businessUnitId 
+      ? { id: categoryId, businessUnitId }
+      : { id: categoryId }
+    
     const category = await prisma.assetCategory.findUnique({
-      where: { id: categoryId },
+      where: whereClause,
       include: {
         defaultAssetAccount: {
           select: {

@@ -50,7 +50,10 @@ export interface CreateAssetData {
 export async function getAssetCategories(businessUnitId: string) {
   try {
     const categories = await prisma.assetCategory.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        businessUnitId: businessUnitId
+      },
       select: {
         id: true,
         name: true,
@@ -90,12 +93,14 @@ export async function getAssetCategories(businessUnitId: string) {
   }
 }
 
-export async function getDepartments() {
+export async function getDepartments(businessUnitId?: string) {
   try {
+    const whereClause = businessUnitId 
+      ? { isActive: true, businessUnitId }
+      : { isActive: true }
+      
     const departments = await prisma.department.findMany({
-      where: { 
-        isActive: true 
-      },
+      where: whereClause,
       select: {
         id: true,
         name: true,

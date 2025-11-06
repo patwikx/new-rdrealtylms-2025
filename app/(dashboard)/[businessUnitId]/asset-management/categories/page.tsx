@@ -30,6 +30,7 @@ export default async function AssetCategoriesPage({ params, searchParams }: Asse
   
   try {
     const categoriesData = await getAssetCategories({
+      businessUnitId,
       search,
       page: parseInt(page),
       limit: 20

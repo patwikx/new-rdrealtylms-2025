@@ -112,7 +112,7 @@ export function CreateCategoryDialog({ open, onOpenChange, businessUnitId }: Cre
         defaultAccumulatedDepAccountId: data.defaultAccumulatedDepAccountId === "none" ? undefined : data.defaultAccumulatedDepAccountId
       }
       
-      const result = await createAssetCategory(processedData)
+      const result = await createAssetCategory(processedData, businessUnitId)
       
       if (result.error) {
         toast.error(result.error)

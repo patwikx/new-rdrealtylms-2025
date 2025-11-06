@@ -146,7 +146,7 @@ export function EditAssetDialog({
     try {
       const [categoriesData, departmentsData, glAccountsData] = await Promise.all([
         getAssetCategories(businessUnitId),
-        getDepartments(),
+        getDepartments(businessUnitId),
         getGLAccounts()
       ])
       

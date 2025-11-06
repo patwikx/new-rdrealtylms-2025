@@ -33,7 +33,7 @@ export default async function CategoryDetailsPage({ params }: CategoryDetailsPag
     }
 
     // Get category details
-    const category = await getCategoryDetails(id)
+    const category = await getCategoryDetails(id, businessUnitId)
     
     return (
       <div className="space-y-6">

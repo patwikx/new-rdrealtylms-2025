@@ -37,6 +37,7 @@ model BusinessUnit {
   inventoryVerifications InventoryVerification[]
   barcodeSettings        BarcodeSettings?
   materialRequests       MaterialRequest[]
+  assetCategories        AssetCategory[]
 }
 
 model User {
@@ -258,23 +259,26 @@ model Role {
 
 // Asset Categories
 model AssetCategory {
-  id          String   @id @default(uuid())
-  name        String
-  code        String   @unique
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  code           String   @unique
+  description    String?
+  businessUnitId String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   defaultAssetAccountId               String?
   defaultDepreciationExpenseAccountId String?
   defaultAccumulatedDepAccountId      String?
 
+  businessUnit         BusinessUnit? @relation(fields: [businessUnitId], references: [id], onDelete: Cascade)
   assets               Asset[]
-  defaultAssetAccount  GLAccount? @relation("CategoryAssetAccount", fields: [defaultAssetAccountId], references: [id])
-  defaultDepExpAccount GLAccount? @relation("CategoryDepExpAccount", fields: [defaultDepreciationExpenseAccountId], references: [id])
-  defaultAccDepAccount GLAccount? @relation("CategoryAccDepAccount", fields: [defaultAccumulatedDepAccountId], references: [id])
+  defaultAssetAccount  GLAccount?    @relation("CategoryAssetAccount", fields: [defaultAssetAccountId], references: [id])
+  defaultDepExpAccount GLAccount?    @relation("CategoryDepExpAccount", fields: [defaultDepreciationExpenseAccountId], references: [id])
+  defaultAccDepAccount GLAccount?    @relation("CategoryAccDepAccount", fields: [defaultAccumulatedDepAccountId], references: [id])
 
+  @@unique([code, businessUnitId])
   @@map("asset_categories")
 }
 
