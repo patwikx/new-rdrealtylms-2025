@@ -16,6 +16,7 @@ import {
   Calendar,
   Hash
 } from "lucide-react";
+import { CreateBusinessUnitDialog } from "../create-business-unit-dialog";
 
 interface BusinessUnit {
   id: string;
@@ -104,12 +105,7 @@ export function BusinessUnitsView({ businessUnits, currentUser, businessUnitId }
             Manage business units and their configurations
           </p>
         </div>
-        <Button asChild>
-          <Link href={`/${businessUnitId}/admin/business-units/create`} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Business Unit
-          </Link>
-        </Button>
+        <CreateBusinessUnitDialog />
       </div>
 
       {/* Search */}
