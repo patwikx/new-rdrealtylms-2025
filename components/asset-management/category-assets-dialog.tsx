@@ -86,7 +86,7 @@ export function CategoryAssetsDialog({
   const loadAssets = async (page: number) => {
     setIsLoading(true)
     try {
-      const data = await getCategoryAssets(category.id, page, 10)
+      const data = await getCategoryAssets(category.id, businessUnitId, page, 10)
       setAssetsData(data as any)
       setCurrentPage(page)
     } catch (error) {
