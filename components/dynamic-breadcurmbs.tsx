@@ -153,6 +153,9 @@ const routeConfig: Record<string, { label: string; icon?: React.ComponentType<{ 
   'roles': { label: 'Roles', icon: Shield },
   'roles/create': { label: 'Create Role', icon: Plus },
   
+  // System Permissions (Admin)
+  'admin/system-permissions': { label: 'System Permissions', icon: Shield },
+  
   // Profile & Settings
   'profile': { label: 'Profile', icon: UserCheck },
   'settings': { label: 'Settings', icon: Settings },
