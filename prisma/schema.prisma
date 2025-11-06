@@ -212,6 +212,9 @@ enum UserRole {
   MANAGER
   HR
   ADMIN
+  ACCTG
+  PURCHASER
+  MRS_COORDINATOR
 }
 
 enum EmployeeClassification {
