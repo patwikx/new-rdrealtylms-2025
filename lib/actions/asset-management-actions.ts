@@ -26,6 +26,10 @@ export interface AssetWithDetails {
   monthlyDepreciation: number | null
   depreciationRate: number | null
   depreciationPerUnit: number | null
+  // Pre-depreciation fields
+  originalPurchasePrice: number | null
+  priorDepreciationAmount: number
+  systemEntryBookValue: number | null
   barcodeValue: string | null
   tagNumber: string | null
   currentlyAssignedTo: string | null
@@ -223,12 +227,15 @@ export async function getAssets(filters: AssetFilters): Promise<AssetsResponse> 
     const transformedAssets: AssetWithDetails[] = assets.map(asset => ({
       ...asset,
       purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      originalPurchasePrice: asset.originalPurchasePrice ? Number(asset.originalPurchasePrice) : null,
       salvageValue: asset.salvageValue ? Number(asset.salvageValue) : null,
       currentBookValue: asset.currentBookValue ? Number(asset.currentBookValue) : null,
       accumulatedDepreciation: Number(asset.accumulatedDepreciation),
       monthlyDepreciation: asset.monthlyDepreciation ? Number(asset.monthlyDepreciation) : null,
       depreciationRate: asset.depreciationRate ? Number(asset.depreciationRate) : null,
       depreciationPerUnit: asset.depreciationPerUnit ? Number(asset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(asset.priorDepreciationAmount),
+      systemEntryBookValue: asset.systemEntryBookValue ? Number(asset.systemEntryBookValue) : null,
       specifications: asset.specifications as Record<string, unknown> | null,
       currentDeployment: asset.deployments[0] ? {
         id: asset.deployments[0].id,

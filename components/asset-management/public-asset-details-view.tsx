@@ -2,15 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+
 import { 
   Package, 
   Calendar, 
   DollarSign, 
   MapPin, 
   User, 
-  Building, 
-  Hash,
+  Building,
   FileText,
   Clock,
   Activity
@@ -37,12 +36,12 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800'
-      case 'INACTIVE': return 'bg-gray-100 text-gray-800'
-      case 'MAINTENANCE': return 'bg-yellow-100 text-yellow-800'
-      case 'DISPOSED': return 'bg-red-100 text-red-800'
-      case 'LOST': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'ACTIVE': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+      case 'INACTIVE': return 'bg-muted text-muted-foreground'
+      case 'MAINTENANCE': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+      case 'DISPOSED': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+      case 'LOST': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -51,10 +50,10 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <Package className="h-8 w-8 text-blue-600" />
+          <Package className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{asset.itemCode}</h1>
-            <p className="text-lg text-gray-600">{asset.description}</p>
+            <h1 className="text-3xl font-bold text-foreground">{asset.itemCode}</h1>
+            <p className="text-lg text-muted-foreground">{asset.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -62,7 +61,7 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
             {asset.status.replace(/_/g, ' ')}
           </Badge>
           {asset.isActive && (
-            <Badge variant="outline" className="text-green-600 border-green-600">
+            <Badge variant="outline" className="text-green-600 border-green-600 dark:text-green-400 dark:border-green-400">
               Active
             </Badge>
           )}
@@ -81,45 +80,45 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Item Code</label>
-                <p className="text-sm font-mono">{asset.itemCode}</p>
+                <label className="text-sm font-medium text-muted-foreground">Item Code</label>
+                <p className="text-sm font-mono text-foreground">{asset.itemCode}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
-                <p className="text-sm">{asset.category?.name || "Not specified"}</p>
+                <label className="text-sm font-medium text-muted-foreground">Category</label>
+                <p className="text-sm text-foreground">{asset.category?.name || "Not specified"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Serial Number</label>
-                <p className="text-sm font-mono">{asset.serialNumber || "Not specified"}</p>
+                <label className="text-sm font-medium text-muted-foreground">Serial Number</label>
+                <p className="text-sm font-mono text-foreground">{asset.serialNumber || "Not specified"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Model Number</label>
-                <p className="text-sm">{asset.modelNumber || "Not specified"}</p>
+                <label className="text-sm font-medium text-muted-foreground">Model Number</label>
+                <p className="text-sm text-foreground">{asset.modelNumber || "Not specified"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Brand</label>
-                <p className="text-sm">{asset.brand || "Not specified"}</p>
+                <label className="text-sm font-medium text-muted-foreground">Brand</label>
+                <p className="text-sm text-foreground">{asset.brand || "Not specified"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Quantity</label>
-                <p className="text-sm">{asset.quantity}</p>
+                <label className="text-sm font-medium text-muted-foreground">Quantity</label>
+                <p className="text-sm text-foreground">{asset.quantity}</p>
               </div>
             </div>
             
             {asset.location && (
               <div>
-                <label className="text-sm font-medium text-gray-500 flex items-center gap-1">
+                <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
                   Location
                 </label>
-                <p className="text-sm">{asset.location}</p>
+                <p className="text-sm text-foreground">{asset.location}</p>
               </div>
             )}
 
             {asset.notes && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Notes</label>
-                <p className="text-sm text-gray-700">{asset.notes}</p>
+                <label className="text-sm font-medium text-muted-foreground">Notes</label>
+                <p className="text-sm text-foreground">{asset.notes}</p>
               </div>
             )}
           </CardContent>
@@ -136,28 +135,28 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Purchase Price</label>
-                <p className="text-sm font-semibold">{formatCurrency(asset.purchasePrice)}</p>
+                <label className="text-sm font-medium text-muted-foreground">Purchase Price</label>
+                <p className="text-sm font-semibold text-foreground">{formatCurrency(asset.purchasePrice)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Current Book Value</label>
-                <p className="text-sm font-semibold">{formatCurrency(asset.currentBookValue)}</p>
+                <label className="text-sm font-medium text-muted-foreground">Current Book Value</label>
+                <p className="text-sm font-semibold text-foreground">{formatCurrency(asset.currentBookValue)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Accumulated Depreciation</label>
-                <p className="text-sm">{formatCurrency(asset.accumulatedDepreciation)}</p>
+                <label className="text-sm font-medium text-muted-foreground">Accumulated Depreciation</label>
+                <p className="text-sm text-foreground">{formatCurrency(asset.accumulatedDepreciation)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Purchase Date</label>
-                <p className="text-sm flex items-center gap-1">
+                <label className="text-sm font-medium text-muted-foreground">Purchase Date</label>
+                <p className="text-sm flex items-center gap-1 text-foreground">
                   <Calendar className="h-4 w-4" />
                   {formatDate(asset.purchaseDate)}
                 </p>
               </div>
               {asset.warrantyExpiry && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Warranty Expiry</label>
-                  <p className="text-sm flex items-center gap-1">
+                  <label className="text-sm font-medium text-muted-foreground">Warranty Expiry</label>
+                  <p className="text-sm flex items-center gap-1 text-foreground">
                     <Calendar className="h-4 w-4" />
                     {formatDate(asset.warrantyExpiry)}
                   </p>
@@ -177,25 +176,25 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Business Unit</label>
-              <p className="text-sm">{asset.businessUnit?.name} ({asset.businessUnit?.code})</p>
+              <label className="text-sm font-medium text-muted-foreground">Business Unit</label>
+              <p className="text-sm text-foreground">{asset.businessUnit?.name} ({asset.businessUnit?.code})</p>
             </div>
             {asset.department && (
               <div>
-                <label className="text-sm font-medium text-gray-500">Department</label>
-                <p className="text-sm">{asset.department.name}</p>
+                <label className="text-sm font-medium text-muted-foreground">Department</label>
+                <p className="text-sm text-foreground">{asset.department.name}</p>
               </div>
             )}
             <div>
-              <label className="text-sm font-medium text-gray-500">Created By</label>
-              <p className="text-sm flex items-center gap-1">
+              <label className="text-sm font-medium text-muted-foreground">Created By</label>
+              <p className="text-sm flex items-center gap-1 text-foreground">
                 <User className="h-4 w-4" />
                 {asset.createdBy?.name} ({asset.createdBy?.employeeId})
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Created Date</label>
-              <p className="text-sm flex items-center gap-1">
+              <label className="text-sm font-medium text-muted-foreground">Created Date</label>
+              <p className="text-sm flex items-center gap-1 text-foreground">
                 <Clock className="h-4 w-4" />
                 {formatDate(asset.createdAt)}
               </p>
@@ -214,23 +213,23 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Assigned To</label>
-                <p className="text-sm font-semibold">
+                <label className="text-sm font-medium text-muted-foreground">Assigned To</label>
+                <p className="text-sm font-semibold text-foreground">
                   {asset.currentDeployment.employee.name} ({asset.currentDeployment.employee.employeeId})
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Transmittal Number</label>
-                <p className="text-sm font-mono">{asset.currentDeployment.transmittalNumber}</p>
+                <label className="text-sm font-medium text-muted-foreground">Transmittal Number</label>
+                <p className="text-sm font-mono text-foreground">{asset.currentDeployment.transmittalNumber}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Deployed Date</label>
-                <p className="text-sm">{formatDate(asset.currentDeployment.deployedDate)}</p>
+                <label className="text-sm font-medium text-muted-foreground">Deployed Date</label>
+                <p className="text-sm text-foreground">{formatDate(asset.currentDeployment.deployedDate)}</p>
               </div>
               {asset.currentDeployment.expectedReturnDate && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Expected Return</label>
-                  <p className="text-sm">{formatDate(asset.currentDeployment.expectedReturnDate)}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Expected Return</label>
+                  <p className="text-sm text-foreground">{formatDate(asset.currentDeployment.expectedReturnDate)}</p>
                 </div>
               )}
             </CardContent>
@@ -251,21 +250,21 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
             <div className="space-y-4">
               {asset.recentHistory.slice(0, 10).map((history: any, index: number) => (
                 <div key={history.id} className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {history.action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         {formatDate(history.performedAt)}
                       </p>
                     </div>
                     {history.notes && (
-                      <p className="text-sm text-gray-600 mt-1">{history.notes}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{history.notes}</p>
                     )}
                     {history.employee && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         by {history.employee.name}
                       </p>
                     )}
@@ -278,7 +277,7 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
       )}
 
       {/* Footer */}
-      <div className="mt-8 text-center text-sm text-gray-500">
+      <div className="mt-8 text-center text-sm text-muted-foreground">
         <p>Asset information accessed via QR code</p>
         <p>Last updated: {formatDate(asset.updatedAt)}</p>
       </div>

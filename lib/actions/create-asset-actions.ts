@@ -36,6 +36,20 @@ export interface CreateAssetData {
   salvageValue?: number
   depreciationStartDate?: Date
   
+  // Pre-depreciation fields for assets already partially depreciated
+  originalPurchaseDate?: Date
+  originalPurchasePrice?: number
+  originalUsefulLifeYears?: number
+  originalUsefulLifeMonths?: number
+  priorDepreciationAmount?: number
+  priorDepreciationMonths?: number
+  systemEntryDate?: Date
+  systemEntryBookValue?: number
+  remainingUsefulLifeYears?: number
+  remainingUsefulLifeMonths?: number
+  isPreDepreciated?: boolean
+  useSystemEntryAsStart?: boolean
+  
   // Units of Production specific
   totalExpectedUnits?: number
   
@@ -218,56 +232,79 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
     // Calculate depreciation values if depreciation is configured
     let calculatedValues = {}
     
-    if (data.depreciationMethod && data.purchasePrice && data.usefulLifeYears) {
-      const purchasePrice = data.purchasePrice
-      const salvageValue = data.salvageValue || 0
-      const depreciableAmount = purchasePrice - salvageValue
-      
-      switch (data.depreciationMethod) {
-        case 'STRAIGHT_LINE':
-          const totalMonths = (data.usefulLifeYears * 12) + (data.usefulLifeMonths || 0)
-          calculatedValues = {
-            monthlyDepreciation: totalMonths > 0 ? depreciableAmount / totalMonths : 0,
-            currentBookValue: purchasePrice
-          }
-          break
-          
-        case 'DECLINING_BALANCE':
-          if (data.depreciationRate) {
-            const annualDepreciation = purchasePrice * (data.depreciationRate / 100)
+    if (data.depreciationMethod) {
+      // Handle pre-depreciated assets
+      if (data.isPreDepreciated && data.systemEntryBookValue && data.originalUsefulLifeYears) {
+        const remainingBookValue = data.systemEntryBookValue - (data.salvageValue || 0)
+        const originalTotalMonths = (data.originalUsefulLifeYears * 12) + (data.originalUsefulLifeMonths || 0)
+        const priorMonths = data.priorDepreciationMonths || 0
+        const remainingMonths = originalTotalMonths - priorMonths
+        
+        calculatedValues = {
+          monthlyDepreciation: remainingMonths > 0 ? remainingBookValue / remainingMonths : 0,
+          currentBookValue: data.systemEntryBookValue,
+          accumulatedDepreciation: data.priorDepreciationAmount || 0,
+          remainingUsefulLifeYears: Math.floor(remainingMonths / 12),
+          remainingUsefulLifeMonths: remainingMonths % 12
+        }
+      }
+      // Standard depreciation calculation
+      else if (data.purchasePrice && data.usefulLifeYears) {
+        const purchasePrice = data.purchasePrice
+        const salvageValue = data.salvageValue || 0
+        const depreciableAmount = purchasePrice - salvageValue
+        
+        switch (data.depreciationMethod) {
+          case 'STRAIGHT_LINE':
+            const totalMonths = (data.usefulLifeYears * 12) + (data.usefulLifeMonths || 0)
             calculatedValues = {
-              monthlyDepreciation: annualDepreciation / 12,
-              currentBookValue: purchasePrice,
-              depreciationRate: data.depreciationRate
-            }
-          }
-          break
-          
-        case 'UNITS_OF_PRODUCTION':
-          if (data.totalExpectedUnits && data.totalExpectedUnits > 0) {
-            calculatedValues = {
-              depreciationPerUnit: depreciableAmount / data.totalExpectedUnits,
-              totalExpectedUnits: data.totalExpectedUnits,
+              monthlyDepreciation: totalMonths > 0 ? depreciableAmount / totalMonths : 0,
               currentBookValue: purchasePrice
             }
-          }
-          break
-          
-        case 'SUM_OF_YEARS_DIGITS':
-          const totalYears = data.usefulLifeYears
-          const sumOfYears = (totalYears * (totalYears + 1)) / 2
-          const firstYearDepreciation = (depreciableAmount * totalYears) / sumOfYears
-          calculatedValues = {
-            monthlyDepreciation: firstYearDepreciation / 12,
-            currentBookValue: purchasePrice
-          }
-          break
+            break
+            
+          case 'DECLINING_BALANCE':
+            if (data.depreciationRate) {
+              const annualDepreciation = purchasePrice * (data.depreciationRate / 100)
+              calculatedValues = {
+                monthlyDepreciation: annualDepreciation / 12,
+                currentBookValue: purchasePrice,
+                depreciationRate: data.depreciationRate
+              }
+            }
+            break
+            
+          case 'UNITS_OF_PRODUCTION':
+            if (data.totalExpectedUnits && data.totalExpectedUnits > 0) {
+              calculatedValues = {
+                depreciationPerUnit: depreciableAmount / data.totalExpectedUnits,
+                totalExpectedUnits: data.totalExpectedUnits,
+                currentBookValue: purchasePrice
+              }
+            }
+            break
+            
+          case 'SUM_OF_YEARS_DIGITS':
+            const totalYears = data.usefulLifeYears
+            const sumOfYears = (totalYears * (totalYears + 1)) / 2
+            const firstYearDepreciation = (depreciableAmount * totalYears) / sumOfYears
+            calculatedValues = {
+              monthlyDepreciation: firstYearDepreciation / 12,
+              currentBookValue: purchasePrice
+            }
+            break
+        }
       }
     }
     
-    // Set next depreciation date if depreciation start date is provided
+    // Set next depreciation date
     let nextDepreciationDate = null
-    if (data.depreciationStartDate) {
+    if (data.isPreDepreciated && data.useSystemEntryAsStart && data.systemEntryDate) {
+      // For pre-depreciated assets, start from system entry date
+      nextDepreciationDate = new Date(data.systemEntryDate)
+      nextDepreciationDate.setMonth(nextDepreciationDate.getMonth() + 1)
+    } else if (data.depreciationStartDate) {
+      // Standard depreciation start date
       nextDepreciationDate = new Date(data.depreciationStartDate)
       nextDepreciationDate.setMonth(nextDepreciationDate.getMonth() + 1)
     }
@@ -307,6 +344,20 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
         depreciationStartDate: data.depreciationStartDate || null,
         nextDepreciationDate,
         
+        // Pre-depreciation fields
+        originalPurchaseDate: data.originalPurchaseDate || null,
+        originalPurchasePrice: data.originalPurchasePrice || null,
+        originalUsefulLifeYears: data.originalUsefulLifeYears || null,
+        originalUsefulLifeMonths: data.originalUsefulLifeMonths || null,
+        priorDepreciationAmount: data.priorDepreciationAmount || 0,
+        priorDepreciationMonths: data.priorDepreciationMonths || 0,
+        systemEntryDate: data.systemEntryDate || null,
+        systemEntryBookValue: data.systemEntryBookValue || null,
+        remainingUsefulLifeYears: data.remainingUsefulLifeYears || null,
+        remainingUsefulLifeMonths: data.remainingUsefulLifeMonths || null,
+        isPreDepreciated: data.isPreDepreciated || false,
+        useSystemEntryAsStart: data.useSystemEntryAsStart || false,
+        
         // QR Code - will be generated after asset creation
         barcodeValue: null,
         barcodeType: 'QR_CODE',
@@ -341,11 +392,26 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
       // Continue without QR code - can be generated later
     }
     
+    // Convert Decimal fields to numbers for client serialization
+    const serializedAsset = {
+      ...asset,
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      originalPurchasePrice: asset.originalPurchasePrice ? Number(asset.originalPurchasePrice) : null,
+      salvageValue: asset.salvageValue ? Number(asset.salvageValue) : null,
+      currentBookValue: asset.currentBookValue ? Number(asset.currentBookValue) : null,
+      accumulatedDepreciation: Number(asset.accumulatedDepreciation),
+      monthlyDepreciation: asset.monthlyDepreciation ? Number(asset.monthlyDepreciation) : null,
+      depreciationRate: asset.depreciationRate ? Number(asset.depreciationRate) : null,
+      depreciationPerUnit: asset.depreciationPerUnit ? Number(asset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(asset.priorDepreciationAmount),
+      systemEntryBookValue: asset.systemEntryBookValue ? Number(asset.systemEntryBookValue) : null
+    }
+
     revalidatePath(`/${businessUnitId}/asset-management/assets`)
     return { 
       success: "Asset created successfully", 
       data: { 
-        id: asset.id, 
+        ...serializedAsset,
         qrCode: qrCodeDataURL 
       } 
     }

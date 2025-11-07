@@ -35,6 +35,7 @@ interface AssetNetBookEntry {
   dateAcquired: string;
   accumulatedCost: number;
   accumulatedDepreciation: number;
+  usefulLifeRemainingMonths: number | null;
   netBookValue: number;
   monthlyDepreciation: number;
   department: string;
@@ -74,12 +75,35 @@ export function AssetsNetBookValuePreview({
         entriesByGLAccount.set(glAccount, []);
       }
       
+      // Calculate remaining useful life in months
+      const calculateRemainingMonths = () => {
+        const totalLifeMonths = (asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0);
+        const currentDate = new Date();
+        const startDate = asset.depreciationStartDate ? new Date(asset.depreciationStartDate) : null;
+        
+        if (!startDate || totalLifeMonths === 0) {
+          return null;
+        }
+        
+        // Calculate months elapsed since depreciation started in the system
+        const monthsElapsedInSystem = Math.max(0, 
+          (currentDate.getFullYear() - startDate.getFullYear()) * 12 + 
+          (currentDate.getMonth() - startDate.getMonth())
+        );
+        
+        // Add prior depreciation months (months depreciated before system entry)
+        const totalMonthsDepreciated = monthsElapsedInSystem + (asset.priorDepreciationMonths || 0);
+        
+        return Math.max(0, totalLifeMonths - totalMonthsDepreciated);
+      };
+
       entriesByGLAccount.get(glAccount)!.push({
         assetCode: asset.itemCode,
         assetDescription: asset.description,
         dateAcquired: format(new Date(asset.purchaseDate!), 'MM/dd/yyyy'),
         accumulatedCost: Number(asset.purchasePrice),
         accumulatedDepreciation: Number(asset.accumulatedDepreciation),
+        usefulLifeRemainingMonths: calculateRemainingMonths(),
         netBookValue: Number(asset.currentBookValue),
         monthlyDepreciation: Number(asset.monthlyDepreciation || 0),
         department: asset.department?.name || 'General'
@@ -178,7 +202,7 @@ export function AssetsNetBookValuePreview({
             
             .column-headers {
               display: grid;
-              grid-template-columns: 80px 1fr 80px 100px 120px 100px 100px;
+              grid-template-columns: 80px 1fr 80px 100px 120px 80px 100px 100px;
               gap: 8px;
               padding: 8px 0;
               font-weight: bold;
@@ -186,10 +210,12 @@ export function AssetsNetBookValuePreview({
               margin-bottom: 10px;
             }
             
+            .column-headers span:nth-child(3),
             .column-headers span:nth-child(4),
             .column-headers span:nth-child(5),
             .column-headers span:nth-child(6),
-            .column-headers span:nth-child(7) {
+            .column-headers span:nth-child(7),
+            .column-headers span:nth-child(8) {
               text-align: right;
             }
             
@@ -205,7 +231,7 @@ export function AssetsNetBookValuePreview({
             
             .entry-row {
               display: grid;
-              grid-template-columns: 80px 1fr 80px 100px 120px 100px 100px;
+              grid-template-columns: 80px 1fr 80px 100px 120px 80px 100px 100px;
               gap: 8px;
               padding: 3px 0;
               font-size: 10px;
@@ -228,7 +254,7 @@ export function AssetsNetBookValuePreview({
             
             .subtotal-amounts {
               display: grid;
-              grid-template-columns: 100px 120px 100px;
+              grid-template-columns: 100px 120px 80px 100px;
               gap: 8px;
               font-family: 'Courier New', monospace;
             }
@@ -259,7 +285,7 @@ export function AssetsNetBookValuePreview({
             
             .total-amounts {
               display: grid;
-              grid-template-columns: 100px 120px 100px;
+              grid-template-columns: 100px 120px 80px 100px;
               gap: 8px;
               font-family: 'Courier New', monospace;
               font-size: 13px;
@@ -288,6 +314,7 @@ export function AssetsNetBookValuePreview({
               <span>Date Acquired</span>
               <span>Accumulated Cost</span>
               <span>Accumulated Depreciation</span>
+              <span>Useful Life Remaining (Months)</span>
               <span>Net Book Value</span>
               <span>Monthly Depreciation</span>
             </div>
@@ -308,9 +335,10 @@ export function AssetsNetBookValuePreview({
                     <div class="entry-row">
                       <span>${entry.assetCode}</span>
                       <span>${entry.assetDescription}</span>
-                      <span>${entry.dateAcquired}</span>
+                      <span class="col-amount">${entry.dateAcquired}</span>
                       <span class="col-amount">${formatCurrency(entry.accumulatedCost)}</span>
                       <span class="col-amount">${formatCurrency(entry.accumulatedDepreciation)}</span>
+                      <span class="col-amount">${entry.usefulLifeRemainingMonths !== null ? entry.usefulLifeRemainingMonths + ' months' : 'N/A'}</span>
                       <span class="col-amount">${formatCurrency(entry.netBookValue)}</span>
                       <span class="col-amount">${formatCurrency(entry.monthlyDepreciation)}</span>
                     </div>
@@ -322,6 +350,7 @@ export function AssetsNetBookValuePreview({
                     <div class="subtotal-amounts">
                       <span class="col-amount">${formatCurrency(subtotalCost)}</span>
                       <span class="col-amount">${formatCurrency(subtotalDepreciation)}</span>
+                      <span class="col-amount">—</span>
                       <span class="col-amount">${formatCurrency(subtotalNetBook)}</span>
                     </div>
                   </div>
@@ -337,6 +366,7 @@ export function AssetsNetBookValuePreview({
                 <div class="total-amounts">
                   <span class="col-amount">${formatCurrency(totalAccumulatedCost)}</span>
                   <span class="col-amount">${formatCurrency(totalAccumulatedDepreciation)}</span>
+                  <span class="col-amount">—</span>
                   <span class="col-amount">${formatCurrency(totalNetBookValue)}</span>
                 </div>
               </div>
@@ -408,6 +438,7 @@ export function AssetsNetBookValuePreview({
                   <span className="col-date">Date Acquired</span>
                   <span className="col-cost-header">Accumulated Cost</span>
                   <span className="col-depreciation-header">Accumulated Depreciation</span>
+                  <span className="col-remaining-header">Useful Life Remaining (Months)</span>
                   <span className="col-netbook-header">Net Book Value</span>
                   <span className="col-monthly-header">Monthly Depreciation</span>
                 </div>
@@ -435,6 +466,12 @@ export function AssetsNetBookValuePreview({
                           <span className="col-date">{entry.dateAcquired}</span>
                           <span className="col-cost">{formatCurrency(entry.accumulatedCost)}</span>
                           <span className="col-depreciation">{formatCurrency(entry.accumulatedDepreciation)}</span>
+                          <span className="col-remaining">
+                            {entry.usefulLifeRemainingMonths !== null 
+                              ? `${entry.usefulLifeRemainingMonths} months` 
+                              : 'N/A'
+                            }
+                          </span>
                           <span className="col-netbook">{formatCurrency(entry.netBookValue)}</span>
                           <span className="col-monthly">{formatCurrency(entry.monthlyDepreciation)}</span>
                         </div>
@@ -446,6 +483,7 @@ export function AssetsNetBookValuePreview({
                         <div className="subtotal-amounts">
                           <span className="subtotal-cost">{formatCurrency(subtotalCost)}</span>
                           <span className="subtotal-depreciation">{formatCurrency(subtotalDepreciation)}</span>
+                          <span className="subtotal-remaining">—</span>
                           <span className="subtotal-netbook">{formatCurrency(subtotalNetBook)}</span>
                         </div>
                       </div>
@@ -461,6 +499,7 @@ export function AssetsNetBookValuePreview({
                     <div className="total-amounts">
                       <span className="total-cost">{formatCurrency(totalAccumulatedCost)}</span>
                       <span className="total-depreciation">{formatCurrency(totalAccumulatedDepreciation)}</span>
+                      <span className="total-remaining">—</span>
                       <span className="total-netbook">{formatCurrency(totalNetBookValue)}</span>
                     </div>
                   </div>
@@ -523,7 +562,7 @@ export function AssetsNetBookValuePreview({
 
         .header-row {
           display: grid;
-          grid-template-columns: 80px 1fr 80px 100px 120px 100px 100px;
+          grid-template-columns: 80px 1fr 80px 100px 120px 80px 100px 100px;
           gap: 8px;
           padding: 8px 0;
           font-weight: bold;
@@ -531,7 +570,7 @@ export function AssetsNetBookValuePreview({
           color: hsl(var(--foreground));
         }
 
-        .col-cost-header, .col-depreciation-header, .col-netbook-header, .col-monthly-header {
+        .col-date, .col-cost-header, .col-depreciation-header, .col-remaining-header, .col-netbook-header, .col-monthly-header {
           text-align: right;
         }
 
@@ -552,14 +591,14 @@ export function AssetsNetBookValuePreview({
 
         .entry-row {
           display: grid;
-          grid-template-columns: 80px 1fr 80px 100px 120px 100px 100px;
+          grid-template-columns: 80px 1fr 80px 100px 120px 80px 100px 100px;
           gap: 8px;
           padding: 3px 0;
           font-size: 10px;
           color: hsl(var(--foreground));
         }
 
-        .col-cost, .col-depreciation, .col-netbook, .col-monthly {
+        .col-date, .col-cost, .col-depreciation, .col-remaining, .col-netbook, .col-monthly {
           text-align: right;
           font-family: 'Courier New', monospace;
         }
@@ -577,11 +616,11 @@ export function AssetsNetBookValuePreview({
 
         .subtotal-amounts {
           display: grid;
-          grid-template-columns: 100px 120px 100px;
+          grid-template-columns: 100px 120px 80px 100px;
           gap: 8px;
         }
 
-        .subtotal-cost, .subtotal-depreciation, .subtotal-netbook {
+        .subtotal-cost, .subtotal-depreciation, .subtotal-remaining, .subtotal-netbook {
           text-align: right;
           font-family: 'Courier New', monospace;
         }
@@ -613,11 +652,11 @@ export function AssetsNetBookValuePreview({
 
         .total-amounts {
           display: grid;
-          grid-template-columns: 100px 120px 100px;
+          grid-template-columns: 100px 120px 80px 100px;
           gap: 8px;
         }
 
-        .total-cost, .total-depreciation, .total-netbook {
+        .total-cost, .total-depreciation, .total-remaining, .total-netbook {
           text-align: right;
           font-family: 'Courier New', monospace;
           font-size: 13px;
@@ -686,12 +725,12 @@ export function AssetsNetBookValuePreview({
           }
 
           .header-row, .entry-row {
-            grid-template-columns: 70px 1fr 70px 90px 110px 90px 90px;
+            grid-template-columns: 70px 1fr 70px 90px 110px 70px 90px 90px;
             gap: 6px;
           }
 
           .subtotal-amounts, .total-amounts {
-            grid-template-columns: 90px 110px 90px;
+            grid-template-columns: 90px 110px 70px 90px;
             gap: 6px;
           }
         }
@@ -702,13 +741,13 @@ export function AssetsNetBookValuePreview({
           }
 
           .header-row, .entry-row {
-            grid-template-columns: 60px 1fr 60px 80px 100px 80px 80px;
+            grid-template-columns: 60px 1fr 60px 80px 100px 60px 80px 80px;
             gap: 4px;
             font-size: 9px;
           }
 
           .subtotal-amounts, .total-amounts {
-            grid-template-columns: 80px 100px 80px;
+            grid-template-columns: 80px 100px 60px 80px;
             gap: 4px;
           }
         }

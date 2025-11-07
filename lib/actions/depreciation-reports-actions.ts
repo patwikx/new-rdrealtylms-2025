@@ -74,6 +74,7 @@ export interface DepreciationAnalysisData {
   depreciationRate: number;
   totalDepreciationToDate: number;
   projectedFullDepreciationDate: Date | null;
+  priorDepreciationMonths: number;
   status: string;
   location: string | null;
   currentlyAssignedTo: string | null;
@@ -451,6 +452,7 @@ export async function getDepreciationAnalysis(
       depreciationRate,
       totalDepreciationToDate: totalDepreciationToDate.toNumber(),
       projectedFullDepreciationDate,
+      priorDepreciationMonths: asset.priorDepreciationMonths,
       status: asset.status,
       location: asset.location,
       currentlyAssignedTo: asset.currentlyAssignedTo,

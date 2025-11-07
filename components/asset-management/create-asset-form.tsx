@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
-import { CalendarIcon, Calculator, Package, DollarSign, Settings } from "lucide-react"
+import { CalendarIcon, Calculator, Package, DollarSign, Settings, History } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Switch } from "@/components/ui/switch"
 
 import { toast } from "sonner"
@@ -65,6 +65,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
   const [glAccounts, setGLAccounts] = useState<GLAccount[]>([])
   const [selectedCategory, setSelectedCategory] = useState<AssetCategory | null>(null)
   const [autoGenerateCode, setAutoGenerateCode] = useState(true)
+  const [isPreDepreciated, setIsPreDepreciated] = useState(false)
 
 
   const form = useForm<CreateAssetData>({
@@ -85,7 +86,12 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
       usefulLifeMonths: 0,
       depreciationMethod: "STRAIGHT_LINE",
       status: "AVAILABLE",
-      isActive: true
+      isActive: true,
+      // Pre-depreciation defaults
+      isPreDepreciated: false,
+      useSystemEntryAsStart: false,
+      priorDepreciationAmount: 0,
+      priorDepreciationMonths: 0
     }
   })
 
@@ -94,6 +100,11 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
   const watchedPurchasePrice = form.watch("purchasePrice")
   const watchedUsefulLifeYears = form.watch("usefulLifeYears")
   const watchedSalvageValue = form.watch("salvageValue")
+  const watchedIsPreDepreciated = form.watch("isPreDepreciated")
+  const watchedOriginalPurchasePrice = form.watch("originalPurchasePrice")
+  const watchedOriginalUsefulLifeYears = form.watch("originalUsefulLifeYears")
+  const watchedPriorDepreciationAmount = form.watch("priorDepreciationAmount")
+  const watchedSystemEntryBookValue = form.watch("systemEntryBookValue")
 
   // Load initial data
   useEffect(() => {
@@ -116,6 +127,47 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
     
     loadData()
   }, [businessUnitId])
+
+  // Auto-sync pre-depreciation fields with standard fields
+  useEffect(() => {
+    if (watchedIsPreDepreciated) {
+      const originalPurchaseDate = form.watch("originalPurchaseDate")
+      const originalPurchasePrice = form.watch("originalPurchasePrice")
+      const originalUsefulLifeYears = form.watch("originalUsefulLifeYears")
+      const originalUsefulLifeMonths = form.watch("originalUsefulLifeMonths")
+      const systemEntryDate = form.watch("systemEntryDate")
+
+      // Sync purchase information
+      if (originalPurchaseDate) {
+        form.setValue("purchaseDate", originalPurchaseDate)
+      }
+      if (originalPurchasePrice) {
+        form.setValue("purchasePrice", originalPurchasePrice)
+      }
+      
+      // Sync depreciation information
+      if (originalUsefulLifeYears) {
+        form.setValue("usefulLifeYears", originalUsefulLifeYears)
+      }
+      if (originalUsefulLifeMonths !== undefined) {
+        form.setValue("usefulLifeMonths", originalUsefulLifeMonths)
+      }
+      
+      // Set depreciation start date to system entry date if useSystemEntryAsStart is true
+      if (systemEntryDate && form.watch("useSystemEntryAsStart")) {
+        form.setValue("depreciationStartDate", systemEntryDate)
+      }
+    }
+  }, [
+    watchedIsPreDepreciated,
+    form.watch("originalPurchaseDate"),
+    form.watch("originalPurchasePrice"),
+    form.watch("originalUsefulLifeYears"),
+    form.watch("originalUsefulLifeMonths"),
+    form.watch("systemEntryDate"),
+    form.watch("useSystemEntryAsStart"),
+    form
+  ])
 
   // Handle category selection
   useEffect(() => {
@@ -149,6 +201,17 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
 
   // Calculate estimated monthly depreciation
   const calculateMonthlyDepreciation = () => {
+    // Handle pre-depreciated assets
+    if (watchedIsPreDepreciated && watchedSystemEntryBookValue && watchedOriginalUsefulLifeYears) {
+      const remainingBookValue = watchedSystemEntryBookValue - (watchedSalvageValue || 0)
+      const originalTotalMonths = watchedOriginalUsefulLifeYears * 12 + (form.watch("originalUsefulLifeMonths") || 0)
+      const priorMonths = watchedPriorDepreciationAmount ? form.watch("priorDepreciationMonths") || 0 : 0
+      const remainingMonths = originalTotalMonths - priorMonths
+      
+      return remainingMonths > 0 ? remainingBookValue / remainingMonths : 0
+    }
+    
+    // Standard depreciation calculation
     if (!watchedPurchasePrice || !watchedUsefulLifeYears || !watchedDepreciationMethod) {
       return 0
     }
@@ -228,14 +291,14 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
           </div>
 
           {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
                 <Package className="h-5 w-5" />
                 Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h3>
+            </div>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
@@ -510,135 +573,784 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                   )}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Purchase Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Purchase Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="purchaseDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Purchase Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date > new Date()}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="purchasePrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Purchase Price</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="warrantyExpiry"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Warranty Expiry</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {!(watchedIsPreDepreciated || isPreDepreciated) && (
+            <div className="space-y-4">
+              <div className="pb-2 border-b border-border">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Purchase Information
+                </h3>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="purchaseDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Purchase Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date > new Date()}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-          {/* Financial Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Financial Configuration
-              </CardTitle>
-              {selectedCategory && (
-                <div className="text-sm text-muted-foreground">
-                  Default accounts from category: {selectedCategory.name}
+                  <FormField
+                    control={form.control}
+                    name="purchasePrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Purchase Price</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="warrantyExpiry"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Warranty Expiry</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date < new Date()}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+          {/* Depreciation Configuration - Only show when pre-depreciation is NOT enabled */}
+          {!(watchedIsPreDepreciated || isPreDepreciated) && (
+            <div className="space-y-4">
+              <div className="pb-2 border-b border-border">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Depreciation Configuration
+                </h3>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="depreciationMethod"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Depreciation Method</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select method" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="STRAIGHT_LINE">Straight Line</SelectItem>
+                            <SelectItem value="DECLINING_BALANCE">Declining Balance</SelectItem>
+                            <SelectItem value="UNITS_OF_PRODUCTION">Units of Production</SelectItem>
+                            <SelectItem value="SUM_OF_YEARS_DIGITS">Sum of Years Digits</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="depreciationStartDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Depreciation Start Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="usefulLifeYears"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Useful Life (Years)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="usefulLifeMonths"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Months</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="11"
+                            placeholder="0"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="salvageValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Salvage Value</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Method-specific fields */}
+                {watchedDepreciationMethod === 'DECLINING_BALANCE' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="depreciationRate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Depreciation Rate (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {watchedDepreciationMethod === 'UNITS_OF_PRODUCTION' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="totalExpectedUnits"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Expected Units</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              placeholder="0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {/* Depreciation Preview */}
+                {((watchedPurchasePrice && watchedUsefulLifeYears) || (watchedIsPreDepreciated && watchedSystemEntryBookValue)) && (
+                  <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                    <h4 className="text-sm font-medium mb-2">
+                      {watchedIsPreDepreciated ? "Future Depreciation Preview" : "Depreciation Preview"}
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">
+                          {watchedIsPreDepreciated ? "Current Book Value:" : "Purchase Price:"}
+                        </span>
+                        <p className="font-medium">
+                          ₱{(watchedIsPreDepreciated ? (watchedSystemEntryBookValue || 0) : (watchedPurchasePrice || 0)).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Salvage Value:</span>
+                        <p className="font-medium">₱{(watchedSalvageValue || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">
+                          {watchedIsPreDepreciated ? "Remaining Depreciable:" : "Depreciable Amount:"}
+                        </span>
+                        <p className="font-medium">
+                          ₱{watchedIsPreDepreciated 
+                            ? ((watchedSystemEntryBookValue || 0) - (watchedSalvageValue || 0)).toLocaleString()
+                            : ((watchedPurchasePrice || 0) - (watchedSalvageValue || 0)).toLocaleString()
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Est. Monthly Depreciation:</span>
+                        <p className="font-medium">₱{calculateMonthlyDepreciation().toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {watchedIsPreDepreciated && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        * Calculation based on remaining book value and remaining useful life
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Pre-Depreciation Configuration */}
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Pre-Depreciation Configuration
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Use this section if the asset was already depreciating before being entered into the system
+              </p>
+            </div>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="isPreDepreciated"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked)
+                          setIsPreDepreciated(checked)
+                          if (!checked) {
+                            // Reset pre-depreciation fields when disabled
+                            form.setValue("originalPurchaseDate", undefined)
+                            form.setValue("originalPurchasePrice", undefined)
+                            form.setValue("originalUsefulLifeYears", undefined)
+                            form.setValue("originalUsefulLifeMonths", undefined)
+                            form.setValue("priorDepreciationAmount", 0)
+                            form.setValue("priorDepreciationMonths", 0)
+                            form.setValue("systemEntryDate", undefined)
+                            form.setValue("systemEntryBookValue", undefined)
+                            form.setValue("remainingUsefulLifeYears", undefined)
+                            form.setValue("remainingUsefulLifeMonths", undefined)
+                            form.setValue("useSystemEntryAsStart", false)
+                          } else {
+                            // When enabling pre-depreciation, set system entry date to today
+                            form.setValue("systemEntryDate", new Date())
+                            form.setValue("useSystemEntryAsStart", true)
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm font-medium">
+                      This asset was already depreciating before system entry
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              {(watchedIsPreDepreciated || isPreDepreciated) && (
+                <div className="space-y-6 p-4 border rounded-lg bg-muted/20">
+                  {/* Depreciation Method and Salvage Value */}
+                  <div>
+                    <div className="text-sm font-medium text-foreground mb-3">
+                      Depreciation Settings
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="depreciationMethod"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Depreciation Method <span className="text-red-500">*</span></FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select method" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="STRAIGHT_LINE">Straight Line</SelectItem>
+                                <SelectItem value="DECLINING_BALANCE">Declining Balance</SelectItem>
+                                <SelectItem value="UNITS_OF_PRODUCTION">Units of Production</SelectItem>
+                                <SelectItem value="SUM_OF_YEARS_DIGITS">Sum of Years Digits</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="salvageValue"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Salvage Value</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Original Asset Information */}
+                  <div>
+                    <div className="text-sm font-medium text-foreground mb-3">
+                      Original Asset Information
+                    </div>
+                  
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="originalPurchaseDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Original Purchase Date <span className="text-red-500">*</span></FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick original purchase date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="originalPurchasePrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Original Purchase Price <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="systemEntryDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>System Entry Date <span className="text-red-500">*</span></FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick system entry date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date > new Date()}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="warrantyExpiry"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Warranty Expiry</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick warranty expiry date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date()}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                    <FormField
+                      control={form.control}
+                      name="originalUsefulLifeYears"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Original Useful Life (Years) <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              placeholder="0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="originalUsefulLifeMonths"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Additional Months</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="11"
+                              placeholder="0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="priorDepreciationAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prior Depreciation Amount <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="priorDepreciationMonths"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prior Depreciation Months <span className="text-red-500">*</span></FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="systemEntryBookValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>System Entry Book Value <span className="text-red-500">*</span></FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="useSystemEntryAsStart"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          Start future depreciation from system entry date (recommended)
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Pre-depreciation Preview */}
+                  {watchedOriginalPurchasePrice && watchedPriorDepreciationAmount && (
+                    <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <h4 className="text-sm font-medium mb-2 text-blue-900 dark:text-blue-100">Pre-Depreciation Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-700 dark:text-blue-300">Original Cost:</span>
+                          <p className="font-medium text-blue-900 dark:text-blue-100">₱{watchedOriginalPurchasePrice.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-blue-700 dark:text-blue-300">Prior Depreciation:</span>
+                          <p className="font-medium text-blue-900 dark:text-blue-100">₱{watchedPriorDepreciationAmount.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-blue-700 dark:text-blue-300">Calculated Book Value:</span>
+                          <p className="font-medium text-blue-900 dark:text-blue-100">₱{(watchedOriginalPurchasePrice - watchedPriorDepreciationAmount).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <span className="text-blue-700 dark:text-blue-300">Entry Book Value:</span>
+                          <p className="font-medium text-blue-900 dark:text-blue-100">₱{(watchedSystemEntryBookValue || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      {watchedSystemEntryBookValue && Math.abs((watchedOriginalPurchasePrice - watchedPriorDepreciationAmount) - watchedSystemEntryBookValue) > 0.01 && (
+                        <div className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                          ⚠️ Note: Entry book value differs from calculated book value. This may indicate an adjustment or different depreciation method was used.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
-            </CardHeader>
-            <CardContent className="space-y-4">
+            </div>
+          </div>
+
+          {/* Financial Configuration - Moved to bottom */}
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Financial Configuration
+              </h3>
+              {selectedCategory && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Default accounts from category: {selectedCategory.name}
+                </p>
+              )}
+            </div>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
@@ -673,7 +1385,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       <FormLabel>Depreciation Expense Account</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                      <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select expense account" />
                           </SelectTrigger>
                         </FormControl>
@@ -698,7 +1410,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       <FormLabel>Accumulated Depreciation Account</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                       <SelectTrigger className="w-full">
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select accumulated dep. account" />
                           </SelectTrigger>
                         </FormControl>
@@ -715,219 +1427,8 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                   )}
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Depreciation Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Depreciation Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="depreciationMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Depreciation Method</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="STRAIGHT_LINE">Straight Line</SelectItem>
-                          <SelectItem value="DECLINING_BALANCE">Declining Balance</SelectItem>
-                          <SelectItem value="UNITS_OF_PRODUCTION">Units of Production</SelectItem>
-                          <SelectItem value="SUM_OF_YEARS_DIGITS">Sum of Years Digits</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="depreciationStartDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Depreciation Start Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="usefulLifeYears"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Useful Life (Years)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="usefulLifeMonths"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Additional Months</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="11"
-                          placeholder="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="salvageValue"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Salvage Value</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Method-specific fields */}
-              {watchedDepreciationMethod === 'DECLINING_BALANCE' && (
-                <FormField
-                  control={form.control}
-                  name="depreciationRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Depreciation Rate (%)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {watchedDepreciationMethod === 'UNITS_OF_PRODUCTION' && (
-                <FormField
-                  control={form.control}
-                  name="totalExpectedUnits"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Expected Units</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {/* Depreciation Preview */}
-              {watchedPurchasePrice && watchedUsefulLifeYears && (
-                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Depreciation Preview</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Purchase Price:</span>
-                      <p className="font-medium">₱{watchedPurchasePrice.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Salvage Value:</span>
-                      <p className="font-medium">₱{(watchedSalvageValue || 0).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Depreciable Amount:</span>
-                      <p className="font-medium">₱{(watchedPurchasePrice - (watchedSalvageValue || 0)).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Est. Monthly Depreciation:</span>
-                      <p className="font-medium">₱{calculateMonthlyDepreciation().toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </form>
       </Form>
 

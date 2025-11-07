@@ -317,6 +317,23 @@ model Asset {
   usefulLifeMonths   Int?
   salvageValue       Decimal?            @default(0) @db.Decimal(12, 2)
 
+  // Pre-depreciation tracking for assets entered after partial depreciation
+  originalPurchaseDate     DateTime? // When asset was originally purchased (may differ from purchaseDate)
+  originalPurchasePrice    Decimal?  @db.Decimal(12, 2) // Original cost (may differ from purchasePrice)
+  originalUsefulLifeYears  Int? // Original expected life in years
+  originalUsefulLifeMonths Int? // Original expected life in months
+
+  priorDepreciationAmount Decimal   @default(0) @db.Decimal(12, 2) // Depreciation before system entry
+  priorDepreciationMonths Int       @default(0) // Months depreciated before system
+  systemEntryDate         DateTime? // When asset was entered into system
+  systemEntryBookValue    Decimal?  @db.Decimal(12, 2) // Book value at system entry
+
+  remainingUsefulLifeYears  Int? // Remaining years to depreciate
+  remainingUsefulLifeMonths Int? // Remaining months to depreciate
+
+  isPreDepreciated      Boolean @default(false) // Asset had prior depreciation
+  useSystemEntryAsStart Boolean @default(false) // Start depreciation from system entry date
+
   currentBookValue        Decimal? @db.Decimal(12, 2)
   accumulatedDepreciation Decimal  @default(0) @db.Decimal(12, 2)
 
@@ -399,6 +416,11 @@ model AssetDepreciation {
   isAdjustment     Boolean  @default(false)
   adjustmentReason String?
   originalAmount   Decimal? @db.Decimal(12, 2)
+
+  // Prior period depreciation tracking
+  isPriorPeriodAdjustment Boolean   @default(false) // For recording prior depreciation
+  priorPeriodStartDate    DateTime? // Start of prior period
+  priorPeriodEndDate      DateTime? // End of prior period
 
   calculatedBy String?
   calculatedAt DateTime @default(now())

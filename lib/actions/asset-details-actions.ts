@@ -39,6 +39,20 @@ export interface AssetDetailsData {
   currentUnits: number | null
   depreciationPerUnit: number | null
   
+  // Pre-depreciation fields
+  originalPurchaseDate: Date | null
+  originalPurchasePrice: number | null
+  originalUsefulLifeYears: number | null
+  originalUsefulLifeMonths: number | null
+  priorDepreciationAmount: number
+  priorDepreciationMonths: number
+  systemEntryDate: Date | null
+  systemEntryBookValue: number | null
+  remainingUsefulLifeYears: number | null
+  remainingUsefulLifeMonths: number | null
+  isPreDepreciated: boolean
+  useSystemEntryAsStart: boolean
+  
   // QR Code fields
   barcodeValue: string | null
   barcodeType: string | null
@@ -279,6 +293,7 @@ export async function getAssetDetails(assetId: string, businessUnitId: string): 
       ...asset,
       // Convert all Decimal fields to numbers
       purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      originalPurchasePrice: asset.originalPurchasePrice ? Number(asset.originalPurchasePrice) : null,
       salvageValue: asset.salvageValue ? Number(asset.salvageValue) : null,
       currentBookValue: asset.currentBookValue ? Number(asset.currentBookValue) : null,
       accumulatedDepreciation: Number(asset.accumulatedDepreciation),
@@ -287,6 +302,8 @@ export async function getAssetDetails(assetId: string, businessUnitId: string): 
       totalExpectedUnits: asset.totalExpectedUnits || null,
       currentUnits: asset.currentUnits || null,
       depreciationPerUnit: asset.depreciationPerUnit ? Number(asset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(asset.priorDepreciationAmount),
+      systemEntryBookValue: asset.systemEntryBookValue ? Number(asset.systemEntryBookValue) : null,
       // Relations
       currentDeployment: asset.deployments?.[0] || null,
       recentHistory: asset.assetHistories || [],
@@ -340,12 +357,15 @@ export async function updateAssetStatus(assetId: string, status: AssetStatus, bu
     const serializedAsset = {
       ...updatedAsset,
       purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      originalPurchasePrice: updatedAsset.originalPurchasePrice ? Number(updatedAsset.originalPurchasePrice) : null,
       salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
       currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
       accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
       monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
       depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
-      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(updatedAsset.priorDepreciationAmount),
+      systemEntryBookValue: updatedAsset.systemEntryBookValue ? Number(updatedAsset.systemEntryBookValue) : null
     }
 
     return { success: "Asset status updated successfully", data: serializedAsset }
@@ -397,12 +417,15 @@ export async function updateAssetLocation(assetId: string, location: string, bus
     const serializedAsset = {
       ...updatedAsset,
       purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      originalPurchasePrice: updatedAsset.originalPurchasePrice ? Number(updatedAsset.originalPurchasePrice) : null,
       salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
       currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
       accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
       monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
       depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
-      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(updatedAsset.priorDepreciationAmount),
+      systemEntryBookValue: updatedAsset.systemEntryBookValue ? Number(updatedAsset.systemEntryBookValue) : null
     }
 
     return { success: "Asset location updated successfully", data: serializedAsset }
@@ -568,12 +591,15 @@ export async function updateAsset(assetId: string, data: UpdateAssetData, busine
     const serializedAsset = {
       ...updatedAsset,
       purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      originalPurchasePrice: updatedAsset.originalPurchasePrice ? Number(updatedAsset.originalPurchasePrice) : null,
       salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
       currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
       accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
       monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
       depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
-      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null,
+      priorDepreciationAmount: Number(updatedAsset.priorDepreciationAmount),
+      systemEntryBookValue: updatedAsset.systemEntryBookValue ? Number(updatedAsset.systemEntryBookValue) : null
     }
 
     return { success: "Asset updated successfully", data: serializedAsset }
