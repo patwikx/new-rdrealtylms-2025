@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Search, Check } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Search, Check, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
 
 interface MRSItem {
@@ -48,40 +47,47 @@ export function MultiSelectItemsDialog({
   onItemsSelected 
 }: MultiSelectItemsDialogProps) {
   const [items, setItems] = useState<MRSItem[]>([])
-  const [filteredItems, setFilteredItems] = useState<MRSItem[]>([])
   const [selectedItems, setSelectedItems] = useState<Map<string, SelectedItem>>(new Map())
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const itemsPerPage = 50
 
-  // Fetch items from API
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+      setCurrentPage(1) // Reset to first page on search
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Fetch items from API with search and pagination
   useEffect(() => {
     if (open) {
       fetchItems()
     }
-  }, [open])
-
-  // Filter items based on search term
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredItems(items)
-    } else {
-      const filtered = items.filter(item => 
-        item.itemCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.itemDesc.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      setFilteredItems(filtered)
-    }
-  }, [items, searchTerm])
+  }, [open, debouncedSearchTerm, currentPage])
 
   const fetchItems = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/mrs-items')
+      const params = new URLSearchParams()
+      if (debouncedSearchTerm.trim()) {
+        params.append('search', debouncedSearchTerm.trim())
+      }
+      params.append('page', currentPage.toString())
+      params.append('limit', itemsPerPage.toString())
+
+      const response = await fetch(`/api/mrs-items?${params}`)
       const data = await response.json()
       
       if (data.success) {
         setItems(data.data)
-        setFilteredItems(data.data)
+        setTotalItems(data.total || data.data.length)
       } else {
         toast.error("Failed to fetch items")
       }
@@ -93,10 +99,12 @@ export function MultiSelectItemsDialog({
     }
   }
 
-  const handleItemToggle = (item: MRSItem, checked: boolean) => {
+  const handleItemToggle = useCallback((item: MRSItem, checked?: boolean) => {
     const newSelectedItems = new Map(selectedItems)
+    const isCurrentlySelected = selectedItems.has(item.itemId)
+    const shouldSelect = checked !== undefined ? checked : !isCurrentlySelected
     
-    if (checked) {
+    if (shouldSelect) {
       // Add item with default values
       newSelectedItems.set(item.itemId, {
         ...item,
@@ -110,7 +118,17 @@ export function MultiSelectItemsDialog({
     }
     
     setSelectedItems(newSelectedItems)
-  }
+  }, [selectedItems])
+
+  const handleRowClick = useCallback((item: MRSItem, event: React.MouseEvent) => {
+    // Don't toggle if clicking on input fields or checkbox
+    const target = event.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.closest('input') || target.closest('[role="checkbox"]')) {
+      return
+    }
+    
+    handleItemToggle(item)
+  }, [handleItemToggle])
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
     const newSelectedItems = new Map(selectedItems)
@@ -166,8 +184,14 @@ export function MultiSelectItemsDialog({
   const handleCancel = () => {
     setSelectedItems(new Map())
     setSearchTerm("")
+    setDebouncedSearchTerm("")
+    setCurrentPage(1)
     onOpenChange(false)
   }
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const hasNextPage = currentPage < totalPages
+  const hasPrevPage = currentPage > 1
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -176,7 +200,7 @@ export function MultiSelectItemsDialog({
           <DialogTitle>Select Existing Items</DialogTitle>
         </DialogHeader>
 
-        {/* Search */}
+        {/* Search and Pagination Info */}
         <div className="flex items-center space-x-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -187,9 +211,16 @@ export function MultiSelectItemsDialog({
               className="pl-10"
             />
           </div>
-          <Badge variant="secondary" className="whitespace-nowrap">
-            {selectedItems.size} selected
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="whitespace-nowrap">
+              {selectedItems.size} selected
+            </Badge>
+            {totalItems > 0 && (
+              <Badge variant="outline" className="whitespace-nowrap text-xs">
+                {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Items Table */}
@@ -209,11 +240,11 @@ export function MultiSelectItemsDialog({
                         <TableRow className="h-10">
                           <TableHead className="w-8 px-1 text-xs">
                             <Checkbox
-                              checked={filteredItems.length > 0 && filteredItems.every(item => selectedItems.has(item.itemId))}
+                              checked={items.length > 0 && items.every(item => selectedItems.has(item.itemId))}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   const newSelectedItems = new Map(selectedItems)
-                                  filteredItems.forEach(item => {
+                                  items.forEach(item => {
                                     if (!newSelectedItems.has(item.itemId)) {
                                       newSelectedItems.set(item.itemId, {
                                         ...item,
@@ -226,7 +257,7 @@ export function MultiSelectItemsDialog({
                                   setSelectedItems(newSelectedItems)
                                 } else {
                                   const newSelectedItems = new Map(selectedItems)
-                                  filteredItems.forEach(item => {
+                                  items.forEach(item => {
                                     newSelectedItems.delete(item.itemId)
                                   })
                                   setSelectedItems(newSelectedItems)
@@ -244,12 +275,16 @@ export function MultiSelectItemsDialog({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredItems.map((item) => {
+                        {items.map((item) => {
                           const isSelected = selectedItems.has(item.itemId)
                           const selectedItem = selectedItems.get(item.itemId)
                           
                           return (
-                            <TableRow key={item.itemId} className={`h-10 ${isSelected ? "bg-muted/50" : ""}`}>
+                            <TableRow 
+                              key={item.itemId} 
+                              className={`h-10 cursor-pointer hover:bg-muted/30 ${isSelected ? "bg-muted/50" : ""}`}
+                              onClick={(e) => handleRowClick(item, e)}
+                            >
                               <TableCell className="px-1 py-1">
                                 <Checkbox
                                   checked={isSelected}
@@ -320,12 +355,16 @@ export function MultiSelectItemsDialog({
 
                 {/* Mobile/Tablet Card View */}
                 <div className="block md:hidden p-2 space-y-2">
-                  {filteredItems.map((item) => {
+                  {items.map((item) => {
                     const isSelected = selectedItems.has(item.itemId)
                     const selectedItem = selectedItems.get(item.itemId)
                     
                     return (
-                      <div key={item.itemId} className={`border rounded-md p-2 ${isSelected ? "bg-muted/50 border-primary" : "bg-card"}`}>
+                      <div 
+                        key={item.itemId} 
+                        className={`border rounded-md p-2 cursor-pointer hover:bg-muted/30 ${isSelected ? "bg-muted/50 border-primary" : "bg-card"}`}
+                        onClick={(e) => handleRowClick(item, e)}
+                      >
                         <div className="flex items-start space-x-2">
                           <Checkbox
                             checked={isSelected}

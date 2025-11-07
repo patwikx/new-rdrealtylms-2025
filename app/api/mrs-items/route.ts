@@ -13,6 +13,10 @@ export interface MRSItem {
 export interface MRSItemsResponse {
   success: boolean;
   data: MRSItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
   error?: string;
   details?: string;
 }
