@@ -20,7 +20,8 @@ import {
   Clock,
   BarChart3,
   History,
-  AlertTriangle
+  AlertTriangle,
+  Settings
 } from "lucide-react"
 import {
   Select,
@@ -32,7 +33,8 @@ import {
 import { useRouter } from "next/navigation"
 import { DepreciationDataResponse } from "@/lib/actions/asset-depreciation-actions"
 import { AssetDepreciationCalculationDialog } from "./asset-depreciation-calculation-dialog"
-import { AutomatedDepreciationDialog } from "./automated-depreciation-dialog"
+
+import { ManualDepreciationDialog } from "./manual-depreciation-dialog"
 import { toast } from "sonner"
 import { format } from "date-fns"
 
@@ -63,7 +65,8 @@ export function AssetDepreciationView({
   const [searchTerm, setSearchTerm] = useState(currentFilters.search || "")
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
   const [showCalculationDialog, setShowCalculationDialog] = useState(false)
-  const [showAutomatedDialog, setShowAutomatedDialog] = useState(false)
+
+  const [showManualDialog, setShowManualDialog] = useState(false)
 
   const handleSearch = () => {
     const params = new URLSearchParams()
@@ -140,10 +143,24 @@ export function AssetDepreciationView({
               </Badge>
               <Button 
                 variant="outline"
-                onClick={() => setShowAutomatedDialog(true)}
+                onClick={() => router.push(`/${businessUnitId}/asset-management/depreciation/history`)}
               >
                 <Clock className="h-4 w-4 mr-2" />
-                Automated Schedule
+                View History
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowManualDialog(true)}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Manual Depreciation
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => router.push(`/${businessUnitId}/asset-management/depreciation/schedules`)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                View Schedules
               </Button>
               {selectedAssets.size > 0 && (
                 <>
@@ -311,19 +328,21 @@ export function AssetDepreciationView({
         />
       )}
 
-      {/* Automated Depreciation Dialog */}
-      {showAutomatedDialog && (
-        <AutomatedDepreciationDialog
+      {/* Manual Depreciation Dialog */}
+      {showManualDialog && (
+        <ManualDepreciationDialog
           businessUnitId={businessUnitId}
           categories={depreciationData.categories}
-          open={showAutomatedDialog}
-          onOpenChange={setShowAutomatedDialog}
+          open={showManualDialog}
+          onOpenChange={setShowManualDialog}
           onSuccess={() => {
-            setShowAutomatedDialog(false)
+            setShowManualDialog(false)
             router.refresh()
           }}
         />
       )}
+
+
     </div>
   )
 }

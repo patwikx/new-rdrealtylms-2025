@@ -412,9 +412,17 @@ export async function getCategoryDetails(categoryId: string, businessUnitId?: st
       throw new Error("Category not found")
     }
 
-    // Transform the data to match our component expectations
+    // Transform the data to match our component expectations and convert Decimal fields
     const transformedAssets = category.assets.map(asset => ({
       ...asset,
+      // Convert Decimal fields to numbers
+      purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
+      salvageValue: asset.salvageValue ? Number(asset.salvageValue) : null,
+      currentBookValue: asset.currentBookValue ? Number(asset.currentBookValue) : null,
+      accumulatedDepreciation: Number(asset.accumulatedDepreciation),
+      monthlyDepreciation: asset.monthlyDepreciation ? Number(asset.monthlyDepreciation) : null,
+      depreciationRate: asset.depreciationRate ? Number(asset.depreciationRate) : null,
+      depreciationPerUnit: asset.depreciationPerUnit ? Number(asset.depreciationPerUnit) : null,
       currentDeployment: asset.deployments[0] || null
     }))
 

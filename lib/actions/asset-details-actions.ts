@@ -34,6 +34,10 @@ export interface AssetDetailsData {
   nextDepreciationDate: Date | null
   monthlyDepreciation: number | null
   isFullyDepreciated: boolean
+  depreciationRate: number | null
+  totalExpectedUnits: number | null
+  currentUnits: number | null
+  depreciationPerUnit: number | null
   
   // QR Code fields
   barcodeValue: string | null
@@ -273,11 +277,17 @@ export async function getAssetDetails(assetId: string, businessUnitId: string): 
 
     return {
       ...asset,
+      // Convert all Decimal fields to numbers
       purchasePrice: asset.purchasePrice ? Number(asset.purchasePrice) : null,
       salvageValue: asset.salvageValue ? Number(asset.salvageValue) : null,
       currentBookValue: asset.currentBookValue ? Number(asset.currentBookValue) : null,
       accumulatedDepreciation: Number(asset.accumulatedDepreciation),
       monthlyDepreciation: asset.monthlyDepreciation ? Number(asset.monthlyDepreciation) : null,
+      depreciationRate: asset.depreciationRate ? Number(asset.depreciationRate) : null,
+      totalExpectedUnits: asset.totalExpectedUnits || null,
+      currentUnits: asset.currentUnits || null,
+      depreciationPerUnit: asset.depreciationPerUnit ? Number(asset.depreciationPerUnit) : null,
+      // Relations
       currentDeployment: asset.deployments?.[0] || null,
       recentHistory: asset.assetHistories || [],
       deploymentHistory
@@ -326,7 +336,19 @@ export async function updateAssetStatus(assetId: string, status: AssetStatus, bu
       }
     })
 
-    return { success: "Asset status updated successfully", data: updatedAsset }
+    // Convert Decimal fields to numbers before returning
+    const serializedAsset = {
+      ...updatedAsset,
+      purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
+      currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
+      accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
+      monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
+      depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+    }
+
+    return { success: "Asset status updated successfully", data: serializedAsset }
   } catch (error) {
     console.error("Error updating asset status:", error)
     return { error: "Failed to update asset status" }
@@ -371,7 +393,19 @@ export async function updateAssetLocation(assetId: string, location: string, bus
       }
     })
 
-    return { success: "Asset location updated successfully", data: updatedAsset }
+    // Convert Decimal fields to numbers before returning
+    const serializedAsset = {
+      ...updatedAsset,
+      purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
+      currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
+      accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
+      monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
+      depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+    }
+
+    return { success: "Asset location updated successfully", data: serializedAsset }
   } catch (error) {
     console.error("Error updating asset location:", error)
     return { error: "Failed to update asset location" }
@@ -530,7 +564,19 @@ export async function updateAsset(assetId: string, data: UpdateAssetData, busine
       })
     }
 
-    return { success: "Asset updated successfully", data: updatedAsset }
+    // Convert Decimal fields to numbers before returning
+    const serializedAsset = {
+      ...updatedAsset,
+      purchasePrice: updatedAsset.purchasePrice ? Number(updatedAsset.purchasePrice) : null,
+      salvageValue: updatedAsset.salvageValue ? Number(updatedAsset.salvageValue) : null,
+      currentBookValue: updatedAsset.currentBookValue ? Number(updatedAsset.currentBookValue) : null,
+      accumulatedDepreciation: Number(updatedAsset.accumulatedDepreciation),
+      monthlyDepreciation: updatedAsset.monthlyDepreciation ? Number(updatedAsset.monthlyDepreciation) : null,
+      depreciationRate: updatedAsset.depreciationRate ? Number(updatedAsset.depreciationRate) : null,
+      depreciationPerUnit: updatedAsset.depreciationPerUnit ? Number(updatedAsset.depreciationPerUnit) : null
+    }
+
+    return { success: "Asset updated successfully", data: serializedAsset }
   } catch (error) {
     console.error("Error updating asset:", error)
     return { error: "Failed to update asset" }

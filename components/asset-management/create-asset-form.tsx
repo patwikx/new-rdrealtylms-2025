@@ -648,7 +648,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       <FormLabel>Asset Account</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select asset account" />
                           </SelectTrigger>
                         </FormControl>
@@ -673,7 +673,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       <FormLabel>Depreciation Expense Account</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                      <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select expense account" />
                           </SelectTrigger>
                         </FormControl>
@@ -698,7 +698,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       <FormLabel>Accumulated Depreciation Account</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                       <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select accumulated dep. account" />
                           </SelectTrigger>
                         </FormControl>

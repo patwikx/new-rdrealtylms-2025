@@ -93,21 +93,38 @@ export async function getAssetCategories(businessUnitId: string) {
   }
 }
 
-export async function getDepartments(businessUnitId?: string) {
+export async function getDepartments(businessUnitId?: string, includeInactive: boolean = false) {
   try {
-    const whereClause = businessUnitId 
-      ? { isActive: true, businessUnitId }
-      : { isActive: true }
+    let whereClause: any = {}
+    
+    if (businessUnitId) {
+      // Include departments that belong to this business unit OR have no business unit assigned
+      whereClause.OR = [
+        { businessUnitId },
+        { businessUnitId: null }
+      ]
+    }
+    
+    if (!includeInactive) {
+      whereClause.OR ? 
+        whereClause.AND = [{ OR: whereClause.OR }, { isActive: { not: false } }] :
+        whereClause.isActive = { not: false } // This includes true and null values
+      delete whereClause.OR
+    }
       
     const departments = await prisma.department.findMany({
       where: whereClause,
       select: {
         id: true,
         name: true,
-        code: true
+        code: true,
+        isActive: true,
+        businessUnitId: true
       },
       orderBy: { name: 'asc' }
     })
+    
+    console.log(`Found ${departments.length} departments for businessUnit: ${businessUnitId}`, departments)
     
     return departments
   } catch (error) {

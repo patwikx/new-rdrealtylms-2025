@@ -444,10 +444,6 @@ export function AssetsManagementView({
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/asset-management/assets/${asset.id}/edit`)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Asset
-                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => handleToggleActive(asset)}

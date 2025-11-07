@@ -3,7 +3,7 @@
 // Removed unused useState import
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
@@ -117,59 +117,39 @@ export function CategoryDetailsView({
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Total Assets</p>
-                <p className="text-2xl font-bold">{category.assets?.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="flex items-center gap-3">
+          <Package className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Total Assets</p>
+            <p className="text-2xl font-bold">{category.assets?.length || 0}</p>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-500" />
-              <div>
-                <p className="text-sm font-medium">Total Value</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <DollarSign className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Total Value</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium">Available</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {statusCounts.AVAILABLE || 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <Package className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Available</p>
+            <p className="text-2xl font-bold">{statusCounts.AVAILABLE || 0}</p>
+          </div>
+        </div>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-purple-500" />
-              <div>
-                <p className="text-sm font-medium">Deployed</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {statusCounts.DEPLOYED || 0}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3">
+          <User className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <p className="text-sm text-muted-foreground">Deployed</p>
+            <p className="text-2xl font-bold">{statusCounts.DEPLOYED || 0}</p>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -180,16 +160,13 @@ export function CategoryDetailsView({
           <TabsTrigger value="accounts">Account Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Category Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <TabsContent value="details" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Building2 className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Category Information</h3>
+              </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Category Name</p>
@@ -220,17 +197,13 @@ export function CategoryDetailsView({
                     <p className="text-sm">{format(new Date(category.createdAt), 'PPP')}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Hash className="h-5 w-5" />
-                  Asset Statistics
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Hash className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Asset Statistics</h3>
+              </div>
                 <div className="space-y-3">
                   {Object.entries(statusCounts).map(([status, count]) => (
                     <div key={status} className="flex items-center justify-between">
@@ -254,8 +227,7 @@ export function CategoryDetailsView({
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+            </div>
           </div>
         </TabsContent>
 
@@ -375,15 +347,12 @@ export function CategoryDetailsView({
           </div>
         </TabsContent>
 
-        <TabsContent value="accounts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Default Account Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <TabsContent value="accounts" className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Default Account Settings</h3>
+            </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Asset Account</p>
@@ -417,8 +386,7 @@ export function CategoryDetailsView({
                   Individual assets can override these settings.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

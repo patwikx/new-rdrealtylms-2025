@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Package, DollarSign, Settings, FileText } from "lucide-react"
 import { toast } from "sonner"
@@ -60,6 +60,8 @@ interface Department {
   id: string
   name: string
   code: string | null
+  isActive: boolean | null
+  businessUnitId: string | null
 }
 
 interface GLAccount {
@@ -146,13 +148,16 @@ export function EditAssetDialog({
     try {
       const [categoriesData, departmentsData, glAccountsData] = await Promise.all([
         getAssetCategories(businessUnitId),
-        getDepartments(businessUnitId),
+        getDepartments(businessUnitId, true), // Include inactive departments
         getGLAccounts()
       ])
       
       setCategories(categoriesData)
       setDepartments(departmentsData)
       setGLAccounts(glAccountsData)
+      
+      // Debug logging
+      console.log("Loaded departments:", departmentsData.length, departmentsData)
     } catch (error) {
       console.error("Error loading data:", error)
       toast.error("Failed to load form data")
@@ -219,18 +224,15 @@ export function EditAssetDialog({
                 <TabsTrigger value="accounts">GL Accounts</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Basic Information
-                    </CardTitle>
-                    <CardDescription>
-                      Update basic asset details and identification
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <TabsContent value="basic" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h3 className="font-semibold">Basic Information</h3>
+                      <p className="text-sm text-muted-foreground">Update basic asset details and identification</p>
+                    </div>
+                  </div>
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -256,7 +258,7 @@ export function EditAssetDialog({
                             <FormLabel>Category <span className="text-red-500">*</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select category" />
                                 </SelectTrigger>
                               </FormControl>
@@ -354,15 +356,17 @@ export function EditAssetDialog({
                             <FormLabel>Department</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select department" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="none">No department</SelectItem>
-                                {departments.filter(dept => dept.id && dept.id.trim() !== '').map((dept) => (
+                                {departments.map((dept) => (
                                   <SelectItem key={dept.id} value={dept.id}>
                                     {dept.name} {dept.code && `(${dept.code})`}
+                                    {!dept.businessUnitId}
+                                    {dept.isActive === false && " (Inactive)"}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -426,22 +430,18 @@ export function EditAssetDialog({
                         </FormItem>
                       )}
                     />
-                  </CardContent>
-                </Card>
+                </div>
               </TabsContent>
 
-              <TabsContent value="financial" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
-                      Financial Information
-                    </CardTitle>
-                    <CardDescription>
-                      Update purchase information and warranty details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <TabsContent value="financial" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h3 className="font-semibold">Financial Information</h3>
+                      <p className="text-sm text-muted-foreground">Update purchase information and warranty details</p>
+                    </div>
+                  </div>
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -545,22 +545,18 @@ export function EditAssetDialog({
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               </TabsContent>
 
-              <TabsContent value="depreciation" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Depreciation Configuration
-                    </CardTitle>
-                    <CardDescription>
-                      Configure depreciation method and useful life
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <TabsContent value="depreciation" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <Settings className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h3 className="font-semibold">Depreciation Configuration</h3>
+                      <p className="text-sm text-muted-foreground">Configure depreciation method and useful life</p>
+                    </div>
+                  </div>
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -687,22 +683,18 @@ export function EditAssetDialog({
                         )}
                       />
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               </TabsContent>
 
-              <TabsContent value="accounts" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
-                      GL Account Configuration
-                    </CardTitle>
-                    <CardDescription>
-                      Configure general ledger accounts for this asset
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <TabsContent value="accounts" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <h3 className="font-semibold">GL Account Configuration</h3>
+                      <p className="text-sm text-muted-foreground">Configure general ledger accounts for this asset</p>
+                    </div>
+                  </div>
                     <FormField
                       control={form.control}
                       name="assetAccountId"
@@ -780,8 +772,7 @@ export function EditAssetDialog({
                         </FormItem>
                       )}
                     />
-                  </CardContent>
-                </Card>
+                </div>
               </TabsContent>
             </Tabs>
 
