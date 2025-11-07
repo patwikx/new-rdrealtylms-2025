@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
+
 import { useRouter, useParams } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { CalendarIcon, Plus, Trash2, Send } from "lucide-react"
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { MultiSelectItemsDialog } from "./multi-select-items-dialog"
@@ -56,7 +56,6 @@ interface MaterialRequestFormData {
 }
 
 export function MaterialRequestCreateForm() {
-  const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const businessUnitId = params.businessUnitId as string
@@ -97,7 +96,6 @@ export function MaterialRequestCreateForm() {
     name: "items",
   })
 
-  const watchedBusinessUnitId = form.watch("businessUnitId")
   const watchedDepartmentId = form.watch("departmentId")
   const watchedItems = form.watch("items")
   const watchedFreight = form.watch("freight")
@@ -413,11 +411,11 @@ export function MaterialRequestCreateForm() {
           </div>
 
           {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">Basic Information</h3>
+            </div>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 
 
@@ -762,14 +760,14 @@ export function MaterialRequestCreateForm() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Items */}
-          <Card>
-            <CardHeader>
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <CardTitle className="text-base sm:text-lg">Items</CardTitle>
+                <h3 className="text-base sm:text-lg font-semibold text-foreground">Items</h3>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button 
                     type="button" 
@@ -951,8 +949,8 @@ export function MaterialRequestCreateForm() {
                 </Dialog>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+            <div>
               {fields.length > 0 ? (
                 <div>
                   {/* Mobile Card View */}
@@ -1150,15 +1148,15 @@ export function MaterialRequestCreateForm() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Totals */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Totals</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="pb-2 border-b border-border">
+              <h3 className="text-base sm:text-lg font-semibold text-foreground">Totals</h3>
+            </div>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
                   control={form.control}
@@ -1209,8 +1207,8 @@ export function MaterialRequestCreateForm() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </form>
       </Form>
 
