@@ -1,16 +1,18 @@
 import { auth } from "@/auth"
-import { redirect } from "next/navigation"
-import { getCategoryDetails, getGLAccountsForCategories } from "@/lib/actions/asset-categories-actions"
-import { CategoryDetailsView } from "@/components/asset-management/category-details-view"
+import { redirect, notFound } from "next/navigation"
+import { DepreciationScheduleDetailView } from "@/components/asset-management/depreciation-schedule-detail-view"
+import { getScheduleDetails, getScheduleCategories } from "@/lib/actions/depreciation-schedule-actions"
 
-interface CategoryDetailsPageProps {
+interface DepreciationScheduleDetailPageProps {
   params: Promise<{
     businessUnitId: string
     id: string
   }>
 }
 
-export default async function CategoryDetailsPage({ params }: CategoryDetailsPageProps) {
+export default async function DepreciationScheduleDetailPage({ 
+  params 
+}: DepreciationScheduleDetailPageProps) {
   const session = await auth()
   
   if (!session?.user?.id) {
@@ -32,34 +34,38 @@ export default async function CategoryDetailsPage({ params }: CategoryDetailsPag
       redirect("/unauthorized")
     }
 
-    // Get category details and GL accounts
-    const [category, glAccounts] = await Promise.all([
-      getCategoryDetails(id, businessUnitId),
-      getGLAccountsForCategories()
+    // Get schedule details and categories
+    const [scheduleDetails, categories] = await Promise.all([
+      getScheduleDetails(id, businessUnitId),
+      getScheduleCategories(businessUnitId)
     ])
+    
+    if (!scheduleDetails) {
+      notFound()
+    }
     
     return (
       <div className="space-y-6">
-        <CategoryDetailsView 
-          category={category}
+        <DepreciationScheduleDetailView 
+          scheduleDetails={scheduleDetails}
           businessUnit={businessUnit}
           businessUnitId={businessUnitId}
-          glAccounts={glAccounts}
+          categories={categories}
         />
       </div>
     )
   } catch (error) {
-    console.error("Error loading category details:", error)
+    console.error("Error loading schedule details:", error)
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Category Details</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Schedule Details</h1>
           </div>
         </div>
         
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Category not found or unable to load details.</p>
+          <p className="text-muted-foreground">Unable to load schedule details. Please try again later.</p>
         </div>
       </div>
     )

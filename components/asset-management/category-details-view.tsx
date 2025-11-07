@@ -1,9 +1,20 @@
 "use client"
 
-// Removed unused useState import
+import { useState } from "react"
+import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
@@ -17,8 +28,13 @@ import {
   MoreHorizontal,
   Building2,
   Hash,
-  FileText
+  FileText,
+  Loader2,
+  Save,
+  X
 } from "lucide-react"
+import { toast } from "sonner"
+import { updateAssetCategory } from "@/lib/actions/asset-categories-actions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,14 +53,67 @@ interface CategoryDetailsViewProps {
     code: string
   }
   businessUnitId: string
+  glAccounts?: Array<{
+    id: string
+    accountCode: string
+    accountName: string
+    accountType: string
+  }>
 }
 
 export function CategoryDetailsView({
   category,
   businessUnit,
-  businessUnitId
+  businessUnitId,
+  glAccounts = []
 }: CategoryDetailsViewProps) {
   const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const form = useForm({
+    defaultValues: {
+      name: category.name,
+      code: category.code,
+      description: category.description || "",
+      isActive: category.isActive,
+      defaultAssetAccountId: category.defaultAssetAccountId || "none",
+      defaultDepreciationExpenseAccountId: category.defaultDepreciationExpenseAccountId || "none",
+      defaultAccumulatedDepAccountId: category.defaultAccumulatedDepAccountId || "none"
+    }
+  })
+
+  const handleSave = async (data: any) => {
+    setIsSaving(true)
+    try {
+      const processedData = {
+        ...data,
+        defaultAssetAccountId: data.defaultAssetAccountId === "none" ? null : data.defaultAssetAccountId,
+        defaultDepreciationExpenseAccountId: data.defaultDepreciationExpenseAccountId === "none" ? null : data.defaultDepreciationExpenseAccountId,
+        defaultAccumulatedDepAccountId: data.defaultAccumulatedDepAccountId === "none" ? null : data.defaultAccumulatedDepAccountId,
+        businessUnitId
+      }
+      
+      const result = await updateAssetCategory(category.id, processedData, businessUnitId)
+      
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(result.success)
+        setIsEditing(false)
+        router.refresh()
+      }
+    } catch (error) {
+      toast.error("Failed to update category")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    form.reset()
+    setIsEditing(false)
+  }
 
   const getAssetStatusColor = (status: AssetStatus): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -109,10 +178,10 @@ export function CategoryDetailsView({
           
           <Button 
             variant="outline"
-            onClick={() => router.push(`/${businessUnitId}/asset-management/categories/${category.id}/edit`)}
+            onClick={() => setIsEditing(!isEditing)}
           >
             <Edit className="h-4 w-4 mr-2" />
-            Edit Category
+            {isEditing ? 'Cancel Edit' : 'Edit Category'}
           </Button>
         </div>
       </div>
@@ -161,49 +230,194 @@ export function CategoryDetailsView({
         </TabsList>
 
         <TabsContent value="details" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Building2 className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold">Category Information</h3>
-              </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Category Name</p>
-                    <p className="text-sm font-semibold">{category.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Category Code</p>
-                    <Badge variant="outline" className="font-mono">
-                      {category.code}
-                    </Badge>
-                  </div>
+          {isEditing ? (
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Edit className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Edit Category</h3>
                 </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Description</p>
-                  <p className="text-sm">{category.description || 'No description provided'}</p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Category Name *</Label>
+                    <Input
+                      id="name"
+                      {...form.register('name', { required: 'Name is required' })}
+                      placeholder="e.g., Computer Equipment"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="code">Category Code *</Label>
+                    <Input
+                      id="code"
+                      {...form.register('code', { required: 'Code is required' })}
+                      placeholder="e.g., COMP"
+                      className="font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      {...form.register('description')}
+                      placeholder="Optional description..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isActive"
+                      checked={form.watch('isActive')}
+                      onCheckedChange={(checked) => form.setValue('isActive', checked)}
+                    />
+                    <Label htmlFor="isActive">Active (category is available for use)</Label>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <Badge variant={category.isActive ? "default" : "secondary"}>
-                      {category.isActive ? "Active" : "Inactive"}
-                    </Badge>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <h4 className="font-semibold">Default GL Accounts</h4>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Created</p>
-                    <p className="text-sm">{format(new Date(category.createdAt), 'PPP')}</p>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="defaultAssetAccountId">Asset Account</Label>
+                      <Select
+                        value={form.watch('defaultAssetAccountId')}
+                        onValueChange={(value) => form.setValue('defaultAssetAccountId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select asset account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No account selected</SelectItem>
+                          {glAccounts.filter(acc => acc.accountType === 'ASSET').map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.accountCode} - {account.accountName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="defaultDepreciationExpenseAccountId">Depreciation Expense Account</Label>
+                      <Select
+                        value={form.watch('defaultDepreciationExpenseAccountId')}
+                        onValueChange={(value) => form.setValue('defaultDepreciationExpenseAccountId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select expense account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No account selected</SelectItem>
+                          {glAccounts.filter(acc => acc.accountType === 'EXPENSE').map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.accountCode} - {account.accountName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="defaultAccumulatedDepAccountId">Accumulated Depreciation Account</Label>
+                      <Select
+                        value={form.watch('defaultAccumulatedDepAccountId')}
+                        onValueChange={(value) => form.setValue('defaultAccumulatedDepAccountId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select accumulated depreciation account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No account selected</SelectItem>
+                          {glAccounts.filter(acc => acc.accountType === 'ASSET').map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.accountCode} - {account.accountName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b">
-                <Hash className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold">Asset Statistics</h3>
               </div>
+            </form>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Category Information</h3>
+                </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Category Name</p>
+                      <p className="text-sm font-semibold">{category.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Category Code</p>
+                      <Badge variant="outline" className="font-mono">
+                        {category.code}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Description</p>
+                    <p className="text-sm">{category.description || 'No description provided'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Status</p>
+                      <Badge variant={category.isActive ? "default" : "secondary"}>
+                        {category.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Created</p>
+                      <p className="text-sm">{format(new Date(category.createdAt), 'PPP')}</p>
+                    </div>
+                  </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Hash className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Asset Statistics</h3>
+                </div>
                 <div className="space-y-3">
                   {Object.entries(statusCounts).map(([status, count]) => (
                     <div key={status} className="flex items-center justify-between">
@@ -227,8 +441,9 @@ export function CategoryDetailsView({
                     </div>
                   </div>
                 )}
+              </div>
             </div>
-          </div>
+          )}
         </TabsContent>
 
         <TabsContent value="assets" className="space-y-4">

@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Package, DollarSign } from "lucide-react"
 import { toast } from "sonner"
 import { 
@@ -155,14 +155,14 @@ export function EditCategoryDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Information */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base">Basic Information</CardTitle>
-                <CardDescription>
-                  Category name and identification details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <h3 className="font-semibold">Basic Information</h3>
+                  <p className="text-sm text-muted-foreground">Category name and identification details</p>
+                </div>
+              </div>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -244,21 +244,17 @@ export function EditCategoryDialog({
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+            </div>
 
             {/* Default GL Accounts */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Default GL Accounts (Optional)
-                </CardTitle>
-                <CardDescription>
-                  Set default accounts for assets in this category. These can be overridden per asset.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <h3 className="font-semibold">Default GL Accounts (Optional)</h3>
+                  <p className="text-sm text-muted-foreground">Set default accounts for assets in this category. These can be overridden per asset.</p>
+                </div>
+              </div>
                 <FormField
                   control={form.control}
                   name="defaultAssetAccountId"
@@ -336,22 +332,20 @@ export function EditCategoryDialog({
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
+            </div>
 
             {/* Category Stats */}
             {category._count.assets > 0 && (
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base">Category Usage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    This category is currently used by <strong>{category._count.assets}</strong> asset(s).
-                    Changes to default accounts will only affect new assets created in this category.
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-medium">Category Usage</h4>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  This category is currently used by <strong>{category._count.assets}</strong> asset(s).
+                  Changes to default accounts will only affect new assets created in this category.
+                </div>
+              </div>
             )}
 
             <DialogFooter>

@@ -322,3 +322,118 @@ export async function triggerDepreciationSchedules() {
     }
   }
 }
+
+export async function getScheduleDetails(scheduleId: string, businessUnitId: string) {
+  try {
+    const schedule = await prisma.depreciationSchedule.findFirst({
+      where: {
+        id: scheduleId,
+        businessUnitId
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        executions: {
+          include: {
+            executor: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            _count: {
+              select: {
+                assetDetails: true
+              }
+            }
+          },
+          orderBy: { executionDate: 'desc' },
+          take: 20
+        },
+        _count: {
+          select: { executions: true }
+        }
+      }
+    })
+
+    if (!schedule) {
+      return null
+    }
+
+    // Get categories for display
+    const categories = await prisma.assetCategory.findMany({
+      where: { 
+        businessUnitId,
+        id: { 
+          in: [...schedule.includeCategories, ...schedule.excludeCategories] 
+        }
+      },
+      select: {
+        id: true,
+        name: true
+      }
+    })
+
+    // Get assets that would be affected by this schedule
+    let assetWhereClause: any = {
+      businessUnitId,
+      isActive: true,
+      depreciationMethod: { not: null },
+      isFullyDepreciated: false
+    }
+
+    if (schedule.includeCategories.length > 0) {
+      assetWhereClause.categoryId = { in: schedule.includeCategories }
+    }
+
+    if (schedule.excludeCategories.length > 0) {
+      assetWhereClause.categoryId = { notIn: schedule.excludeCategories }
+    }
+
+    const affectedAssetsCount = await prisma.asset.count({
+      where: assetWhereClause
+    })
+
+    const totalAssetValue = await prisma.asset.aggregate({
+      where: assetWhereClause,
+      _sum: {
+        currentBookValue: true
+      }
+    })
+
+    return {
+      ...schedule,
+      description: schedule.description ?? undefined,
+      creator: {
+        ...schedule.creator,
+        email: schedule.creator.email ?? undefined
+      },
+      executions: schedule.executions.map(execution => ({
+        ...execution,
+        totalDepreciationAmount: Number(execution.totalDepreciationAmount),
+        executionDurationMs: execution.executionDurationMs ?? undefined,
+        errorMessage: execution.errorMessage ?? undefined,
+        executor: execution.executor ? {
+          ...execution.executor,
+          email: execution.executor.email ?? undefined
+        } : undefined,
+        assetCount: execution._count.assetDetails
+      })),
+      categories: categories.reduce((acc, cat) => {
+        acc[cat.id] = cat.name
+        return acc
+      }, {} as Record<string, string>),
+      affectedAssetsCount,
+      totalAssetValue: Number(totalAssetValue._sum.currentBookValue || 0)
+    }
+  } catch (error) {
+    console.error("Error fetching schedule details:", error)
+    return null
+  }
+}
