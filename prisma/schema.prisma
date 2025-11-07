@@ -265,7 +265,7 @@ model Role {
 model AssetCategory {
   id             String   @id @default(uuid())
   name           String
-  code           String   @unique
+  code           String
   description    String?
   businessUnitId String?
   isActive       Boolean  @default(true)
