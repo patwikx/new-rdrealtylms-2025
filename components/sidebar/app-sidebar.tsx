@@ -246,7 +246,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
   }
 
   // Add admin-only items
-  const adminRoles = ['ADMIN']
+  const adminRoles = ['ADMIN', 'HR']
   if (adminRoles.includes(userRole)) {
     baseItems.push({
       title: "Administration",
