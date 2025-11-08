@@ -9,22 +9,7 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  session: { 
-    strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 hours (28800 seconds)
-  },
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 8 * 60 * 60, // 8 hours - standard work session
-      },
-    },
-  },
+  session: { strategy: "jwt" },
   pages: {
     signIn: "/auth/sign-in",
     error: "/auth/error",
