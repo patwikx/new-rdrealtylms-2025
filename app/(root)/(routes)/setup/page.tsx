@@ -1,27 +1,33 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { SetupPageClient } from "@/components/setup/setup-page-client";
+import { auth, signOut } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function SetupPage() {
   const session = await auth();
   
   // If no session, redirect to login
   if (!session?.user) {
-    redirect("/");
+    redirect("/auth/sign-in");
   }
   
-  // If user is admin, redirect to admin business unit management
+  // If user is ADMIN, redirect to admin business unit management
   if (session.user.role === "ADMIN") {
     redirect("/admin/business-units");
   }
   
-  // If user already has business unit, redirect to their dashboard
-  if (session.user.businessUnit?.id) {
-    redirect(`/${session.user.businessUnit.id}`);
+  // Fetch user's business unit from database
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      businessUnitId: true,
+    },
+  });
+  
+  // If user has a business unit, redirect to their dashboard
+  if (user?.businessUnitId) {
+    redirect(`/${user.businessUnitId}`);
   }
-
-  // Users without business units should wait for admin assignment
-
-  // Show setup page for regular users without business unit
-  return <SetupPageClient user={session.user} />;
+  
+  // If user has no business unit, force logout
+  await signOut({ redirectTo: "/auth/sign-in?error=NoBusinessUnit&logout=true" });
 }
