@@ -11,7 +11,7 @@ export const {
 } = NextAuth({
   session: { 
     strategy: "jwt",
-    maxAge: 60, // 60 seconds
+    maxAge: 8 * 60 * 60, // 8 hours (28800 seconds)
   },
   cookies: {
     sessionToken: {
@@ -21,7 +21,7 @@ export const {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 60, // 60 seconds - expires after 60 seconds of inactivity
+        maxAge: 8 * 60 * 60, // 8 hours - standard work session
       },
     },
   },
