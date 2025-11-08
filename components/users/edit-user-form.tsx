@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-;
+import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format as formatDate } from "date-fns";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -84,6 +89,8 @@ export function EditUserForm({
     roleId: user.roleId || (roles.length > 0 ? roles[0].id : ""),
     departmentId: user.department?.id || (departments.length > 0 ? departments[0].id : ""),
     approverId: user.approver?.id || (managers.length > 0 ? managers[0].id : ""),
+    isActive: user.isActive ?? true,
+    terminateDate: user.terminateDate || null,
   });
 
   // Debug: Log initial values (remove in production)
@@ -128,6 +135,8 @@ export function EditUserForm({
         roleId: formData.roleId,
         departmentId: formData.departmentId,
         approverId: formData.approverId,
+        isActive: formData.isActive,
+        terminateDate: formData.terminateDate,
       });
 
       if (result.error) {
@@ -203,10 +212,10 @@ export function EditUserForm({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean | Date | null) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: field === "isActive" ? value === "true" || value === true : value
     }));
   };
 
@@ -294,6 +303,54 @@ export function EditUserForm({
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   className="h-9"
                 />
+              </div>
+
+              {/* Active Status and Terminate Date */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="isActive" className="text-sm font-medium">Account Status</Label>
+                  <div className="flex items-center space-x-2 h-9">
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => handleInputChange("isActive", checked.toString())}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {formData.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="terminateDate" className="text-sm font-medium">Terminate Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="terminateDate"
+                        variant="outline"
+                        className={cn(
+                          "w-full h-9 justify-start text-left font-normal",
+                          !formData.terminateDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.terminateDate ? (
+                          formatDate(new Date(formData.terminateDate), "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.terminateDate ? new Date(formData.terminateDate) : undefined}
+                        onSelect={(date) => handleInputChange("terminateDate", date ? date.toISOString() : "")}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
 
               {/* Department */}
@@ -416,6 +473,21 @@ export function EditUserForm({
             </div>
             
             <div className="space-y-3 p-3 bg-muted/20 rounded-md">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Account Status:</span>
+                <span className={cn(
+                  "font-medium",
+                  user.isActive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                )}>
+                  {user.isActive ? "Active" : "Inactive"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Last Login:</span>
+                <span className="font-medium text-right">
+                  {user.lastLoginAt ? formatDate(new Date(user.lastLoginAt), "MMM dd, yyyy HH:mm") : "Never"}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Direct Reports:</span>
                 <span className="font-medium">{user.directReportsCount || "0"}</span>

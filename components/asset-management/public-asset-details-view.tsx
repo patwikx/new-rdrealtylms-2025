@@ -16,8 +16,78 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 
+interface AssetCategory {
+  id: string
+  name: string
+  code: string
+  description: string | null
+}
+
+interface BusinessUnit {
+  id: string
+  name: string
+  code: string
+}
+
+interface Department {
+  id: string
+  name: string
+  code: string
+}
+
+interface Employee {
+  id: string
+  name: string
+  employeeId: string
+}
+
+interface AssetDeployment {
+  id: string
+  transmittalNumber: string
+  deployedDate: Date | string
+  expectedReturnDate: Date | string | null
+  returnedDate: Date | string | null
+  status: string
+  employee: Employee
+}
+
+interface AssetHistory {
+  id: string
+  action: string
+  notes: string | null
+  performedAt: Date | string
+  employee: Employee | null
+}
+
+interface PublicAssetData {
+  id: string
+  itemCode: string
+  description: string
+  serialNumber: string | null
+  modelNumber: string | null
+  brand: string | null
+  quantity: number
+  location: string | null
+  notes: string | null
+  status: string
+  isActive: boolean
+  purchasePrice: number | null
+  currentBookValue: number | null
+  accumulatedDepreciation: number
+  purchaseDate: Date | string | null
+  warrantyExpiry: Date | string | null
+  category: AssetCategory | null
+  businessUnit: BusinessUnit | null
+  department: Department | null
+  createdBy: Employee | null
+  createdAt: Date | string
+  updatedAt: Date | string
+  currentDeployment: AssetDeployment | null
+  recentHistory: AssetHistory[]
+}
+
 interface PublicAssetDetailsViewProps {
-  asset: any
+  asset: PublicAssetData
 }
 
 export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
@@ -248,7 +318,7 @@ export function PublicAssetDetailsView({ asset }: PublicAssetDetailsViewProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {asset.recentHistory.slice(0, 10).map((history: any, index: number) => (
+              {asset.recentHistory.slice(0, 10).map((history: AssetHistory) => (
                 <div key={history.id} className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">

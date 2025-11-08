@@ -266,6 +266,10 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
           url: `/${businessUnitId}/admin/business-units`,
         },
         {
+          title: "GL Accounts",
+          url: `/${businessUnitId}/admin/gl-accounts`,
+        },
+        {
           title: "User Management",
           url: `/${businessUnitId}/admin/users`,
         },
@@ -278,8 +282,8 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
             url: `/${businessUnitId}/admin/system-permissions`,
           },
         {
-          title: "GL Accounts",
-          url: `/${businessUnitId}/admin/gl-accounts`,
+          title: "Audit Logs",
+          url: `/${businessUnitId}/admin/audit-logs`,
         },
       ],
     });
@@ -317,6 +321,7 @@ export function AppSidebar({
 
 
   const userData = React.useMemo(() => ({
+    id: session.user.id,
     name: session.user.name,
     email: session.user.email ?? '',
     avatar: '', // No avatar field in current schema

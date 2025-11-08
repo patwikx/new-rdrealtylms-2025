@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "./auth.config"
+import { logUserLogin } from "@/lib/actions/audit-log-actions"
 
 export const {
   handlers: { GET, POST },
@@ -24,7 +25,18 @@ export const {
         where: { id: user.id } 
       });
       
-      return !!existingUser;
+      if (!existingUser) return false;
+      
+      // Update last login timestamp
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() }
+      });
+      
+      // Log the login event to audit logs
+      await logUserLogin(user.id);
+      
+      return true;
     },
     
     async jwt({ token, user }) {

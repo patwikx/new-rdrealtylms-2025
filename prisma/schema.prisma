@@ -68,16 +68,12 @@ model User {
   department         Department?         @relation(fields: [deptId], references: [id])
 
   // Asset Management Fields (NEW - all optional for safety)
-  firstName     String?
-  lastName      String?
-  middleName    String?
   position      String?
   roleId        String?
   isActive      Boolean?  @default(true)
   hireDate      DateTime?
   terminateDate DateTime?
   emailVerified DateTime?
-  image         String?
   lastLoginAt   DateTime?
 
   // Asset Management Relations (NEW - safe to add)

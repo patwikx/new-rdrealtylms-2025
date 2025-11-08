@@ -16,6 +16,11 @@ export const authConfig = {
           
           if (!user || !user.password) return null;
           
+          // Check if user account is active
+          if (user.isActive === false) {
+            throw new Error("Your account has been deactivated. Please contact your administrator.");
+          }
+          
           const passwordsMatch = await bcryptjs.compare(
             password,
             user.password

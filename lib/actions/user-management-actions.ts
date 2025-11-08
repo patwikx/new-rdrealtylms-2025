@@ -12,6 +12,9 @@ export interface UserWithDetails {
   employeeId: string;
   role: UserRole;
   roleId: string | null;
+  isActive: boolean | null;
+  terminateDate: Date | null;
+  lastLoginAt: Date | null;
   createdAt: Date;
   businessUnit: {
     id: string;
@@ -311,6 +314,7 @@ export async function updateUser(
     departmentId?: string;
     approverId?: string;
     isActive?: boolean;
+    terminateDate?: Date | null;
   }
 ): Promise<{ success?: string; error?: string }> {
   try {
@@ -367,8 +371,8 @@ export async function updateUser(
         ...(data.roleId !== undefined && { roleId: data.roleId || null }),
         ...(data.approverId !== undefined && { approverId: data.approverId || null }),
         ...(data.departmentId !== undefined && { deptId: data.departmentId || null }),
-        // Note: isActive field not yet implemented in schema
-        // ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.terminateDate !== undefined && { terminateDate: data.terminateDate }),
       },
     });
     

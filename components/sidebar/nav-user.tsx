@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useTheme } from "next-themes"
+import { logUserLogout } from "@/lib/actions/audit-log-actions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,7 @@ import { toast } from "sonner"
 
 interface NavUserProps {
   user: {
+    id?: string
     name: string
     email: string
     avatar: string
@@ -94,6 +96,11 @@ export function NavUser({ user }: NavUserProps) {
 
   const handleSignOut = React.useCallback(async () => {
     try {
+      // Log the logout event before signing out
+      if (user.id) {
+        await logUserLogout(user.id);
+      }
+      
       await signOut({ 
         callbackUrl: '/auth/sign-in',
         redirect: true 
@@ -101,7 +108,7 @@ export function NavUser({ user }: NavUserProps) {
     } catch (error) {
       toast.error(`Sign out error: ${error}`)
     }
-  }, [])
+  }, [user.id])
 
   const userInitials = React.useMemo(() => getUserInitials(user.name), [user.name])
   const avatarSrc = mounted ? (profileImageUrl || user.avatar) : user.avatar

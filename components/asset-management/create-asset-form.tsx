@@ -82,8 +82,8 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
       notes: "",
       purchasePrice: undefined,
       salvageValue: 0,
-      usefulLifeYears: undefined,
-      usefulLifeMonths: 0,
+      usefulLifeYears: 0,
+      usefulLifeMonths: undefined,
       depreciationMethod: "STRAIGHT_LINE",
       status: "AVAILABLE",
       isActive: true,
@@ -98,11 +98,10 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
   const watchedCategoryId = form.watch("categoryId")
   const watchedDepreciationMethod = form.watch("depreciationMethod")
   const watchedPurchasePrice = form.watch("purchasePrice")
-  const watchedUsefulLifeYears = form.watch("usefulLifeYears")
+  const watchedUsefulLifeMonths = form.watch("usefulLifeMonths")
   const watchedSalvageValue = form.watch("salvageValue")
   const watchedIsPreDepreciated = form.watch("isPreDepreciated")
   const watchedOriginalPurchasePrice = form.watch("originalPurchasePrice")
-  const watchedOriginalUsefulLifeYears = form.watch("originalUsefulLifeYears")
   const watchedPriorDepreciationAmount = form.watch("priorDepreciationAmount")
   const watchedSystemEntryBookValue = form.watch("systemEntryBookValue")
 
@@ -133,7 +132,6 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
     if (watchedIsPreDepreciated) {
       const originalPurchaseDate = form.watch("originalPurchaseDate")
       const originalPurchasePrice = form.watch("originalPurchasePrice")
-      const originalUsefulLifeYears = form.watch("originalUsefulLifeYears")
       const originalUsefulLifeMonths = form.watch("originalUsefulLifeMonths")
       const systemEntryDate = form.watch("systemEntryDate")
 
@@ -146,11 +144,9 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
       }
       
       // Sync depreciation information
-      if (originalUsefulLifeYears) {
-        form.setValue("usefulLifeYears", originalUsefulLifeYears)
-      }
       if (originalUsefulLifeMonths !== undefined) {
         form.setValue("usefulLifeMonths", originalUsefulLifeMonths)
+        form.setValue("usefulLifeYears", 0)
       }
       
       // Set depreciation start date to system entry date if useSystemEntryAsStart is true
@@ -162,7 +158,6 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
     watchedIsPreDepreciated,
     form.watch("originalPurchaseDate"),
     form.watch("originalPurchasePrice"),
-    form.watch("originalUsefulLifeYears"),
     form.watch("originalUsefulLifeMonths"),
     form.watch("systemEntryDate"),
     form.watch("useSystemEntryAsStart"),
@@ -202,9 +197,9 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
   // Calculate estimated monthly depreciation
   const calculateMonthlyDepreciation = () => {
     // Handle pre-depreciated assets
-    if (watchedIsPreDepreciated && watchedSystemEntryBookValue && watchedOriginalUsefulLifeYears) {
+    if (watchedIsPreDepreciated && watchedSystemEntryBookValue && form.watch("originalUsefulLifeMonths")) {
       const remainingBookValue = watchedSystemEntryBookValue - (watchedSalvageValue || 0)
-      const originalTotalMonths = watchedOriginalUsefulLifeYears * 12 + (form.watch("originalUsefulLifeMonths") || 0)
+      const originalTotalMonths = form.watch("originalUsefulLifeMonths") || 0
       const priorMonths = watchedPriorDepreciationAmount ? form.watch("priorDepreciationMonths") || 0 : 0
       const remainingMonths = originalTotalMonths - priorMonths
       
@@ -212,21 +207,22 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
     }
     
     // Standard depreciation calculation
-    if (!watchedPurchasePrice || !watchedUsefulLifeYears || !watchedDepreciationMethod) {
+    if (!watchedPurchasePrice || !watchedUsefulLifeMonths || !watchedDepreciationMethod) {
       return 0
     }
     
     const purchasePrice = watchedPurchasePrice
     const salvageValue = watchedSalvageValue || 0
     const depreciableAmount = purchasePrice - salvageValue
-    const totalMonths = watchedUsefulLifeYears * 12
+    const totalMonths = watchedUsefulLifeMonths
     
     switch (watchedDepreciationMethod) {
       case 'STRAIGHT_LINE':
         return totalMonths > 0 ? depreciableAmount / totalMonths : 0
       case 'DECLINING_BALANCE':
         // Assuming 200% declining balance (double declining)
-        const rate = (2 / watchedUsefulLifeYears) * 100
+        const usefulLifeYears = totalMonths / 12
+        const rate = (2 / usefulLifeYears) * 100
         return (purchasePrice * rate / 100) / 12
       default:
         return 0
@@ -702,7 +698,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                 </h3>
               </div>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <FormField
                     control={form.control}
                     name="depreciationMethod"
@@ -711,7 +707,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                         <FormLabel>Depreciation Method</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select method" />
                             </SelectTrigger>
                           </FormControl>
@@ -764,15 +760,13 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
+                                    <FormField
                     control={form.control}
-                    name="usefulLifeYears"
+                    name="usefulLifeMonths"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Useful Life (Years)</FormLabel>
+                        <FormLabel>Useful Life (Months)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -780,27 +774,6 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                             placeholder="0"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="usefulLifeMonths"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Additional Months</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="11"
-                            placeholder="0"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -829,6 +802,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                     )}
                   />
                 </div>
+
 
                 {/* Method-specific fields */}
                 {watchedDepreciationMethod === 'DECLINING_BALANCE' && (
@@ -882,7 +856,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                 )}
 
                 {/* Depreciation Preview */}
-                {((watchedPurchasePrice && watchedUsefulLifeYears) || (watchedIsPreDepreciated && watchedSystemEntryBookValue)) && (
+                {((watchedPurchasePrice && watchedUsefulLifeMonths) || (watchedIsPreDepreciated && watchedSystemEntryBookValue)) && (
                   <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                     <h4 className="text-sm font-medium mb-2">
                       {watchedIsPreDepreciated ? "Future Depreciation Preview" : "Depreciation Preview"}
@@ -954,13 +928,11 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                             // Reset pre-depreciation fields when disabled
                             form.setValue("originalPurchaseDate", undefined)
                             form.setValue("originalPurchasePrice", undefined)
-                            form.setValue("originalUsefulLifeYears", undefined)
                             form.setValue("originalUsefulLifeMonths", undefined)
                             form.setValue("priorDepreciationAmount", 0)
                             form.setValue("priorDepreciationMonths", 0)
                             form.setValue("systemEntryDate", undefined)
                             form.setValue("systemEntryBookValue", undefined)
-                            form.setValue("remainingUsefulLifeYears", undefined)
                             form.setValue("remainingUsefulLifeMonths", undefined)
                             form.setValue("useSystemEntryAsStart", false)
                           } else {
@@ -1182,10 +1154,10 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                     <FormField
                       control={form.control}
-                      name="originalUsefulLifeYears"
+                      name="originalUsefulLifeMonths"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Original Useful Life (Years) <span className="text-red-500">*</span></FormLabel>
+                          <FormLabel>Original Useful Life (Months) <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -1193,27 +1165,6 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                               placeholder="0"
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="originalUsefulLifeMonths"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Additional Months</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="11"
-                              placeholder="0"
-                              {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1261,10 +1212,8 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                         </FormItem>
                       )}
                     />
-                  </div>
-                  </div>
 
-                  <FormField
+                    <FormField
                     control={form.control}
                     name="systemEntryBookValue"
                     render={({ field }) => (
@@ -1284,6 +1233,10 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       </FormItem>
                     )}
                   />
+                  </div>
+                  </div>
+
+                  
 
                   <FormField
                     control={form.control}
