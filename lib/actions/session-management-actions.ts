@@ -12,8 +12,15 @@ export async function createSessionRecord(userId: string, sessionToken: string) 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 5);
 
-    await prisma.session.create({
-      data: {
+    // Use upsert to handle duplicate sessionToken (shouldn't happen but just in case)
+    await prisma.session.upsert({
+      where: {
+        sessionToken,
+      },
+      update: {
+        expires: expiresAt,
+      },
+      create: {
         sessionToken,
         userId,
         expires: expiresAt,

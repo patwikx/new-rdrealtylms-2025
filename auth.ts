@@ -59,45 +59,36 @@ export const {
         // Create session record in database for tracking
         const sessionToken = randomUUID();
         token.sessionToken = sessionToken;
-        await createSessionRecord(user.id, sessionToken);
+        
+        try {
+          await createSessionRecord(user.id, sessionToken);
+        } catch (error) {
+          console.error("Failed to create session record:", error);
+          // Continue with login even if session creation fails
+        }
       }
       return token;
     },
     
     async session({ session, token }) {
-      // If token doesn't have required fields (old JWT), return null to force re-login
-      if (!token.id || !token.employeeId || !token.role) {
+      // Send properties to the client - types are guaranteed by JWT interface
+      if (token.id) {
         return {
           ...session,
           user: {
             ...session.user,
-            id: "", // Empty string will trigger logout in middleware
-            employeeId: "",
-            email: null,
-            name: "",
-            role: "USER" as const,
-            classification: null,
-            businessUnit: null,
-            department: null,
+            id: token.id,
+            employeeId: token.employeeId,
+            email: token.email,
+            name: token.name,
+            role: token.role,
+            classification: token.classification,
+            businessUnit: token.businessUnit,
+            department: token.department,
           },
         };
       }
-      
-      // Send properties to the client - types are guaranteed by JWT interface
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-          employeeId: token.employeeId,
-          email: token.email,
-          name: token.name,
-          role: token.role,
-          classification: token.classification,
-          businessUnit: token.businessUnit,
-          department: token.department,
-        },
-      };
+      return session;
     },
   },
 });
