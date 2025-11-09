@@ -2,6 +2,8 @@ import NextAuth from "next-auth"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "./auth.config"
 import { logUserLogin } from "@/lib/actions/audit-log-actions"
+import { createSessionRecord } from "@/lib/actions/session-management-actions"
+import { randomUUID } from "crypto"
 
 export const {
   handlers: { GET, POST },
@@ -11,8 +13,7 @@ export const {
 } = NextAuth({
   session: { 
     strategy: "jwt",
-  maxAge: 5 * 60, // 5 minutes of inactivity
-  updateAge: 60, // Refresh token every 60 seconds if active
+    maxAge: 8 * 60 * 60, // 8 hours in seconds (28800 seconds)
   },
   pages: {
     signIn: "/auth/sign-in",
@@ -54,25 +55,31 @@ export const {
         token.classification = user.classification;
         token.businessUnit = user.businessUnit;
         token.department = user.department;
+        
+        // Create session record in database for tracking
+        const sessionToken = randomUUID();
+        token.sessionToken = sessionToken;
+        await createSessionRecord(user.id, sessionToken);
       }
       return token;
     },
     
     async session({ session, token }) {
-      // Send properties to the client
-      if (token && token.id) {
+      // Send properties to the client - types are guaranteed by JWT interface
+      if (token.id) {
         return {
           ...session,
           user: {
-            id: token.id as string,
-            employeeId: token.employeeId as string,
-            email: token.email as string | null,
-            name: token.name as string,
-            role: token.role as typeof session.user.role,
-            classification: token.classification as typeof session.user.classification,
-            businessUnit: token.businessUnit as typeof session.user.businessUnit,
-            department: token.department as typeof session.user.department,
-          }
+            ...session.user,
+            id: token.id,
+            employeeId: token.employeeId,
+            email: token.email,
+            name: token.name,
+            role: token.role,
+            classification: token.classification,
+            businessUnit: token.businessUnit,
+            department: token.department,
+          },
         };
       }
       return session;

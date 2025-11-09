@@ -55,5 +55,6 @@ declare module "next-auth/jwt" {
     classification: EmployeeClassification | null;
     businessUnit: UserBusinessUnit | null;
     department: UserDepartment | null;
+    sessionToken?: string; // For hybrid session tracking
   }
 }

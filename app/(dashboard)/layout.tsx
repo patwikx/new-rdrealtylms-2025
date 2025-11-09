@@ -13,6 +13,7 @@ import { AppSidebar } from '@/components/sidebar/app-sidebar';
 import { Separator } from '@/components/ui/separator';
 import { DynamicBreadcrumbs } from '@/components/dynamic-breadcurmbs';
 import { SecurityMonitor } from '@/components/auth/security-monitor';
+import { SessionMonitor } from '@/components/auth/session-monitor';
 
 export const metadata = {
   title: "Dashboard | Leave Management System",
@@ -186,6 +187,9 @@ export default async function DashboardLayout({
         userBusinessUnitId={session.user.businessUnit.id}
         userRole={session.user.role}
       />
+      
+      {/* Session Monitor - Hybrid JWT + Database session validation */}
+      <SessionMonitor checkInterval={30000} />
       
       <div className="min-h-screen flex w-full">
         {/* App Sidebar */}
