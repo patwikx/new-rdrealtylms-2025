@@ -65,24 +65,39 @@ export const {
     },
     
     async session({ session, token }) {
-      // Send properties to the client - types are guaranteed by JWT interface
-      if (token.id) {
+      // If token doesn't have required fields (old JWT), return null to force re-login
+      if (!token.id || !token.employeeId || !token.role) {
         return {
           ...session,
           user: {
             ...session.user,
-            id: token.id,
-            employeeId: token.employeeId,
-            email: token.email,
-            name: token.name,
-            role: token.role,
-            classification: token.classification,
-            businessUnit: token.businessUnit,
-            department: token.department,
+            id: "", // Empty string will trigger logout in middleware
+            employeeId: "",
+            email: null,
+            name: "",
+            role: "USER" as const,
+            classification: null,
+            businessUnit: null,
+            department: null,
           },
         };
       }
-      return session;
+      
+      // Send properties to the client - types are guaranteed by JWT interface
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id,
+          employeeId: token.employeeId,
+          email: token.email,
+          name: token.name,
+          role: token.role,
+          classification: token.classification,
+          businessUnit: token.businessUnit,
+          department: token.department,
+        },
+      };
     },
   },
 });

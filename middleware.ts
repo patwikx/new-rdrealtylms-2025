@@ -7,19 +7,26 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  
+  // Check if session has invalid/empty user ID (old JWT token)
+  const hasInvalidSession = isLoggedIn && req.auth?.user && !req.auth.user.id;
 
   // Logic to handle redirects for auth pages
   const isAuthRoute = nextUrl.pathname.startsWith("/auth");
   if (isAuthRoute) {
-    if (isLoggedIn) {
+    if (isLoggedIn && !hasInvalidSession) {
       return NextResponse.redirect(new URL("/setup", nextUrl));
     }
     return;
   }
 
-  // Protect all routes - always redirect to sign-in if not logged in
-  if (!isLoggedIn) {
-    return NextResponse.redirect(new URL("/auth/sign-in", nextUrl));
+  // Protect all routes - always redirect to sign-in if not logged in or has invalid session
+  if (!isLoggedIn || hasInvalidSession) {
+    const signInUrl = new URL("/auth/sign-in", nextUrl);
+    if (hasInvalidSession) {
+      signInUrl.searchParams.set("error", "SessionExpired");
+    }
+    return NextResponse.redirect(signInUrl);
   }
 
   // Handle root route - redirect authenticated users to setup

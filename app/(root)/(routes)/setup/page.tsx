@@ -10,6 +10,12 @@ export default async function SetupPage() {
     redirect("/auth/sign-in");
   }
   
+  // If session is incomplete (old JWT token), force re-login
+  if (!session.user.id) {
+    await signOut({ redirectTo: "/auth/sign-in?error=InvalidSession&logout=true" });
+    return;
+  }
+  
   // If user is ADMIN, redirect to admin business unit management
   if (session.user.role === "ADMIN") {
     redirect("/admin/business-units");

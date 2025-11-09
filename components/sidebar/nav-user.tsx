@@ -96,15 +96,16 @@ export function NavUser({ user }: NavUserProps) {
 
   const handleSignOut = React.useCallback(async () => {
     try {
-      // Log the logout event before signing out
+      // Use the server action that handles session cleanup and audit logging
       if (user.id) {
-        await logUserLogout(user.id);
+        const { signOutWithAudit } = await import("@/lib/actions/auth-actions");
+        await signOutWithAudit(user.id);
+      } else {
+        await signOut({ 
+          callbackUrl: '/auth/sign-in',
+          redirect: true 
+        });
       }
-      
-      await signOut({ 
-        callbackUrl: '/auth/sign-in',
-        redirect: true 
-      })
     } catch (error) {
       toast.error(`Sign out error: ${error}`)
     }

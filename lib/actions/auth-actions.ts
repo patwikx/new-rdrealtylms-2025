@@ -2,12 +2,16 @@
 
 import { signOut } from "@/auth";
 import { logUserLogout } from "./audit-log-actions";
+import { deleteUserSessions } from "./session-management-actions";
 
 /**
  * Sign out the current user and log the logout event
  */
 export async function signOutWithAudit(userId: string) {
   try {
+    // Delete user's database sessions
+    await deleteUserSessions(userId);
+    
     // Log the logout event before signing out
     await logUserLogout(userId);
     
