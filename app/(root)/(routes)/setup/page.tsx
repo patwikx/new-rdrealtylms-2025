@@ -10,10 +10,10 @@ export default async function SetupPage() {
     redirect("/auth/sign-in");
   }
   
-  // If session is incomplete (old JWT token), force re-login
+  // If session is incomplete (old JWT token), redirect to login
+  // Don't call signOut here to avoid redirect loop - middleware will handle it
   if (!session.user.id) {
-    await signOut({ redirectTo: "/auth/sign-in?error=InvalidSession&logout=true" });
-    return;
+    redirect("/auth/sign-in?error=InvalidSession");
   }
   
   // If user is ADMIN, redirect to admin business unit management
