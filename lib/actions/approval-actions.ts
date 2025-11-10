@@ -731,7 +731,7 @@ export async function getPendingOvertimeRequests({
           },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       skip,
       take: limit,
     });
@@ -1617,7 +1617,7 @@ export async function getApprovalHistory({
         name: true
       },
       orderBy: {
-        name: 'asc'
+        name: 'desc'
       }
     });
     

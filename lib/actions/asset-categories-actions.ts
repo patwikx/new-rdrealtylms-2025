@@ -109,7 +109,7 @@ export async function getAssetCategories({
             }
           }
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: 'desc' },
         skip,
         take: limit
       }),
@@ -304,7 +304,7 @@ export async function getCategoryAssets(categoryId: string, businessUnitId?: str
             }
           }
         },
-        orderBy: { itemCode: 'asc' },
+        orderBy: { itemCode: 'desc' },
         skip,
         take: limit
       }),
@@ -335,7 +335,7 @@ export async function getGLAccountsForCategories() {
         accountName: true,
         accountType: true
       },
-      orderBy: { accountCode: 'asc' }
+      orderBy: { accountCode: 'desc' }
     })
     
     return accounts
@@ -398,7 +398,7 @@ export async function getCategoryDetails(categoryId: string, businessUnitId?: st
               take: 1
             }
           },
-          orderBy: { itemCode: 'asc' }
+          orderBy: { itemCode: 'desc' }
         },
         _count: {
           select: {

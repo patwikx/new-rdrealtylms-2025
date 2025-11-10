@@ -74,7 +74,7 @@ function getStatusVariant(status: string) {
   }
 }
 
-function getApprovalStatusBadge(status: 'APPROVED' | 'REJECTED' | 'PENDING', type: 'manager' | 'hr') {
+function getApprovalStatusBadge(status: 'APPROVED' | 'REJECTED' | 'PENDING') {
   if (status === 'PENDING') {
     return (
       <Badge variant="secondary" className="text-xs">
@@ -118,6 +118,47 @@ export function OvertimeRequestsView({
   const [requests] = useState<OvertimeRequestWithDetails[]>(overtimeRequestsData.requests);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+
+  // Helper function to extract time without timezone conversion
+  const extractTimeFromDateTime = (dateTime: Date | string): string => {
+    let isoString: string;
+    
+    // Handle both Date objects and ISO strings
+    if (typeof dateTime === 'string') {
+      isoString = dateTime;
+    } else {
+      // If it's a Date object, convert to ISO string but we'll extract the UTC time
+      isoString = dateTime.toISOString();
+    }
+    
+    // Extract the time portion from ISO string (e.g., "2025-11-08T13:00:00.000Z" -> "13:00")
+    const timePart = isoString.split('T')[1]?.split('.')[0] || isoString.split('T')[1]?.split('Z')[0];
+    if (!timePart) return "";
+    
+    const [hours, minutes] = timePart.split(':');
+    const hour24 = parseInt(hours, 10);
+    const minute = minutes;
+    
+    // Convert to 12-hour format
+    let hour12: number;
+    let period: string;
+    
+    if (hour24 === 0) {
+      hour12 = 12;
+      period = "AM";
+    } else if (hour24 < 12) {
+      hour12 = hour24;
+      period = "AM";
+    } else if (hour24 === 12) {
+      hour12 = 12;
+      period = "PM";
+    } else {
+      hour12 = hour24 - 12;
+      period = "PM";
+    }
+    
+    return `${hour12}:${minute} ${period}`;
+  };
 
   const updateFilter = (key: string, value: string | undefined) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -263,8 +304,8 @@ export function OvertimeRequestsView({
                     </TableCell>
                     <TableCell>
                       {isSameDay 
-                        ? `${format(request.startTime, 'h:mm a')} - ${format(request.endTime, 'h:mm a')}`
-                        : `${format(request.startTime, 'MMM dd h:mm a')} - ${format(request.endTime, 'MMM dd h:mm a')}`
+                        ? `${extractTimeFromDateTime(request.startTime)} - ${extractTimeFromDateTime(request.endTime)}`
+                        : `${format(request.startTime, 'MMM dd')} ${extractTimeFromDateTime(request.startTime)} - ${format(request.endTime, 'MMM dd')} ${extractTimeFromDateTime(request.endTime)}`
                       }
                     </TableCell>
                     <TableCell className="font-medium">
@@ -281,11 +322,11 @@ export function OvertimeRequestsView({
                         <User className="h-4 w-4 text-blue-600" />
                         {(() => {
                           if (request.status === 'REJECTED') {
-                            return getApprovalStatusBadge('REJECTED', 'manager');
+                            return getApprovalStatusBadge('REJECTED');
                           } else if (request.managerComments !== null) {
-                            return getApprovalStatusBadge('APPROVED', 'manager');
+                            return getApprovalStatusBadge('APPROVED');
                           }
-                          return getApprovalStatusBadge('PENDING', 'manager');
+                          return getApprovalStatusBadge('PENDING');
                         })()}
                       </div>
                     </TableCell>
@@ -294,11 +335,11 @@ export function OvertimeRequestsView({
                         <Heart className="h-4 w-4 text-purple-600" />
                         {(() => {
                           if (request.status === 'REJECTED') {
-                            return getApprovalStatusBadge('REJECTED', 'hr');
+                            return getApprovalStatusBadge('REJECTED');
                           } else if (request.hrComments !== null || request.status === 'APPROVED') {
-                            return getApprovalStatusBadge('APPROVED', 'hr');
+                            return getApprovalStatusBadge('APPROVED');
                           }
-                          return getApprovalStatusBadge('PENDING', 'hr');
+                          return getApprovalStatusBadge('PENDING');
                         })()}
                       </div>
                     </TableCell>
@@ -363,8 +404,8 @@ export function OvertimeRequestsView({
                       <span className="text-muted-foreground">Time Period:</span>
                       <p className="font-medium">
                         {isSameDay 
-                          ? `${format(request.startTime, 'h:mm a')} - ${format(request.endTime, 'h:mm a')}`
-                          : `${format(request.startTime, 'MMM dd h:mm a')} - ${format(request.endTime, 'MMM dd h:mm a')}`
+                          ? `${extractTimeFromDateTime(request.startTime)} - ${extractTimeFromDateTime(request.endTime)}`
+                          : `${format(request.startTime, 'MMM dd')} ${extractTimeFromDateTime(request.startTime)} - ${format(request.endTime, 'MMM dd')} ${extractTimeFromDateTime(request.endTime)}`
                         }
                       </p>
                     </div>
@@ -391,11 +432,11 @@ export function OvertimeRequestsView({
                         <span className="text-xs font-medium">Manager:</span>
                         {(() => {
                           if (request.status === 'REJECTED') {
-                            return getApprovalStatusBadge('REJECTED', 'manager');
+                            return getApprovalStatusBadge('REJECTED');
                           } else if (request.managerComments !== null) {
-                            return getApprovalStatusBadge('APPROVED', 'manager');
+                            return getApprovalStatusBadge('APPROVED');
                           }
-                          return getApprovalStatusBadge('PENDING', 'manager');
+                          return getApprovalStatusBadge('PENDING');
                         })()}
                       </div>
                       <div className="flex items-center gap-2">
@@ -403,11 +444,11 @@ export function OvertimeRequestsView({
                         <span className="text-xs font-medium">HR:</span>
                         {(() => {
                           if (request.status === 'REJECTED') {
-                            return getApprovalStatusBadge('REJECTED', 'hr');
+                            return getApprovalStatusBadge('REJECTED');
                           } else if (request.hrComments !== null || request.status === 'APPROVED') {
-                            return getApprovalStatusBadge('APPROVED', 'hr');
+                            return getApprovalStatusBadge('APPROVED');
                           }
-                          return getApprovalStatusBadge('PENDING', 'hr');
+                          return getApprovalStatusBadge('PENDING');
                         })()}
                       </div>
                     </div>
