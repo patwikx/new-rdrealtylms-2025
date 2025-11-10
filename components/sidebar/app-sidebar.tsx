@@ -155,7 +155,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
   
 
   // Add management items for ADMIN and HR roles
-  if (userRole === "ADMIN" || userRole === "ACCTG") {
+  if (userRole === "ADMIN" || userRole === "ACCTG" || userRole === "HR") {
     baseItems.push(
       {
         title: "Asset Management",
