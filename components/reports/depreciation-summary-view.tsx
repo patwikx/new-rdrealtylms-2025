@@ -66,9 +66,24 @@ export function DepreciationSummaryView({
   currentFilters
 }: DepreciationSummaryViewProps) {
   const router = useRouter();
+  
+  // Helper function to format date for input without timezone issues
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to create date from input string in local timezone
+  const createLocalDate = (dateString: string): Date => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   const [filters, setFilters] = useState({
-    startDate: currentFilters.startDate ? currentFilters.startDate.toISOString().split('T')[0] : '',
-    endDate: currentFilters.endDate ? currentFilters.endDate.toISOString().split('T')[0] : '',
+    startDate: currentFilters.startDate ? formatDateForInput(currentFilters.startDate) : '',
+    endDate: currentFilters.endDate ? formatDateForInput(currentFilters.endDate) : '',
     categoryId: currentFilters.categoryId || 'all',
     departmentId: currentFilters.departmentId || 'all',
     depreciationMethod: currentFilters.depreciationMethod || 'all',
@@ -83,10 +98,11 @@ export function DepreciationSummaryView({
 
   const applyFilters = () => {
     const params = new URLSearchParams();
+    params.set('tab', 'summary'); // Ensure we stay on the summary tab
     Object.entries(filters).forEach(([filterKey, filterValue]) => {
       if (filterValue && filterValue !== 'all') params.set(filterKey, filterValue);
     });
-    router.push(`/${businessUnitId}/reports/depreciation/summary?${params.toString()}`);
+    router.push(`/${businessUnitId}/reports/depreciation?${params.toString()}`);
   };
 
   const clearFilters = () => {
@@ -99,7 +115,7 @@ export function DepreciationSummaryView({
       status: 'all',
       isFullyDepreciated: 'all'
     });
-    router.push(`/${businessUnitId}/reports/depreciation/summary`);
+    router.push(`/${businessUnitId}/reports/depreciation?tab=summary`);
   };
 
   const formatCurrency = (amount: number) => {
@@ -390,8 +406,8 @@ export function DepreciationSummaryView({
         <div className="space-y-2">
           <Label className="text-sm font-medium">Start Date</Label>
           <DatePicker
-            date={filters.startDate ? new Date(filters.startDate) : undefined}
-            onDateChange={(date) => handleFilterChange('startDate', date ? date.toISOString().split('T')[0] : '')}
+            date={filters.startDate ? createLocalDate(filters.startDate) : undefined}
+            onDateChange={(date) => handleFilterChange('startDate', date ? formatDateForInput(date) : '')}
             placeholder="Start date"
           />
         </div>
@@ -399,8 +415,8 @@ export function DepreciationSummaryView({
         <div className="space-y-2">
           <Label className="text-sm font-medium">End Date</Label>
           <DatePicker
-            date={filters.endDate ? new Date(filters.endDate) : undefined}
-            onDateChange={(date) => handleFilterChange('endDate', date ? date.toISOString().split('T')[0] : '')}
+            date={filters.endDate ? createLocalDate(filters.endDate) : undefined}
+            onDateChange={(date) => handleFilterChange('endDate', date ? formatDateForInput(date) : '')}
             placeholder="End date"
           />
         </div>
