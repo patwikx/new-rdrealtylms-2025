@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PendingOvertimeApprovalsResponse, PendingOvertimeRequest } from "@/lib/actions/approval-actions";
+import { PendingOvertimeApprovalsResponse } from "@/lib/actions/approval-actions";
 import { OvertimeApprovalActions } from "@/components/approvals/overtime-approval-actions";
 
 interface PendingOvertimeApprovalsViewProps {
@@ -215,16 +215,16 @@ export function PendingOvertimeApprovalsView({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <div className="font-medium">{format(request.startTime, 'MMM dd, yyyy')}</div>
+                        <div className="font-medium">{format(new Date(request.startTime), 'MMM dd, yyyy')}</div>
                         <div className="text-sm text-muted-foreground">
-                          {format(request.startTime, 'HH:mm')} - {format(request.endTime, 'HH:mm')}
+                          {format(new Date(request.startTime), 'h:mm a')} - {format(new Date(request.endTime), 'h:mm a')}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
                       {request.hours} hours
                     </TableCell>
-                    <TableCell>{format(request.createdAt, "MMM dd, yyyy")}</TableCell>
+                    <TableCell>{format(new Date(request.createdAt), "MMM dd, yyyy")}</TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate" title={request.reason}>
                         {request.reason}
@@ -276,12 +276,12 @@ export function PendingOvertimeApprovalsView({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Date:</span>
-                      <p className="font-medium">{format(request.startTime, 'MMM dd, yyyy')}</p>
+                      <p className="font-medium">{format(new Date(request.startTime), 'MMM dd, yyyy')}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Time:</span>
                       <p className="font-medium">
-                        {format(request.startTime, 'HH:mm')} - {format(request.endTime, 'HH:mm')}
+                        {format(new Date(request.startTime), 'h:mm a')} - {format(new Date(request.endTime), 'h:mm a')}
                       </p>
                     </div>
                     <div>
@@ -290,7 +290,7 @@ export function PendingOvertimeApprovalsView({
                     </div>
                     <div>
                       <span className="text-muted-foreground">Submitted:</span>
-                      <p className="font-medium">{format(request.createdAt, "MMM dd, yyyy")}</p>
+                      <p className="font-medium">{format(new Date(request.createdAt), "MMM dd, yyyy")}</p>
                     </div>
                   </div>
 
