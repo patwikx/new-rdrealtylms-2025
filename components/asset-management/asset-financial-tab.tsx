@@ -11,14 +11,16 @@ import {
   CheckCircle
 } from "lucide-react"
 import { format } from "date-fns"
+import { AssetMonthlyDepreciationSchedule } from "./asset-monthly-depreciation-schedule"
 import { AssetDetailsData } from "@/lib/actions/asset-details-actions"
 
 
 interface AssetFinancialTabProps {
   asset: AssetDetailsData
+  businessUnitId: string
 }
 
-export function AssetFinancialTab({ asset }: AssetFinancialTabProps) {
+export function AssetFinancialTab({ asset, businessUnitId }: AssetFinancialTabProps) {
   const depreciationPercentage = asset.purchasePrice && asset.accumulatedDepreciation
     ? (Number(asset.accumulatedDepreciation) / Number(asset.purchasePrice)) * 100
     : 0
@@ -155,8 +157,8 @@ export function AssetFinancialTab({ asset }: AssetFinancialTabProps) {
           <div className="p-4 bg-card border rounded-lg">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Useful Life</label>
             <div className="text-sm font-medium mt-2">
-              {asset.usefulLifeYears 
-                ? `${asset.usefulLifeYears} years${asset.usefulLifeMonths ? `, ${asset.usefulLifeMonths} months` : ''}`
+              {asset.usefulLifeYears || asset.usefulLifeMonths
+                ? `${(asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0)} months`
                 : 'Not Set'
               }
             </div>
@@ -265,6 +267,11 @@ export function AssetFinancialTab({ asset }: AssetFinancialTabProps) {
         </div>
       </div>
 
+      {/* Monthly Depreciation Schedule */}
+      <AssetMonthlyDepreciationSchedule 
+        assetId={asset.id} 
+        businessUnitId={businessUnitId}
+      />
 
     </div>
   )

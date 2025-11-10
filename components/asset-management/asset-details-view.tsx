@@ -363,7 +363,7 @@ export function AssetDetailsView({ asset, businessUnitId }: AssetDetailsViewProp
         </TabsContent>
 
         <TabsContent value="financial">
-          <AssetFinancialTab asset={asset} />
+          <AssetFinancialTab asset={asset} businessUnitId={businessUnitId} />
         </TabsContent>
 
         <TabsContent value="deployment">

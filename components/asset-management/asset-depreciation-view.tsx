@@ -150,10 +150,10 @@ export function AssetDepreciationView({
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setShowManualDialog(true)}
+                onClick={() => router.push(`/${businessUnitId}/asset-management/depreciation/calculate`)}
               >
-                <Clock className="h-4 w-4 mr-2" />
-                Manual Depreciation
+                <Calculator className="h-4 w-4 mr-2" />
+                Run Depreciation
               </Button>
               <Button 
                 variant="outline"
