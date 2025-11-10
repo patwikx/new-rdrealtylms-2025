@@ -45,13 +45,14 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
       isActive: true,
       items: [
         {
-          title: "Overview",
+          title: "LMS Dashboard",
           url: `/${businessUnitId}`,
         },
-        {
-          title: "Analytics",
-          url: `/${businessUnitId}/analytics`,
-        },
+        // Only show Asset Management Dashboard for ADMIN and ACCTG users
+        ...(userRole === "ADMIN" || userRole === "ACCTG" ? [{
+          title: "Asset Mngt. Dashboard",
+          url: `/${businessUnitId}/asset-management`,
+        }] : []),
       ],
     },
     {

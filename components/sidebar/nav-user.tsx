@@ -107,6 +107,15 @@ export function NavUser({ user }: NavUserProps) {
         });
       }
     } catch (error) {
+      // Ignore NEXT_REDIRECT errors - they're expected during signOut
+      const isRedirectError = 
+        error instanceof Error && 
+        ('digest' in error && typeof error.digest === 'string' && error.digest.includes('NEXT_REDIRECT'));
+      
+      if (isRedirectError) {
+        return; // This is expected, not an error
+      }
+      
       toast.error(`Sign out error: ${error}`)
     }
   }, [user.id])
