@@ -72,6 +72,47 @@ export function PendingOvertimeApprovalsView({
   const requests = approvalsData.overtimeRequests;
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Helper function to extract time without timezone conversion
+  const extractTimeFromDateTime = (dateTime: Date | string): string => {
+    let isoString: string;
+    
+    // Handle both Date objects and ISO strings
+    if (typeof dateTime === 'string') {
+      isoString = dateTime;
+    } else {
+      // If it's a Date object, convert to ISO string but we'll extract the UTC time
+      isoString = dateTime.toISOString();
+    }
+    
+    // Extract the time portion from ISO string (e.g., "2025-11-08T13:00:00.000Z" -> "13:00")
+    const timePart = isoString.split('T')[1]?.split('.')[0] || isoString.split('T')[1]?.split('Z')[0];
+    if (!timePart) return "";
+    
+    const [hours, minutes] = timePart.split(':');
+    const hour24 = parseInt(hours, 10);
+    const minute = minutes;
+    
+    // Convert to 12-hour format
+    let hour12: number;
+    let period: string;
+    
+    if (hour24 === 0) {
+      hour12 = 12;
+      period = "AM";
+    } else if (hour24 < 12) {
+      hour12 = hour24;
+      period = "AM";
+    } else if (hour24 === 12) {
+      hour12 = 12;
+      period = "PM";
+    } else {
+      hour12 = hour24 - 12;
+      period = "PM";
+    }
+    
+    return `${hour12}:${minute} ${period}`;
+  };
+
   const updateFilter = (key: string, value: string | undefined) => {
     const params = new URLSearchParams(searchParams.toString());
     
@@ -217,7 +258,7 @@ export function PendingOvertimeApprovalsView({
                       <div className="space-y-1">
                         <div className="font-medium">{format(new Date(request.startTime), 'MMM dd, yyyy')}</div>
                         <div className="text-sm text-muted-foreground">
-                          {format(new Date(request.startTime), 'h:mm a')} - {format(new Date(request.endTime), 'h:mm a')}
+                          {extractTimeFromDateTime(request.startTime)} - {extractTimeFromDateTime(request.endTime)}
                         </div>
                       </div>
                     </TableCell>
@@ -281,7 +322,7 @@ export function PendingOvertimeApprovalsView({
                     <div>
                       <span className="text-muted-foreground">Time:</span>
                       <p className="font-medium">
-                        {format(new Date(request.startTime), 'h:mm a')} - {format(new Date(request.endTime), 'h:mm a')}
+                        {extractTimeFromDateTime(request.startTime)} - {extractTimeFromDateTime(request.endTime)}
                       </p>
                     </div>
                     <div>
