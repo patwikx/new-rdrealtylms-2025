@@ -339,6 +339,7 @@ export function AppSidebar({
         <BusinessUnitSwitcher 
           items={businessUnits}
           className="px-2"
+          userRole={session.user.role}
         />
       </SidebarHeader>
       <SidebarContent>

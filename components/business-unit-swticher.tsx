@@ -35,6 +35,7 @@ import type { BusinessUnitItem } from "@/types/business-unit-types"
 interface BusinessUnitSwitcherProps {
   items: BusinessUnitItem[]
   className?: string
+  userRole?: string
 }
 
 // Define icon types for better type safety
@@ -87,7 +88,8 @@ const getBusinessUnitTypeLabel = (name: string): string => {
 
 export default function BusinessUnitSwitcher({ 
   className, 
-  items = [] 
+  items = [],
+  userRole
 }: BusinessUnitSwitcherProps) {
   const businessUnitModal = useBusinessUnitModal()
   const params = useParams()
@@ -99,7 +101,9 @@ export default function BusinessUnitSwitcher({
   // Type-safe params access
   const businessUnitId = typeof params.businessUnitId === 'string' ? params.businessUnitId : undefined
 
-  const isSwitcherActive = items.length > 1
+  // Only ADMIN and HR can switch business units
+  const canSwitchBusinessUnits = userRole === 'ADMIN' || userRole === 'HR'
+  const isSwitcherActive = items.length > 1 && canSwitchBusinessUnits
   const currentBusinessUnit = items.find((item) => item.id === businessUnitId)
 
   // Load business unit logos

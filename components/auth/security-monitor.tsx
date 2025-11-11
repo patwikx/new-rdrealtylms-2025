@@ -35,7 +35,8 @@ export function SecurityMonitor({ userBusinessUnitId, userRole }: SecurityMonito
         reason = "Invalid business unit format detected";
       }
       // Check if user is accessing unauthorized business unit
-      else if (userRole !== "ADMIN" && currentBusinessUnitId !== userBusinessUnitId) {
+      // Only ADMIN and HR can access different business units
+      else if (userRole !== "ADMIN" && userRole !== "HR" && currentBusinessUnitId !== userBusinessUnitId) {
         shouldLogout = true;
         reason = "Unauthorized business unit access detected";
       }
