@@ -680,9 +680,7 @@ export async function getPostedRequests(filters?: {
     }
 
     const whereClause: any = {
-      status: MRSRequestStatus.POSTED,
-      // Only show requests that have an e-signature (acknowledgement created)
-      signatureData: { not: null }
+      status: MRSRequestStatus.FOR_POSTING
     }
 
     if (filters?.businessUnitId) {
@@ -995,5 +993,154 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
   } catch (error) {
     console.error("Error fetching done requests:", error)
     return []
+  }
+}
+
+// Get requests that are ready to be served (FOR_SERVING status)
+export async function getRequestsToServe(filters?: {
+  businessUnitId?: string
+  search?: string
+}) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return []
+    }
+
+    // Check if user has permission to serve requests (PURCHASER role)
+    if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
+      return []
+    }
+
+    const whereClause: Record<string, unknown> = {
+      status: MRSRequestStatus.FOR_SERVING
+    }
+
+    if (filters?.businessUnitId) {
+      whereClause.businessUnitId = filters.businessUnitId
+    }
+
+    if (filters?.search) {
+      whereClause.OR = [
+        { docNo: { contains: filters.search, mode: 'insensitive' } },
+        { purpose: { contains: filters.search, mode: 'insensitive' } },
+        { requestedBy: { name: { contains: filters.search, mode: 'insensitive' } } }
+      ]
+    }
+
+    const requests = await prisma.materialRequest.findMany({
+      where: whereClause,
+      include: {
+        items: true,
+        businessUnit: true,
+        department: true,
+        requestedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+        recApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+        finalApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Convert Decimal fields to numbers for client serialization
+    const serializedRequests = requests.map(request => ({
+      ...request,
+      freight: Number(request.freight),
+      discount: Number(request.discount),
+      total: Number(request.total),
+      items: request.items.map(item => ({
+        ...item,
+        quantity: Number(item.quantity),
+        unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+        totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+      }))
+    }))
+
+    return serializedRequests
+  } catch (error) {
+    console.error("Error fetching requests to serve:", error)
+    return []
+  }
+}
+
+// Mark a request as served and move it to FOR_POSTING status
+export async function markRequestAsServed(params: {
+  requestId: string
+  businessUnitId: string
+  notes?: string
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, error: "Not authenticated" }
+    }
+
+    // Check if user has permission to mark as served
+    if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
+      return { success: false, error: "You don't have permission to mark requests as served" }
+    }
+
+    // Verify the request exists and is in FOR_SERVING status
+    const request = await prisma.materialRequest.findFirst({
+      where: {
+        id: params.requestId,
+        businessUnitId: params.businessUnitId,
+        status: MRSRequestStatus.FOR_SERVING
+      }
+    })
+
+    if (!request) {
+      return { success: false, error: "Request not found or not in FOR_SERVING status" }
+    }
+
+    // Update the request status to SERVED, then to FOR_POSTING
+    await prisma.materialRequest.update({
+      where: { id: params.requestId },
+      data: {
+        status: MRSRequestStatus.FOR_POSTING,
+        servedAt: new Date(),
+        servedBy: session.user.id,
+        servedNotes: params.notes,
+        updatedAt: new Date()
+      }
+    })
+
+    // Revalidate relevant paths
+    revalidatePath(`/${params.businessUnitId}/mrs-coordinator/to-serve`)
+    revalidatePath(`/${params.businessUnitId}/mrs-coordinator/posted`)
+    revalidatePath(`/${params.businessUnitId}/material-requests/${params.requestId}`)
+
+    return {
+      success: true,
+      message: `Request ${request.docNo} has been marked as served and is now ready for posting`
+    }
+  } catch (error) {
+    console.error("Error marking request as served:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to mark request as served"
+    }
   }
 }

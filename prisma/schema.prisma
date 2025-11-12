@@ -957,6 +957,10 @@ model MaterialRequest {
   acknowledgedBy   User?     @relation("MRSAcknowledgedBy", fields: [acknowledgedById], references: [id])
   signatureData    String?   @db.Text
 
+  servedAt    DateTime?
+  servedBy    String?
+  servedNotes String?   @db.Text
+
   items              MaterialRequestItem[]
   createdAssets      Asset[]               @relation("CreatedFromMRS")
   acknowledgmentForm MRSAcknowledgment?
@@ -1139,6 +1143,8 @@ enum MRSRequestStatus {
   FINAL_APPROVED
   FOR_POSTING
   POSTED
+  FOR_SERVING
+  SERVED
   RECEIVED
   TRANSMITTED
   CANCELLED

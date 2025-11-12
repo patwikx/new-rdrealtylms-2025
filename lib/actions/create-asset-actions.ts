@@ -182,7 +182,7 @@ export async function generateItemCode(categoryId: string) {
     const lastAsset = await prisma.asset.findFirst({
       where: {
         itemCode: {
-          startsWith: category.code
+          startsWith: `${category.code}-`
         }
       },
       orderBy: {
@@ -195,15 +195,17 @@ export async function generateItemCode(categoryId: string) {
     
     let nextNumber = 1
     if (lastAsset) {
-      // Extract the number part from the item code
-      const numberPart = lastAsset.itemCode.replace(category.code, '')
-      const currentNumber = parseInt(numberPart) || 0
-      nextNumber = currentNumber + 1
+      // Extract the number part from the item code (after the dash)
+      const parts = lastAsset.itemCode.split('-')
+      if (parts.length >= 2) {
+        const currentNumber = parseInt(parts[parts.length - 1]) || 0
+        nextNumber = currentNumber + 1
+      }
     }
     
-    // Format with leading zeros (e.g., IT001, IT002, etc.)
-    const formattedNumber = nextNumber.toString().padStart(3, '0')
-    return `${category.code}${formattedNumber}`
+    // Format with leading zeros (e.g., ITSZ-00001, ITSZ-00002, etc.)
+    const formattedNumber = nextNumber.toString().padStart(5, '0')
+    return `${category.code}-${formattedNumber}`
     
   } catch (error) {
     console.error("Error generating item code:", error)

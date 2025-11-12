@@ -137,12 +137,12 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
       icon: Truck,
       items: [
         {
-          title: "Acknowledgments",
-          url: `/${businessUnitId}/mrs-coordinator/acknowledgement`,
+          title: "For Serving - MRS",
+          url: `/${businessUnitId}/mrs-coordinator/for-serving`,
         },
         {
-          title: "Posted Requests",
-          url: `/${businessUnitId}/mrs-coordinator/posted`,
+          title: "For Posting Requests",
+          url: `/${businessUnitId}/mrs-coordinator/for-posting`,
         },
         {
           title: "Done Requests",

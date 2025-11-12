@@ -252,13 +252,12 @@ export async function approveMaterialRequest(
     } else if (materialRequest.status === MRSRequestStatus.FOR_FINAL_APPROVAL && 
                materialRequest.finalApproverId === userId &&
                materialRequest.recApprovalStatus === ApprovalStatus.APPROVED) {
-      // Final approval - directly post the request
+      // Final approval - move to FOR_SERVING so purchaser can serve it
       updateData = {
         finalApprovalStatus: ApprovalStatus.APPROVED,
         finalApprovalDate: new Date(),
-        status: MRSRequestStatus.POSTED, // Directly set to POSTED
-        dateApproved: new Date(),
-        datePosted: new Date()
+        status: MRSRequestStatus.FOR_SERVING, // Changed from POSTED to FOR_SERVING
+        dateApproved: new Date()
       }
     } else {
       return { error: "You are not authorized to approve this request" }
@@ -270,15 +269,16 @@ export async function approveMaterialRequest(
       data: updateData
     })
 
-    // Check if this was a final approval that triggers posting
+    // Check if this was a final approval that moves to serving
     const isFinalApproval = materialRequest.status === MRSRequestStatus.FOR_FINAL_APPROVAL && 
                            materialRequest.finalApproverId === userId &&
                            materialRequest.recApprovalStatus === ApprovalStatus.APPROVED
 
     revalidatePath(`/${businessUnitId}/approvals/material-requests/pending`)
+    revalidatePath(`/${businessUnitId}/mrs-coordinator/to-serve`)
     
     if (isFinalApproval) {
-      return { success: "Material request approved and posted successfully!", isPosting: true }
+      return { success: "Material request approved and ready for serving!", isPosting: false }
     }
     
     return { success: "Material request approved successfully" }
