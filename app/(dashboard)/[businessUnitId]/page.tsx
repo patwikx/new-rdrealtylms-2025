@@ -7,10 +7,12 @@ import {
   getUserLeaveBalances,
   getPendingApprovals
 } from "@/lib/actions/dashboard-actions";
+import { getDepreciationNotificationCount } from "@/lib/actions/depreciation-notification-actions";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentRequests } from "@/components/dashboard/recent-requests";
 import { LeaveBalanceCard } from "@/components/dashboard/leave-balance";
 import { PendingForApproval } from "@/components/dashboard/pending-for-approval";
+import { DepreciationNotificationDialog } from "@/components/dashboard/depreciation-notification-dialog";
 
 interface DashboardPageProps {
   params: Promise<{
@@ -33,6 +35,11 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
                     session.user.role === "HR" || 
                     session.user.role === "MANAGER";
 
+  // Check if user can see depreciation notifications
+  const canSeeDepreciation = session.user.role === "ADMIN" || 
+                            session.user.role === "ACCTG_MANAGER" || 
+                            session.user.role === "ACCTG";
+
   // Fetch all dashboard data in parallel
   const [
     stats,
@@ -40,12 +47,14 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
     recentOvertimeRequests,
     leaveBalances,
     pendingApprovals,
+    depreciationCount,
   ] = await Promise.all([
     getDashboardStats(businessUnitId),
     getRecentLeaveRequests(businessUnitId),
     getRecentOvertimeRequests(businessUnitId),
     getUserLeaveBalances(businessUnitId),
     canApprove ? getPendingApprovals(businessUnitId) : Promise.resolve({ leaveRequests: [], overtimeRequests: [] }),
+    canSeeDepreciation ? getDepreciationNotificationCount(businessUnitId) : Promise.resolve(0),
   ]);
 
   return (
@@ -97,6 +106,15 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
           leaveRequests={pendingApprovals.leaveRequests}
           overtimeRequests={pendingApprovals.overtimeRequests}
           businessUnitId={businessUnitId}
+        />
+      )}
+
+      {/* Depreciation Notification Dialog */}
+      {canSeeDepreciation && (
+        <DepreciationNotificationDialog
+          businessUnitId={businessUnitId}
+          initialCount={depreciationCount}
+          userRole={session.user.role}
         />
       )}
     </div>
