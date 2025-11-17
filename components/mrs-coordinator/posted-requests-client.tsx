@@ -6,10 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Package, Eye, CheckCircle } from "lucide-react"
+import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { MarkAsDoneDialog } from "./mark-as-done-dialog"
 import { MaterialRequest } from "@/types/material-request-types"
 
@@ -56,8 +62,6 @@ export function PostedRequestsClient({ initialRequests, userRole, businessUnitId
   const canMarkAsDone = (userRole: string): boolean => {
     return ["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(userRole)
   }
-
-
 
   return (
     <div className="flex-1 space-y-6 px-2 sm:px-0">
@@ -133,28 +137,29 @@ export function PostedRequestsClient({ initialRequests, userRole, businessUnitId
                   <TableCell>₱{request.total.toLocaleString()}</TableCell>
                   <TableCell>{request.items.length} items</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <Link href={`/${businessUnitId}/mrs-coordinator/posted/${request.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-
-                      {canMarkAsDone(userRole) && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleMarkAsDone(request)}
-                          disabled={isLoading}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Mark as Done
-                        </Button>
-                      )}
+                    <div className="flex gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {canMarkAsDone(userRole) && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleMarkAsDone(request)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Done
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -220,21 +225,9 @@ export function PostedRequestsClient({ initialRequests, userRole, businessUnitId
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    asChild
-                  >
-                    <Link href={`/${businessUnitId}/mrs-coordinator/posted/${request.id}`}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Link>
-                  </Button>
-
                   {canMarkAsDone(userRole) && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       className="flex-1"
                       onClick={() => handleMarkAsDone(request)}
@@ -244,6 +237,19 @@ export function PostedRequestsClient({ initialRequests, userRole, businessUnitId
                       Mark as Done
                     </Button>
                   )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>

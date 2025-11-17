@@ -6,30 +6,32 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Package, Eye, CheckCircle2, MoreVertical, FileCheck, Link2, FileSignature } from "lucide-react"
-import { toast } from "sonner"
+import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
+import { MarkAsPostedDialog } from "./mark-as-posted-dialog"
 import { MaterialRequest } from "@/types/material-request-types"
 
-interface DoneRequestsClientProps {
+interface ForPostingRequestsClientProps {
   initialRequests: MaterialRequest[]
   userRole: string
   businessUnitId: string
 }
 
-export function DoneRequestsClient({ 
-  initialRequests, 
-  businessUnitId 
-}: DoneRequestsClientProps) {
-  const [requests] = useState<MaterialRequest[]>(initialRequests)
+export function ForPostingRequestsClient({ initialRequests, userRole, businessUnitId }: ForPostingRequestsClientProps) {
+  const [requests, setRequests] = useState<MaterialRequest[]>(initialRequests)
   const [searchTerm, setSearchTerm] = useState("")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null)
+  const [isMarkAsPostedDialogOpen, setIsMarkAsPostedDialogOpen] = useState(false)
   const router = useRouter()
 
   const filteredRequests = useMemo(() => {
@@ -39,34 +41,37 @@ export function DoneRequestsClient({
       request.docNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.purpose?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.confirmationNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.requestedBy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.purchaseOrderNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+      request.requestedBy.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [requests, searchTerm])
 
-  const handleCreateAcknowledgement = (requestId: string) => {
-    router.push(`/${businessUnitId}/material-requests/${requestId}/acknowledgement`)
+  const handleMarkAsPosted = (request: MaterialRequest) => {
+    setSelectedRequest(request)
+    setIsMarkAsPostedDialogOpen(true)
   }
 
-  const handleCopyPublicUrl = (requestId: string) => {
-    const publicUrl = `${window.location.origin}/public/acknowledgement/${requestId}`
-    navigator.clipboard.writeText(publicUrl)
-    toast.success("Public acknowledgement URL copied to clipboard!")
+  const handleMarkAsPostedSuccess = () => {
+    if (selectedRequest) {
+      // Remove the request from the list since it's now posted
+      setRequests(prev => prev.filter(req => req.id !== selectedRequest.id))
+      router.refresh()
+    }
+    setSelectedRequest(null)
   }
 
-  const handleViewSignedAcknowledgement = (requestId: string) => {
-    router.push(`/public/acknowledgement/${requestId}`)
+  const canMarkAsPosted = (userRole: string): boolean => {
+    return ["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(userRole)
   }
+
 
   return (
     <div className="flex-1 space-y-6 px-2 sm:px-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Done/Posted Requests</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">For Posting Requests</h1>
           <p className="text-sm text-muted-foreground">
-            Material requests that have been posted and are ready for acknowledgement
+            Material requests ready to be posted and marked as done
           </p>
         </div>
       </div>
@@ -76,7 +81,7 @@ export function DoneRequestsClient({
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search by document number, purpose, confirmation number, requester, supplier, or PO number..."
+            placeholder="Search by document number, purpose, confirmation number, or requester..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -86,7 +91,7 @@ export function DoneRequestsClient({
 
       {/* Results count */}
       <div className="text-sm text-muted-foreground">
-        Showing {filteredRequests.length} of {requests.length} posted requests
+        Showing {filteredRequests.length} of {requests.length} requests for posting
       </div>
 
       {/* Desktop Table */}
@@ -98,25 +103,20 @@ export function DoneRequestsClient({
               <TableHead>Type</TableHead>
               <TableHead>Requested By</TableHead>
               <TableHead>Department</TableHead>
-              <TableHead>Date Received</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead>PO Number</TableHead>
+              <TableHead>Date Posted</TableHead>
+              <TableHead>Confirmation No.</TableHead>
               <TableHead>Total Amount</TableHead>
               <TableHead>Items</TableHead>
-               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRequests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   <div className="flex flex-col items-center gap-2">
                     <Package className="h-8 w-8 text-muted-foreground" />
-                    <p className="text-muted-foreground">No posted requests found</p>
-                    <p className="text-xs text-muted-foreground">
-                      Requests appear here when they have been marked as posted
-                    </p>
+                    <p className="text-muted-foreground">No requests for posting found</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -132,20 +132,11 @@ export function DoneRequestsClient({
                   </TableCell>
                   <TableCell>{request.department?.name || "N/A"}</TableCell>
                   <TableCell>
-                    {request.dateReceived ? format(new Date(request.dateReceived), "MMM dd, yyyy") : "N/A"}
+                    {request.datePosted ? format(new Date(request.datePosted), "MMM dd, yyyy") : "N/A"}
                   </TableCell>
-                  <TableCell>{request.supplierName || "N/A"}</TableCell>
-                  <TableCell>{request.purchaseOrderNumber || "N/A"}</TableCell>
+                  <TableCell>{request.confirmationNo || "N/A"}</TableCell>
                   <TableCell>₱{request.total.toLocaleString()}</TableCell>
                   <TableCell>{request.items.length} items</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Completed
-                      </Badge>
-                    </div>
-                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <DropdownMenu>
@@ -155,22 +146,14 @@ export function DoneRequestsClient({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {(request as MaterialRequest & { signatureData?: string | null }).signatureData ? (
+                          {canMarkAsPosted(userRole) && (
                             <>
-                              <DropdownMenuItem onClick={() => handleViewSignedAcknowledgement(request.id)}>
-                                <FileSignature className="h-4 w-4 mr-2" />
-                                View Signed Acknowledgement
+                              <DropdownMenuItem onClick={() => handleMarkAsPosted(request)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Posted
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleCopyPublicUrl(request.id)}>
-                                <Link2 className="h-4 w-4 mr-2" />
-                                Copy Public URL
-                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                             </>
-                          ) : (
-                            <DropdownMenuItem onClick={() => handleCreateAcknowledgement(request.id)}>
-                              <FileCheck className="h-4 w-4 mr-2" />
-                              Create Acknowledgement
-                            </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
                             <Eye className="h-4 w-4 mr-2" />
@@ -193,10 +176,7 @@ export function DoneRequestsClient({
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Package className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No posted requests found</p>
-              <p className="text-xs text-muted-foreground text-center mt-1">
-                Requests appear here when they have been marked as posted
-              </p>
+              <p className="text-muted-foreground">No requests for posting found</p>
             </CardContent>
           </Card>
         ) : (
@@ -208,13 +188,7 @@ export function DoneRequestsClient({
                     <Package className="h-4 w-4" />
                     <CardTitle className="text-base">{request.docNo}</CardTitle>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <Badge variant="outline">{request.type}</Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Completed
-                    </Badge>
-                  </div>
+                  <Badge variant="outline">{request.type}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -230,23 +204,16 @@ export function DoneRequestsClient({
                     <p className="font-medium">{request.department?.name || "N/A"}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Date Received:</span>
+                    <span className="text-muted-foreground">Date Posted:</span>
                     <p className="font-medium">
-                      {request.dateReceived ? format(new Date(request.dateReceived), "MMM dd, yyyy") : "N/A"}
+                      {request.datePosted ? format(new Date(request.datePosted), "MMM dd, yyyy") : "N/A"}
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Supplier:</span>
-                    <p className="font-medium">{request.supplierName || "N/A"}</p>
+                    <span className="text-muted-foreground">Confirmation No:</span>
+                    <p className="font-medium">{request.confirmationNo || "N/A"}</p>
                   </div>
                 </div>
-
-                {request.purchaseOrderNumber && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">PO Number:</span>
-                    <p className="font-medium">{request.purchaseOrderNumber}</p>
-                  </div>
-                )}
 
                 <div className="bg-muted/30 rounded-md p-3">
                   <div className="flex items-center justify-between">
@@ -259,25 +226,16 @@ export function DoneRequestsClient({
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  {(request as MaterialRequest & { signatureData?: string | null }).signatureData ? (
+                  {canMarkAsPosted(userRole) && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => handleViewSignedAcknowledgement(request.id)}
+                      onClick={() => handleMarkAsPosted(request)}
+                      disabled={isLoading}
                     >
-                      <FileSignature className="h-4 w-4 mr-2" />
-                      View Signed
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleCreateAcknowledgement(request.id)}
-                    >
-                      <FileCheck className="h-4 w-4 mr-2" />
-                      Create Acknowledgement
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark as Posted
                     </Button>
                   )}
                   <DropdownMenu>
@@ -287,12 +245,6 @@ export function DoneRequestsClient({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {(request as MaterialRequest & { signatureData?: string | null }).signatureData && (
-                        <DropdownMenuItem onClick={() => handleCopyPublicUrl(request.id)}>
-                          <Link2 className="h-4 w-4 mr-2" />
-                          Copy Public URL
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
@@ -305,6 +257,16 @@ export function DoneRequestsClient({
           ))
         )}
       </div>
+
+      {/* Mark as Posted Dialog */}
+      {selectedRequest && (
+        <MarkAsPostedDialog
+          request={selectedRequest}
+          isOpen={isMarkAsPostedDialogOpen}
+          onOpenChange={setIsMarkAsPostedDialogOpen}
+          onSuccess={handleMarkAsPostedSuccess}
+        />
+      )}
     </div>
   )
 }

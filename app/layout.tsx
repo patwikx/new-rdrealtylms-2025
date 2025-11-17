@@ -16,7 +16,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <SessionProvider>
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider
@@ -30,6 +29,5 @@ export default function RootLayout({
         </ThemeProvider>
       </body>
     </html>
-    </SessionProvider>
   );
 }

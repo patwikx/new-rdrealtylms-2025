@@ -459,14 +459,20 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
           <h1 className="text-xl font-semibold">Material Request Acknowledgement</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrint}>
+                    <Button variant="outline" onClick={handlePrint}>
             <Download className="h-4 w-4 mr-2" />
             Print
           </Button>
-          <Button variant="outline" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </Button>
+          {!isAcknowledged && (
+            <Button 
+              onClick={handleAcknowledge}
+              disabled={!signature || isSubmitting}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Submitting..." : "Submit Acknowledgement"}
+            </Button>
+          )}
+
         </div>
       </div>
 
@@ -486,80 +492,47 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
             </p>
           </div>
 
-          {/* Document Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Document No:</span>
-                <span className="font-semibold">{materialRequest.docNo}</span>
+          {/* Document & Requestee Information - Single Row */}
+          <div className="bg-muted/50 border rounded-lg p-5 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Document No</div>
+                <div className="font-semibold text-base">{materialRequest.docNo}</div>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Series:</span>
-                <Badge variant="outline">{materialRequest.series}</Badge>
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Date Prepared</div>
+                <div className="font-medium">{format(new Date(materialRequest.datePrepared), "MMM dd, yyyy")}</div>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Type:</span>
-                <span>{materialRequest.type}</span>
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Type</div>
+                <div className="font-medium">{materialRequest.type}</div>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Status:</span>
-                <Badge variant="secondary">{materialRequest.status}</Badge>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Date Prepared:</span>
-                <span>{format(new Date(materialRequest.datePrepared), "PPP")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Date Required:</span>
-                <span>{format(new Date(materialRequest.dateRequired), "PPP")}</span>
-              </div>
-              {materialRequest.dateReceived && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Date Received:</span>
-                  <span>{format(new Date(materialRequest.dateReceived), "PPP")}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Department:</span>
-                <span>{materialRequest.department?.name || "N/A"}</span>
+              <div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Status</div>
+                <div><Badge variant="secondary">{materialRequest.status}</Badge></div>
               </div>
             </div>
-          </div>
-
-          {/* Requestee Information */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3">Requestee Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Name:</span>
-                <span>{materialRequest.requestedBy.name}</span>
+            
+            <hr className="my-4 border-border/50" />
+            
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Requestee Information</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Name</div>
+                <div className="font-medium">{materialRequest.requestedBy.name}</div>
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Employee ID:</span>
-                <span>{materialRequest.requestedBy.employeeId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium text-muted-foreground">Email:</span>
-                <span>{materialRequest.requestedBy.email || 'N/A'}</span>
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Employee ID</div>
+                <div className="font-medium">{materialRequest.requestedBy.employeeId}</div>
               </div>
               {materialRequest.chargeTo && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Charge To:</span>
-                  <span>{materialRequest.chargeTo}</span>
-                </div>
-              )}
-              {materialRequest.deliverTo && (
-                <div className="flex justify-between">
-                  <span className="font-medium text-muted-foreground">Deliver To:</span>
-                  <span>{materialRequest.deliverTo}</span>
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Charged to:</div>
+                  <div className="font-medium">{materialRequest.chargeTo}</div>
                 </div>
               )}
             </div>
           </div>
-
-          <hr className="my-6 border-border" />
 
           {/* Items Received */}
           <div className="mb-8">
@@ -601,14 +574,6 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
                 ))}
               </TableBody>
             </Table>
-            
-            <div className="flex justify-end mt-4">
-              <div className="text-right">
-                <div className="text-lg font-semibold">
-                  Total Amount: ₱{materialRequest.total.toLocaleString()}
-                </div>
-              </div>
-            </div>
           </div>
 
           <hr className="my-6 border-border" />
@@ -627,12 +592,16 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
           </div>
 
           {/* Signature Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
             <div className="space-y-4">
               <h4 className="font-semibold">Digital Signature:</h4>
               {!isAcknowledged ? (
                 <div className="print:hidden">
-                  <DigitalSignaturePad onSignatureChange={handleSignatureChange} />
+                  <DigitalSignaturePad 
+                    onSignatureChange={handleSignatureChange}
+                    width={800}
+                    height={200}
+                  />
                 </div>
               ) : (
                 <div className="p-4">
@@ -640,7 +609,7 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
                     <img 
                       src={signature} 
                       alt="Digital Signature" 
-                      className="signature-image max-w-[200px] max-h-[100px] mx-auto block"
+                      className="signature-image max-w-[400px] max-h-[200px] mx-auto block"
                     />
                   )}
                   <div className="text-center mt-2 print:block hidden">
@@ -657,7 +626,7 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
                   <img 
                     src={signature} 
                     alt="Digital Signature" 
-                    className="signature-image max-w-[200px] max-h-[100px] mx-auto block"
+                    className="signature-image max-w-[400px] max-h-[200px] mx-auto block"
                   />
                   <div className="text-center mt-2">
                     <p className="text-sm text-muted-foreground">
@@ -666,7 +635,10 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
                   </div>
                 </div>
               )}
-              <div className="border-t pt-2">
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+              <div>
                 <p className="text-sm font-medium">
                   {materialRequest.requestedBy.name}
                 </p>
@@ -674,34 +646,21 @@ export function AcknowledgementDocument({ materialRequest, userRole }: Acknowled
                   {materialRequest.requestedBy.employeeId} • Requestee
                 </p>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <h4 className="font-semibold">Date & Time:</h4>
-              <div className="text-lg font-medium">
-                {format(new Date(), "PPP 'at' p")}
-              </div>
-              <div className="border-t pt-2">
-                <p className="text-sm text-muted-foreground">
+              
+              <div className="space-y-2">
+                <div>
+                  <h4 className="font-semibold text-sm">Date & Time:</h4>
+                  <div className="text-sm font-medium">
+                    {format(new Date(), "PPP 'at' p")}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
                   This document serves as official acknowledgement of receipt.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Action Button */}
-          {!isAcknowledged && (
-            <div className="flex justify-center mt-8 print:hidden no-print">
-              <Button 
-                onClick={handleAcknowledge}
-                disabled={!signature || isSubmitting}
-                size="lg"
-                className="px-8"
-              >
-                {isSubmitting ? "Submitting..." : "Submit Acknowledgement"}
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -1,24 +1,24 @@
 import { Suspense } from "react"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getPostedRequests } from "@/lib/actions/mrs-actions/material-request-actions"
-import { PostedRequestsClient } from "@/components/mrs-coordinator/posted-requests-client"
+import { getForPostingRequests } from "@/lib/actions/mrs-actions/material-request-actions"
+import { ForPostingRequestsClient } from "@/components/mrs-coordinator/for-posting-requests-client"
 import { Skeleton } from "@/components/ui/skeleton"
 
-interface PostedRequestsPageProps {
+interface ForPostingRequestsPageProps {
   params: Promise<{
     businessUnitId: string
   }>
 }
 
-export default async function PostedRequestsPage({ params }: PostedRequestsPageProps) {
+export default async function ForPostingRequestsPage({ params }: ForPostingRequestsPageProps) {
   const session = await auth()
   
   if (!session) {
     redirect("/auth/sign-in")
   }
   const { businessUnitId } = await params
-  // Check if user can view posted requests
+  // Check if user can view for posting requests
   if (!["ADMIN", "MANAGER", "PURCHASER", "PURCHASING_MANAGER", "STOCKROOM"].includes(session.user.role)) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
@@ -26,19 +26,19 @@ export default async function PostedRequestsPage({ params }: PostedRequestsPageP
 
 
   return (
-    <Suspense fallback={<PostedRequestsSkeleton />}>
-      <PostedRequestsContent userRole={session.user.role} businessUnitId={businessUnitId} />
+    <Suspense fallback={<ForPostingRequestsSkeleton />}>
+      <ForPostingRequestsContent userRole={session.user.role} businessUnitId={businessUnitId} />
     </Suspense>
   )
 }
 
-async function PostedRequestsContent({ userRole, businessUnitId }: { userRole: string; businessUnitId: string }) {
-  const requests = await getPostedRequests({ businessUnitId })
+async function ForPostingRequestsContent({ userRole, businessUnitId }: { userRole: string; businessUnitId: string }) {
+  const requests = await getForPostingRequests({ businessUnitId })
   
-  return <PostedRequestsClient initialRequests={requests} userRole={userRole} businessUnitId={businessUnitId} />
+  return <ForPostingRequestsClient initialRequests={requests} userRole={userRole} businessUnitId={businessUnitId} />
 }
 
-function PostedRequestsSkeleton() {
+function ForPostingRequestsSkeleton() {
   return (
     <div className="flex-1 space-y-6 px-2 sm:px-0">
       {/* Header */}
@@ -58,38 +58,6 @@ function PostedRequestsSkeleton() {
       {/* Results count */}
       <Skeleton className="h-4 w-[200px]" />
 
-      {/* Desktop Table */}
-      <div className="rounded-md border hidden sm:block">
-        <div className="p-4 space-y-3">
-          {/* Table header */}
-          <div className="flex space-x-4">
-            <Skeleton className="h-4 w-[120px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[150px]" />
-            <Skeleton className="h-4 w-[120px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[80px]" />
-          </div>
-          
-          {/* Table rows */}
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex space-x-4">
-              <Skeleton className="h-4 w-[120px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[150px]" />
-              <Skeleton className="h-4 w-[120px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[80px]" />
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Mobile Cards */}
       <div className="sm:hidden space-y-4">

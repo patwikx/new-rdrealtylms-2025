@@ -141,7 +141,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
           url: `/${businessUnitId}/mrs-coordinator/for-serving`,
         },
         {
-          title: "For Posting Requests",
+          title: "For Posting - MRS",
           url: `/${businessUnitId}/mrs-coordinator/for-posting`,
         },
         {

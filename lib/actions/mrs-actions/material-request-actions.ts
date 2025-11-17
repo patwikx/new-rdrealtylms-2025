@@ -663,7 +663,7 @@ export async function saveAcknowledgement(requestId: string, signatureData: stri
   }
 }
 
-export async function getPostedRequests(filters?: {
+export async function getForPostingRequests(filters?: {
   businessUnitId?: string
   status?: MRSRequestStatus
   search?: string
@@ -674,7 +674,7 @@ export async function getPostedRequests(filters?: {
       return []
     }
 
-    // Check if user has permission to view posted requests
+    // Check if user has permission to view for posting requests
     if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
       return []
     }
@@ -752,7 +752,7 @@ export async function getPostedRequests(filters?: {
   }
 }
 
-export async function markAsReceived(requestId: string, supplierBPCode?: string, supplierName?: string, purchaseOrderNumber?: string): Promise<ActionResult> {
+export async function markAsReceived(requestId: string): Promise<ActionResult> {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -781,9 +781,6 @@ export async function markAsReceived(requestId: string, supplierBPCode?: string,
       data: {
         status: MRSRequestStatus.RECEIVED,
         dateReceived: new Date(),
-        supplierBPCode: supplierBPCode || null,
-        supplierName: supplierName || null,
-        purchaseOrderNumber: purchaseOrderNumber || null,
       }
     })
 
@@ -886,8 +883,9 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
     console.error("Error fetching approved requests for acknowledgement:", error)
     return []
   }
-}export
- async function getDoneRequests(filters?: {
+}
+
+export async function getDoneRequests(filters?: {
   businessUnitId?: string
   search?: string
 }) {
@@ -903,7 +901,7 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
     }
 
     const whereClause: any = {
-      status: MRSRequestStatus.RECEIVED
+      status: MRSRequestStatus.POSTED
     }
 
     if (filters?.businessUnitId) {
@@ -1090,6 +1088,9 @@ export async function markRequestAsServed(params: {
   requestId: string
   businessUnitId: string
   notes?: string
+  supplierBPCode?: string
+  supplierName?: string
+  purchaseOrderNumber?: string
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const session = await auth()
@@ -1123,6 +1124,9 @@ export async function markRequestAsServed(params: {
         servedAt: new Date(),
         servedBy: session.user.id,
         servedNotes: params.notes,
+        supplierBPCode: params.supplierBPCode,
+        supplierName: params.supplierName,
+        purchaseOrderNumber: params.purchaseOrderNumber,
         updatedAt: new Date()
       }
     })
@@ -1142,5 +1146,51 @@ export async function markRequestAsServed(params: {
       success: false,
       error: error instanceof Error ? error.message : "Failed to mark request as served"
     }
+  }
+}
+
+
+export async function markAsPosted(requestId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    // Check if user has permission
+    if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
+      return { success: false, message: "You don't have permission to mark requests as posted" }
+    }
+
+    // Get the request
+    const request = await prisma.materialRequest.findUnique({
+      where: { id: requestId }
+    })
+
+    if (!request) {
+      return { success: false, message: "Request not found" }
+    }
+
+    // Check if request is in FOR_POSTING status
+    if (request.status !== MRSRequestStatus.FOR_POSTING) {
+      return { success: false, message: "Request must be in FOR_POSTING status" }
+    }
+
+    // Update the request status to POSTED
+    await prisma.materialRequest.update({
+      where: { id: requestId },
+      data: {
+        status: MRSRequestStatus.POSTED,
+        datePosted: new Date(),
+        processedBy: session.user.id,
+        processedAt: new Date(),
+      }
+    })
+
+    revalidatePath("/")
+    return { success: true, message: "Request marked as posted successfully" }
+  } catch (error) {
+    console.error("Error marking request as posted:", error)
+    return { success: false, message: "Failed to mark request as posted" }
   }
 }

@@ -6,28 +6,28 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { markAsReceived } from "@/lib/actions/mrs-actions/material-request-actions"
+import { markAsPosted } from "@/lib/actions/mrs-actions/material-request-actions"
 import { MaterialRequest } from "@/types/material-request-types"
 
-interface MarkAsDoneDialogProps {
+interface MarkAsPostedDialogProps {
   request: MaterialRequest
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }
 
-export function MarkAsDoneDialog({ 
+export function MarkAsPostedDialog({ 
   request, 
   isOpen, 
   onOpenChange, 
   onSuccess 
-}: MarkAsDoneDialogProps) {
+}: MarkAsPostedDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
-      const result = await markAsReceived(request.id)
+      const result = await markAsPosted(request.id)
 
       if (result.success) {
         toast.success(result.message)
@@ -37,8 +37,8 @@ export function MarkAsDoneDialog({
         toast.error(result.message)
       }
     } catch (error) {
-      console.error("Error marking as done:", error)
-      toast.error("Failed to mark request as done")
+      console.error("Error marking as posted:", error)
+      toast.error("Failed to mark request as posted")
     } finally {
       setIsLoading(false)
     }
@@ -50,10 +50,10 @@ export function MarkAsDoneDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-green-600" />
-            Mark Request as Done
+            Mark Request as Posted
           </DialogTitle>
           <DialogDescription>
-            Mark material request &quot;{request.docNo}&quot; as completed and received.
+            Mark material request &quot;{request.docNo}&quot; as posted.
           </DialogDescription>
         </DialogHeader>
 
@@ -146,7 +146,7 @@ export function MarkAsDoneDialog({
             ) : (
               <>
                 <Package className="mr-2 h-4 w-4" />
-                Mark as Done
+                Mark as Posted
               </>
             )}
           </Button>

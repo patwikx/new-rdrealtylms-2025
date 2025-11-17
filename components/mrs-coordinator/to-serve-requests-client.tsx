@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Package, Eye, CheckCircle, Truck } from "lucide-react"
+import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -49,6 +56,279 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
       router.refresh()
     }
     setSelectedRequest(null)
+  }
+
+  const handlePrint = (request: MaterialRequest) => {
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Material Request - ${request.docNo}</title>
+          <style>
+            @page {
+              size: letter portrait;
+              margin: 0.5in;
+            }
+            
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 10pt;
+              line-height: 1.4;
+              color: #000;
+              max-height: 5.5in;
+              padding: 0.25in;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 16px;
+              border-bottom: 2px solid #000;
+              padding-bottom: 8px;
+            }
+            
+            .header h1 {
+              font-size: 14pt;
+              font-weight: bold;
+              margin-bottom: 4px;
+            }
+            
+            .header p {
+              font-size: 9pt;
+            }
+            
+            .info-grid {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 8px;
+              margin-bottom: 12px;
+              font-size: 9pt;
+            }
+            
+            .info-row {
+              display: flex;
+            }
+            
+            .info-label {
+              font-weight: bold;
+              width: 110px;
+              flex-shrink: 0;
+            }
+            
+            .info-value {
+              flex: 1;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 12px;
+              font-size: 9pt;
+            }
+            
+            th, td {
+              border: 1px solid #000;
+              padding: 4px 6px;
+              text-align: left;
+            }
+            
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+            }
+            
+            td.center {
+              text-align: center;
+            }
+            
+            td.right {
+              text-align: right;
+            }
+            
+            .remarks {
+              margin-bottom: 12px;
+              font-size: 9pt;
+            }
+            
+            .remarks-label {
+              font-weight: bold;
+              margin-bottom: 4px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>MATERIAL REQUEST SLIP</h1>
+            <p>${request.businessUnit.name}</p>
+          </div>
+          
+          <div class="info-grid">
+            <div>
+              <div class="info-row">
+                <span class="info-label">Document No:</span>
+                <span class="info-value">${request.docNo}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Type:</span>
+                <span class="info-value">${request.type}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value">${request.status}</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-row">
+                <span class="info-label">Date Prepared:</span>
+                <span class="info-value">${format(new Date(request.datePrepared), "MMM dd, yyyy")}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Date Required:</span>
+                <span class="info-value">${format(new Date(request.dateRequired), "MMM dd, yyyy")}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="info-grid">
+            <div>
+              <div class="info-row">
+                <span class="info-label">Requested By:</span>
+                <span class="info-value">${request.requestedBy.name} (${request.requestedBy.employeeId})</span>
+              </div>
+            </div>
+            <div>
+              <div class="info-row">
+                <span class="info-label">Department:</span>
+                <span class="info-value">${request.department?.name || "N/A"}</span>
+              </div>
+            </div>
+          </div>
+          
+          ${request.purpose ? `
+          <div class="remarks">
+            <div class="remarks-label">Purpose:</div>
+            <div>${request.purpose}</div>
+          </div>
+          ` : ''}
+          
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 15%">Item Code</th>
+                <th style="width: 35%">Description</th>
+                <th style="width: 10%" class="center">UOM</th>
+                <th style="width: 10%" class="center">Qty</th>
+                <th style="width: 30%">Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${request.items.map(item => `
+                <tr>
+                  <td>${item.itemCode || "-"}</td>
+                  <td>${item.description}</td>
+                  <td class="center">${item.uom}</td>
+                  <td class="right">${item.quantity}</td>
+                  <td>${item.remarks || "-"}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          ${request.supplierName || request.purchaseOrderNumber ? `
+          <div class="info-grid">
+            ${request.supplierName ? `
+            <div class="info-row">
+              <span class="info-label">Supplier:</span>
+              <span class="info-value">${request.supplierName}</span>
+            </div>
+            ` : ''}
+            ${request.purchaseOrderNumber ? `
+            <div class="info-row">
+              <span class="info-label">PO Number:</span>
+              <span class="info-value">${request.purchaseOrderNumber}</span>
+            </div>
+            ` : ''}
+          </div>
+          ` : ''}
+          
+          ${request.remarks ? `
+          <div class="remarks">
+            <div class="remarks-label">Remarks:</div>
+            <div>${request.remarks}</div>
+          </div>
+          ` : ''}
+          
+          ${request.recApprover || request.finalApprover ? `
+          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #ccc;">
+            <div style="font-weight: bold; margin-bottom: 8px; font-size: 9pt;">Approval Information:</div>
+            <div class="info-grid">
+              ${request.recApprover ? `
+              <div>
+                <div class="info-row">
+                  <span class="info-label">Recommending:</span>
+                  <span class="info-value">${request.recApprover.name}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Status:</span>
+                  <span class="info-value" style="font-weight: bold; color: ${request.recApprovalStatus === 'APPROVED' ? '#16a34a' : request.recApprovalStatus === 'DISAPPROVED' ? '#dc2626' : '#6b7280'};">
+                    ${request.recApprovalStatus || 'PENDING'}
+                  </span>
+                </div>
+                ${request.recApprovalDate ? `
+                <div class="info-row">
+                  <span class="info-label">Date:</span>
+                  <span class="info-value">${format(new Date(request.recApprovalDate), "MMM dd, yyyy")}</span>
+                </div>
+                ` : ''}
+              </div>
+              ` : ''}
+              ${request.finalApprover ? `
+              <div>
+                <div class="info-row">
+                  <span class="info-label">Final Approver:</span>
+                  <span class="info-value">${request.finalApprover.name}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Status:</span>
+                  <span class="info-value" style="font-weight: bold; color: ${request.finalApprovalStatus === 'APPROVED' ? '#16a34a' : request.finalApprovalStatus === 'DISAPPROVED' ? '#dc2626' : '#6b7280'};">
+                    ${request.finalApprovalStatus || 'PENDING'}
+                  </span>
+                </div>
+                ${request.finalApprovalDate ? `
+                <div class="info-row">
+                  <span class="info-label">Date:</span>
+                  <span class="info-value">${format(new Date(request.finalApprovalDate), "MMM dd, yyyy")}</span>
+                </div>
+                ` : ''}
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
+        </body>
+      </html>
+    `
+
+    printWindow.document.write(html)
+    printWindow.document.close()
   }
 
   const canMarkAsServed = (role: string): boolean => {
@@ -159,25 +439,32 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
-                        <Link href={`/${businessUnitId}/material-requests/${request.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      {canMarkAsServed(userRole) && (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleMarkAsServed(request)}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Mark as Served
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {canMarkAsServed(userRole) && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleMarkAsServed(request)}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as Served
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          <DropdownMenuItem onClick={() => handlePrint(request)}>
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -243,20 +530,9 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                 )}
 
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    asChild
-                  >
-                    <Link href={`/${businessUnitId}/material-requests/${request.id}`}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Link>
-                  </Button>
                   {canMarkAsServed(userRole) && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       className="flex-1"
                       onClick={() => handleMarkAsServed(request)}
@@ -265,6 +541,23 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                       Mark as Served
                     </Button>
                   )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePrint(request)}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardContent>
             </Card>

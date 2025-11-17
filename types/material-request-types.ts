@@ -48,6 +48,9 @@ export interface MaterialRequest {
   finalApproverId: string | null
   finalApprovalDate: Date | null
   finalApprovalStatus: ApprovalStatus | null
+  acknowledgedAt: Date | null
+  acknowledgedById: string | null
+  signatureData: string | null
   createdAt: Date
   updatedAt: Date
   
