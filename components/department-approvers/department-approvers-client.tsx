@@ -107,6 +107,22 @@ export function DepartmentApproversClient({ businessUnitId }: DepartmentApprover
     )
   }
 
+  // Group approvers by employee and department to show multiple roles
+  const groupedApprovers = filteredApprovers.reduce((acc, approver) => {
+    const key = `${approver.employeeId}-${approver.departmentId}`
+    if (!acc[key]) {
+      acc[key] = {
+        ...approver,
+        approverTypes: [approver.approverType]
+      }
+    } else {
+      acc[key].approverTypes.push(approver.approverType)
+    }
+    return acc
+  }, {} as Record<string, DepartmentApprover & { approverTypes: ApproverType[] }>)
+
+  const displayApprovers = Object.values(groupedApprovers)
+
   const getStatusBadge = (isActive: boolean) => {
     return (
       <Badge variant={isActive ? "default" : "secondary"}>
@@ -164,10 +180,10 @@ export function DepartmentApproversClient({ businessUnitId }: DepartmentApprover
       {/* Approvers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Department Approvers ({filteredApprovers.length})</CardTitle>
+          <CardTitle>Department Approvers ({displayApprovers.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredApprovers.length > 0 ? (
+          {displayApprovers.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -181,8 +197,8 @@ export function DepartmentApproversClient({ businessUnitId }: DepartmentApprover
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredApprovers.map((approver) => (
-                    <TableRow key={approver.id}>
+                  {displayApprovers.map((approver) => (
+                    <TableRow key={`${approver.employeeId}-${approver.departmentId}`}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{approver.employee.name}</div>
@@ -207,7 +223,13 @@ export function DepartmentApproversClient({ businessUnitId }: DepartmentApprover
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getApproverTypeBadge(approver.approverType)}
+                        <div className="flex flex-wrap gap-1">
+                          {approver.approverTypes.map((type) => (
+                            <div key={type}>
+                              {getApproverTypeBadge(type)}
+                            </div>
+                          ))}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(approver.isActive)}

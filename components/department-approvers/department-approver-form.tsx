@@ -8,15 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
-import { createDepartmentApprover, updateDepartmentApprover } from "@/lib/actions/mrs-actions/department-approver-actions"
+import { createDepartmentApprover, createMultipleDepartmentApprovers, updateDepartmentApprover } from "@/lib/actions/mrs-actions/department-approver-actions"
 import { getDepartments, getUsers } from "@/lib/actions/mrs-actions/user-actions"
 import { DepartmentApprover } from "@/types/department-approver-types"
 
 const formSchema = z.object({
   departmentId: z.string().min(1, "Department is required"),
   employeeId: z.string().min(1, "Employee is required"),
-  approverType: z.enum(["RECOMMENDING", "FINAL"]),
+  approverTypes: z.array(z.enum(["RECOMMENDING", "FINAL"])).min(1, "At least one approver type is required"),
   isActive: z.boolean(),
 })
 
@@ -60,7 +61,7 @@ export function DepartmentApproverForm({
     defaultValues: {
       departmentId: approver?.departmentId || "",
       employeeId: approver?.employeeId || "",
-      approverType: approver?.approverType || "RECOMMENDING",
+      approverTypes: approver?.approverType ? [approver.approverType] : [],
       isActive: approver?.isActive ?? true,
     },
   })
@@ -98,14 +99,22 @@ export function DepartmentApproverForm({
       let result
       
       if (approver) {
-        // Update existing approver
+        // For editing, we still use the single approver update
+        // Note: This will need to be enhanced if you want to edit multiple types
         result = await updateDepartmentApprover({
           id: approver.id,
-          ...data,
+          departmentId: data.departmentId,
+          employeeId: data.employeeId,
+          approverType: data.approverTypes[0], // Use first selected type for now
+          isActive: data.isActive,
         })
       } else {
-        // Create new approver
-        result = await createDepartmentApprover(data)
+        // Create new approvers (can be multiple types)
+        result = await createMultipleDepartmentApprovers({
+          departmentId: data.departmentId,
+          employeeId: data.employeeId,
+          approverTypes: data.approverTypes,
+        })
       }
 
       if (result.success) {
@@ -188,21 +197,72 @@ export function DepartmentApproverForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="approverType"
-            render={({ field }) => (
+            name="approverTypes"
+            render={() => (
               <FormItem>
-                <FormLabel>Approver Type *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select approver type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="RECOMMENDING">Recommending Approver</SelectItem>
-                    <SelectItem value="FINAL">Final Approver</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel>Approver Types *</FormLabel>
+                <div className="space-y-2">
+                  <FormField
+                    control={form.control}
+                    name="approverTypes"
+                    render={({ field }) => {
+                      return (
+                        <FormItem
+                          key="RECOMMENDING"
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes("RECOMMENDING")}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...field.value, "RECOMMENDING"])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== "RECOMMENDING"
+                                      )
+                                    )
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Recommending Approver
+                          </FormLabel>
+                        </FormItem>
+                      )
+                    }}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="approverTypes"
+                    render={({ field }) => {
+                      return (
+                        <FormItem
+                          key="FINAL"
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes("FINAL")}
+                              onCheckedChange={(checked) => {
+                                return checked
+                                  ? field.onChange([...field.value, "FINAL"])
+                                  : field.onChange(
+                                      field.value?.filter(
+                                        (value) => value !== "FINAL"
+                                      )
+                                    )
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal">
+                            Final Approver
+                          </FormLabel>
+                        </FormItem>
+                      )
+                    }}
+                  />
+                </div>
                 <FormMessage />
               </FormItem>
             )}

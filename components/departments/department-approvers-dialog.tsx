@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Search, Save, Users } from "lucide-react"
 import { toast } from "sonner"
-import { getDepartmentApprovers, createDepartmentApprover } from "@/lib/actions/mrs-actions/department-approver-actions"
+import { getDepartmentApprovers, createDepartmentApprover, createMultipleDepartmentApprovers } from "@/lib/actions/mrs-actions/department-approver-actions"
 import { getUsers } from "@/lib/actions/mrs-actions/user-actions"
 import { ApproverType, UserRole } from "@prisma/client"
 import { cn } from "@/lib/utils"
@@ -46,7 +46,7 @@ export function DepartmentApproversDialog({
   const [users, setUsers] = useState<User[]>([])
   const [approvers, setApprovers] = useState<DepartmentApprover[]>([])
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
-  const [approverType, setApproverType] = useState<ApproverType>("RECOMMENDING")
+  const [approverTypes, setApproverTypes] = useState<ApproverType[]>(["RECOMMENDING"])
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -72,8 +72,24 @@ export function DepartmentApproversDialog({
     loadData()
   }, [departmentId])
 
-  // Get currently assigned approver user IDs
-  const assignedUserIds = new Set(approvers.map(a => a.employeeId))
+  // Get currently assigned approver user IDs by type
+  const getAssignedUserIds = (type: ApproverType) => 
+    new Set(approvers.filter(a => a.approverType === type).map(a => a.employeeId))
+  
+  const recommendingUserIds = getAssignedUserIds("RECOMMENDING")
+  const finalUserIds = getAssignedUserIds("FINAL")
+  
+  // Get users who are available for the selected approver types
+  const getAvailableUsers = () => {
+    return filteredUsers.filter(user => {
+      // User is available if they're not assigned to ALL selected types
+      return approverTypes.some(type => {
+        if (type === "RECOMMENDING") return !recommendingUserIds.has(user.id)
+        if (type === "FINAL") return !finalUserIds.has(user.id)
+        return true
+      })
+    })
+  }
 
   // Filter users based on search term
   const filteredUsers = users.filter(user =>
@@ -93,8 +109,14 @@ export function DepartmentApproversDialog({
   }
 
   const handleRowClick = (userId: string) => {
-    // Don't toggle if user is already an approver
-    if (assignedUserIds.has(userId)) return
+    // Check if user is available for any of the selected types
+    const isAvailable = approverTypes.some(type => {
+      if (type === "RECOMMENDING") return !recommendingUserIds.has(userId)
+      if (type === "FINAL") return !finalUserIds.has(userId)
+      return true
+    })
+    
+    if (!isAvailable) return
     
     const isSelected = selectedUsers.has(userId)
     handleUserSelect(userId, !isSelected)
@@ -102,10 +124,8 @@ export function DepartmentApproversDialog({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Select all non-assigned users
-      const availableUserIds = filteredUsers
-        .filter(user => !assignedUserIds.has(user.id))
-        .map(user => user.id)
+      // Select all available users
+      const availableUserIds = getAvailableUsers().map(user => user.id)
       setSelectedUsers(new Set(availableUserIds))
     } else {
       setSelectedUsers(new Set())
@@ -121,10 +141,10 @@ export function DepartmentApproversDialog({
     setIsSaving(true)
     try {
       const promises = Array.from(selectedUsers).map(userId =>
-        createDepartmentApprover({
+        createMultipleDepartmentApprovers({
           departmentId,
           employeeId: userId,
-          approverType
+          approverTypes
         })
       )
 
@@ -134,7 +154,8 @@ export function DepartmentApproversDialog({
       if (failedResults.length > 0) {
         toast.error(`Failed to assign ${failedResults.length} approver(s)`)
       } else {
-        toast.success(`Successfully assigned ${selectedUsers.size} ${approverType.toLowerCase()} approver(s)`)
+        const typeNames = approverTypes.map(t => t.toLowerCase()).join(" and ")
+        toast.success(`Successfully assigned ${selectedUsers.size} ${typeNames} approver(s)`)
         setSelectedUsers(new Set())
         onSuccess()
       }
@@ -146,7 +167,7 @@ export function DepartmentApproversDialog({
     }
   }
 
-  const availableUsers = filteredUsers.filter(user => !assignedUserIds.has(user.id))
+  const availableUsers = getAvailableUsers()
   const allAvailableSelected = availableUsers.length > 0 && availableUsers.every(user => selectedUsers.has(user.id))
   const someAvailableSelected = availableUsers.some(user => selectedUsers.has(user.id))
 
@@ -199,27 +220,59 @@ export function DepartmentApproversDialog({
 
       {/* Add New Approvers Section - Compact */}
       <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
-          <h3 className="text-base font-medium">Add New Approvers</h3>
-          <div className="flex gap-2">
-            <Select value={approverType} onValueChange={(value: ApproverType) => setApproverType(value)}>
-              <SelectTrigger className="w-40 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RECOMMENDING">Recommending</SelectItem>
-                <SelectItem value="FINAL">Final</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+            <h3 className="text-base font-medium">Add New Approvers</h3>
             <Button
               onClick={handleSaveApprovers}
-              disabled={selectedUsers.size === 0 || isSaving}
+              disabled={selectedUsers.size === 0 || isSaving || approverTypes.length === 0}
               size="sm"
               className="gap-1"
             >
               <Save className="h-3 w-3" />
               {isSaving ? "Saving..." : `Add ${selectedUsers.size}`}
             </Button>
+          </div>
+          
+          {/* Approver Type Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Approver Types:</label>
+            <div className="flex gap-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="recommending"
+                  checked={approverTypes.includes("RECOMMENDING")}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setApproverTypes([...approverTypes, "RECOMMENDING"])
+                    } else {
+                      setApproverTypes(approverTypes.filter(t => t !== "RECOMMENDING"))
+                    }
+                    setSelectedUsers(new Set()) // Clear selections when types change
+                  }}
+                />
+                <label htmlFor="recommending" className="text-sm font-normal cursor-pointer">
+                  Recommending Approver
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="final"
+                  checked={approverTypes.includes("FINAL")}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setApproverTypes([...approverTypes, "FINAL"])
+                    } else {
+                      setApproverTypes(approverTypes.filter(t => t !== "FINAL"))
+                    }
+                    setSelectedUsers(new Set()) // Clear selections when types change
+                  }}
+                />
+                <label htmlFor="final" className="text-sm font-normal cursor-pointer">
+                  Final Approver
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -257,24 +310,42 @@ export function DepartmentApproversDialog({
             <TableBody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => {
-                  const isAssigned = assignedUserIds.has(user.id)
+                  const isRecommendingAssigned = recommendingUserIds.has(user.id)
+                  const isFinalAssigned = finalUserIds.has(user.id)
+                  const isAvailable = approverTypes.some(type => {
+                    if (type === "RECOMMENDING") return !isRecommendingAssigned
+                    if (type === "FINAL") return !isFinalAssigned
+                    return true
+                  })
                   const isSelected = selectedUsers.has(user.id)
+                  
+                  // Show status based on current assignments
+                  let statusBadge = <Badge variant="outline" className="text-xs px-1 py-0">Available</Badge>
+                  if (isRecommendingAssigned && isFinalAssigned) {
+                    statusBadge = <Badge variant="secondary" className="text-xs px-1 py-0">Both Assigned</Badge>
+                  } else if (isRecommendingAssigned) {
+                    statusBadge = <Badge variant="secondary" className="text-xs px-1 py-0">Rec. Assigned</Badge>
+                  } else if (isFinalAssigned) {
+                    statusBadge = <Badge variant="secondary" className="text-xs px-1 py-0">Final Assigned</Badge>
+                  } else if (isSelected) {
+                    statusBadge = <Badge variant="default" className="text-xs px-1 py-0">Selected</Badge>
+                  }
                   
                   return (
                     <TableRow
                       key={user.id}
                       className={cn(
                         "cursor-pointer transition-colors h-10",
-                        isAssigned && "opacity-50 cursor-not-allowed",
-                        isSelected && !isAssigned && "bg-muted/50",
-                        !isAssigned && "hover:bg-muted/30"
+                        !isAvailable && "opacity-50 cursor-not-allowed",
+                        isSelected && isAvailable && "bg-muted/50",
+                        isAvailable && "hover:bg-muted/30"
                       )}
                       onClick={() => handleRowClick(user.id)}
                     >
                       <TableCell className="p-2">
                         <Checkbox
                           checked={isSelected}
-                          disabled={isAssigned}
+                          disabled={!isAvailable}
                           onCheckedChange={(checked) => handleUserSelect(user.id, checked as boolean)}
                           onClick={(e) => e.stopPropagation()}
                           className="h-3 w-3"
@@ -292,13 +363,7 @@ export function DepartmentApproversDialog({
                         <Badge variant="outline" className="text-xs px-1 py-0">{user.role}</Badge>
                       </TableCell>
                       <TableCell className="p-2">
-                        {isAssigned ? (
-                          <Badge variant="secondary" className="text-xs px-1 py-0">Assigned</Badge>
-                        ) : isSelected ? (
-                          <Badge variant="default" className="text-xs px-1 py-0">Selected</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs px-1 py-0">Available</Badge>
-                        )}
+                        {statusBadge}
                       </TableCell>
                     </TableRow>
                   )
@@ -320,7 +385,7 @@ export function DepartmentApproversDialog({
         {selectedUsers.size > 0 && (
           <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
             <span className="text-xs font-medium">
-              {selectedUsers.size} selected as {approverType.toLowerCase()} approver(s)
+              {selectedUsers.size} selected as {approverTypes.map(t => t.toLowerCase()).join(" and ")} approver(s)
             </span>
             <Button
               variant="outline"

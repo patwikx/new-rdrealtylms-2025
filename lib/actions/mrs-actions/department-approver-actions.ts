@@ -12,6 +12,12 @@ const CreateDepartmentApproverSchema = z.object({
   approverType: z.enum(["RECOMMENDING", "FINAL"]),
 })
 
+const CreateMultipleDepartmentApproversSchema = z.object({
+  departmentId: z.string().min(1, "Department is required"),
+  employeeId: z.string().min(1, "Employee is required"),
+  approverTypes: z.array(z.enum(["RECOMMENDING", "FINAL"])).min(1, "At least one approver type is required"),
+})
+
 const UpdateDepartmentApproverSchema = z.object({
   id: z.string(),
   departmentId: z.string().min(1, "Department is required"),
@@ -21,6 +27,7 @@ const UpdateDepartmentApproverSchema = z.object({
 })
 
 export type CreateDepartmentApproverInput = z.infer<typeof CreateDepartmentApproverSchema>
+export type CreateMultipleDepartmentApproversInput = z.infer<typeof CreateMultipleDepartmentApproversSchema>
 export type UpdateDepartmentApproverInput = z.infer<typeof UpdateDepartmentApproverSchema>
 
 export interface ActionResult {
@@ -70,6 +77,120 @@ export async function getDepartmentApprovers(departmentId?: string) {
   } catch (error) {
     console.error("Error fetching department approvers:", error)
     return []
+  }
+}
+
+export async function createMultipleDepartmentApprovers(input: CreateMultipleDepartmentApproversInput): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    // Check if user has permission (only ADMIN and MANAGER)
+    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+      return { success: false, message: "You don't have permission to create department approvers" }
+    }
+
+    const validatedData = CreateMultipleDepartmentApproversSchema.parse(input)
+
+    // Verify department exists
+    const department = await prisma.department.findUnique({
+      where: { id: validatedData.departmentId }
+    })
+
+    if (!department) {
+      return { success: false, message: "Department not found" }
+    }
+
+    // Verify employee exists
+    const employee = await prisma.user.findUnique({
+      where: { id: validatedData.employeeId }
+    })
+
+    if (!employee) {
+      return { success: false, message: "Employee not found" }
+    }
+
+    // Check which approver types already exist
+    const existingApprovers = await prisma.departmentApprover.findMany({
+      where: {
+        departmentId: validatedData.departmentId,
+        employeeId: validatedData.employeeId,
+        approverType: { in: validatedData.approverTypes }
+      }
+    })
+
+    // Filter out existing types
+    const existingTypes = existingApprovers.map(a => a.approverType)
+    const newTypes = validatedData.approverTypes.filter(type => !existingTypes.includes(type))
+
+    if (newTypes.length === 0) {
+      return { 
+        success: false, 
+        message: "This employee is already assigned as the selected approver type(s) for this department" 
+      }
+    }
+
+    // Create new approvers for each type
+    const newApprovers = await Promise.all(
+      newTypes.map(type =>
+        prisma.departmentApprover.create({
+          data: {
+            departmentId: validatedData.departmentId,
+            employeeId: validatedData.employeeId,
+            approverType: type,
+            isActive: true,
+          },
+          include: {
+            employee: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                employeeId: true,
+                role: true,
+              }
+            },
+            department: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                businessUnitId: true,
+              }
+            }
+          }
+        })
+      )
+    )
+
+    revalidatePath("/admin/department-approvers")
+    
+    const message = newTypes.length === 1 
+      ? "Department approver created successfully"
+      : `${newTypes.length} department approvers created successfully`
+    
+    return {
+      success: true,
+      message,
+      data: newApprovers
+    }
+  } catch (error) {
+    console.error("Error creating department approvers:", error)
+    
+    if (error instanceof z.ZodError) {
+      const firstError = error.issues[0]
+      return {
+        success: false,
+        message: `Validation error: ${firstError.message}`
+      }
+    }
+
+    return {
+      success: false,
+      message: "Failed to create department approvers"
+    }
   }
 }
 
