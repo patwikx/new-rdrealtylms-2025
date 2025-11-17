@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ShoppingCart, Calendar, DollarSign, Package, Users } from "lucide-react"
+import { ShoppingCart, Calendar, Package, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -136,18 +136,18 @@ export function MRSNotificationDialog({
               <div className="text-muted-foreground">Loading material requests...</div>
             </div>
           ) : (
-            <div className="overflow-y-auto max-h-[400px]">
+            <div className="overflow-y-auto max-h-[400px] text-xs">
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
-                  <TableRow>
-                    <TableHead>MRS Number</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Requested By</TableHead>
-                    <TableHead>Required Date</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead className="text-right">Total Amount</TableHead>
-                    <TableHead>Priority</TableHead>
+                  <TableRow className="text-xs">
+                    <TableHead className="p-2 w-[100px]">MRS No.</TableHead>
+                    <TableHead className="p-2">Purpose</TableHead>
+                    <TableHead className="p-2 w-[100px]">Department</TableHead>
+                    <TableHead className="p-2 w-[100px]">Requested By</TableHead>
+                    <TableHead className="p-2 w-[90px]">Required</TableHead>
+                    <TableHead className="p-2 w-[60px]">Items</TableHead>
+                    <TableHead className="text-right p-2 w-[85px]">Amount</TableHead>
+                    <TableHead className="p-2 w-[90px]">Priority</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -155,58 +155,55 @@ export function MRSNotificationDialog({
                     const daysUntilRequired = getDaysUntilRequired(mrs.dateRequired)
                     
                     return (
-                      <TableRow key={mrs.id}>
-                        <TableCell>
+                      <TableRow key={mrs.id} className="text-xs">
+                        <TableCell className="p-2">
                           <div className="font-medium font-mono">{mrs.docNo}</div>
                         </TableCell>
-                        <TableCell>
-                          <div className="max-w-[200px] truncate" title={mrs.purpose || 'No purpose specified'}>
-                            {mrs.purpose || 'No purpose specified'}
+                        <TableCell className="p-2">
+                          <div className="max-w-[150px] truncate text-[10px]" title={mrs.purpose || 'No purpose specified'}>
+                            {mrs.purpose || 'No purpose'}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{mrs.department?.name || 'No department'}</span>
+                        <TableCell className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] truncate">{mrs.department?.name || 'N/A'}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{mrs.requestedBy?.name || 'Unknown'}</span>
+                        <TableCell className="p-2">
+                          <span className="text-[10px] truncate block max-w-[90px]">{mrs.requestedBy?.name || 'Unknown'}</span>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {format(mrs.dateRequired, "MMM dd, yyyy")}
+                        <TableCell className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px]">
+                              {format(mrs.dateRequired, "MMM dd, yy")}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {mrs.itemsCount} item{mrs.itemsCount !== 1 ? 's' : ''}
+                        <TableCell className="p-2">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {mrs.itemsCount}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <DollarSign className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium">
-                              {formatCurrency(mrs.totalAmount)}
-                            </span>
-                          </div>
+                        <TableCell className="text-right p-2">
+                          <span className="font-medium text-[10px]">
+                            {formatCurrency(mrs.totalAmount)}
+                          </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-2">
                           <Badge 
                             variant={
                               daysUntilRequired < 0 ? "destructive" : 
                               daysUntilRequired <= 3 ? "secondary" : 
                               "outline"
                             }
-                            className="text-xs"
+                            className="text-[10px] px-1.5 py-0"
                           >
-                            {daysUntilRequired < 0 ? `${Math.abs(daysUntilRequired)} days overdue` :
-                             daysUntilRequired === 0 ? "Due today" :
-                             daysUntilRequired === 1 ? "Due tomorrow" :
-                             `${daysUntilRequired} days left`}
+                            {daysUntilRequired < 0 ? `${Math.abs(daysUntilRequired)}d over` :
+                             daysUntilRequired === 0 ? "Today" :
+                             daysUntilRequired === 1 ? "1d" :
+                             `${daysUntilRequired}d`}
                           </Badge>
                         </TableCell>
                       </TableRow>

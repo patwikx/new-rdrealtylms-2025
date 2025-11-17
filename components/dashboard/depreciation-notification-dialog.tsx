@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, Calendar, DollarSign, Package } from "lucide-react"
+import { AlertTriangle, Calendar, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -135,16 +135,15 @@ export function DepreciationNotificationDialog({
               <div className="text-muted-foreground">Loading assets...</div>
             </div>
           ) : (
-            <div className="overflow-y-auto max-h-[400px]">
+            <div className="overflow-y-auto max-h-[400px] text-xs">
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
-                  <TableRow>
-                    <TableHead>Asset</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Monthly Depreciation</TableHead>
-                    <TableHead className="text-right">Current Book Value</TableHead>
+                  <TableRow className="text-xs">
+                    <TableHead className="p-2">Asset</TableHead>
+                    <TableHead className="p-2 w-[100px]">Category</TableHead>
+                    <TableHead className="p-2 w-[90px]">Due Date</TableHead>
+                    <TableHead className="text-right p-2 w-[90px]">Monthly Dep.</TableHead>
+                    <TableHead className="text-right p-2 w-[90px]">Book Value</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -152,46 +151,34 @@ export function DepreciationNotificationDialog({
                     const overdueDays = getOverdueDays(asset.nextDepreciationDate)
                     
                     return (
-                      <TableRow key={asset.id}>
-                        <TableCell>
+                      <TableRow key={asset.id} className="text-xs">
+                        <TableCell className="p-2">
                           <div>
                             <div className="font-medium">{asset.itemCode}</div>
-                            <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                            <div className="text-[10px] text-muted-foreground truncate max-w-[150px]">
                               {asset.description}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
+                        <TableCell className="p-2">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                             {asset.category.name}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">
-                              {format(asset.nextDepreciationDate, "MMM dd, yyyy")}
+                        <TableCell className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px]">
+                              {format(asset.nextDepreciationDate, "MMM dd, yy")}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={overdueDays > 30 ? "destructive" : overdueDays > 7 ? "secondary" : "outline"}
-                            className="text-xs"
-                          >
-                            {overdueDays === 0 ? "Due Today" : 
-                             overdueDays === 1 ? "1 day overdue" :
-                             `${overdueDays} days overdue`}
-                          </Badge>
+                        <TableCell className="text-right p-2">
+                          <span className="font-medium">
+                            {formatCurrency(asset.monthlyDepreciation)}
+                          </span>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className="font-medium">
-                              {formatCurrency(asset.monthlyDepreciation)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right p-2">
                           <span className="font-medium">
                             {formatCurrency(asset.currentBookValue)}
                           </span>
