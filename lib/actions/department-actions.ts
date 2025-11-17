@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { UserRole } from "@prisma/client";
 
 // Check if user has department management permissions
 async function checkDepartmentManagementPermissions() {
@@ -249,7 +250,8 @@ export async function assignManagerToDepartment(
       return { error: "Manager not found" };
     }
 
-    if (!["MANAGER", "HR", "ADMIN"].includes(manager.role)) {
+    const allowedRoles: UserRole[] = [UserRole.MANAGER, UserRole.HR, UserRole.ADMIN];
+    if (!allowedRoles.includes(manager.role)) {
       return { error: "User must have Manager, HR, or Admin role to be assigned as department manager" };
     }
 
@@ -329,11 +331,11 @@ export async function getAvailableManagers(businessUnitId?: string): Promise<{
     await checkDepartmentManagementPermissions();
     
     const whereClause: {
-      role: { in: string[] };
+      role: { in: UserRole[] };
       businessUnitId?: string;
     } = {
       role: {
-        in: ["MANAGER", "HR", "ADMIN"],
+        in: [UserRole.MANAGER, UserRole.HR, UserRole.ADMIN],
       },
     };
 

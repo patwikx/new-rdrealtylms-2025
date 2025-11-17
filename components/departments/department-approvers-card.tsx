@@ -31,11 +31,13 @@ interface DepartmentApprover {
 interface DepartmentApproversCardProps {
   departmentId: string
   departmentName: string
+  businessUnitId: string
 }
 
 export function DepartmentApproversCard({ 
   departmentId, 
-  departmentName 
+  departmentName,
+  businessUnitId
 }: DepartmentApproversCardProps) {
   const [approvers, setApprovers] = useState<DepartmentApprover[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -118,6 +120,7 @@ export function DepartmentApproversCard({
               <DepartmentApproversDialog
                 departmentId={departmentId}
                 departmentName={departmentName}
+                businessUnitId={businessUnitId}
                 onSuccess={handleDialogSuccess}
                 onCancel={() => setIsDialogOpen(false)}
               />

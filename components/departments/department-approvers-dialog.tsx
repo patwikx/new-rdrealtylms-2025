@@ -34,12 +34,14 @@ interface DepartmentApprover {
 interface DepartmentApproversDialogProps {
   departmentId: string
   departmentName: string
+  businessUnitId: string
   onSuccess: () => void
   onCancel: () => void
 }
 
 export function DepartmentApproversDialog({ 
-  departmentId, 
+  departmentId,
+  businessUnitId,
   onSuccess,
   onCancel
 }: DepartmentApproversDialogProps) {
@@ -55,7 +57,7 @@ export function DepartmentApproversDialog({
     setIsLoading(true)
     try {
       const [usersData, approversData] = await Promise.all([
-        getUsers(),
+        getUsers(businessUnitId),
         getDepartmentApprovers(departmentId)
       ])
       setUsers(usersData)

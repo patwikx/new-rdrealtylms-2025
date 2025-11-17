@@ -72,7 +72,7 @@ export function DepartmentApproverForm({
       try {
         const [departmentsData, usersData] = await Promise.all([
           getDepartments(),
-          getUsers(),
+          getUsers(businessUnitId),
         ])
         
         // Filter departments by business unit

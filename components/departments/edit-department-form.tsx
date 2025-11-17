@@ -270,6 +270,7 @@ export function EditDepartmentForm({
           <DepartmentApproversCard 
             departmentId={department.id}
             departmentName={department.name}
+            businessUnitId={businessUnitId}
           />
 
           {/* Department Managers */}

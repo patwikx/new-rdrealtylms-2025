@@ -265,9 +265,22 @@ export async function getDepartments() {
   }
 }
 
-export async function getUsers() {
+export async function getUsers(businessUnitId?: string) {
   try {
+    let whereClause = {}
+    
+    // If businessUnitId is provided, filter by business unit with exceptions for C-002 and L-005
+    if (businessUnitId) {
+      whereClause = {
+        OR: [
+          { businessUnitId: businessUnitId }, // Users from the specified business unit
+          { employeeId: { in: ["C-002", "L-005"] } } // Always include these specific employees
+        ]
+      }
+    }
+
     const users = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         name: true,
