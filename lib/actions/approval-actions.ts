@@ -58,7 +58,7 @@ async function checkApprovalPermissions(businessUnitId: string) {
   }
   
   // Only managers, HR, and admins can approve requests
-  if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.role !== "MANAGER") {
+  if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.role !== "MANAGER" && session.user.role !== "ACCTG_MANAGER" && session.user.role !== "PURCHASING_MANAGER") {
     throw new Error("Insufficient permissions to approve requests");
   }
   
