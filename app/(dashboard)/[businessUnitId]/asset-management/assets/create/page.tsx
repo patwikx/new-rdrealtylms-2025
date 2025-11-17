@@ -16,12 +16,12 @@ export default async function CreateAssetPage({ params }: CreateAssetPageProps) 
     redirect("/auth/sign-in")
   }
   
+  const { businessUnitId } = await params
+  
   // Check if user has asset management permissions
   if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
-    redirect("/unauthorized")
+    redirect(`/${businessUnitId}/unauthorized`)
   }
-
-  const { businessUnitId } = await params
   
   return (
     <div className="space-y-6">

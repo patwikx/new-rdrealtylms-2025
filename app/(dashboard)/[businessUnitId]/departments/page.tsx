@@ -16,12 +16,12 @@ export default async function DepartmentsPage({ params }: DepartmentsPageProps) 
     redirect("/auth/sign-in");
   }
   
+  const { businessUnitId } = await params;
+  
   // Check if user has department management permissions (HR or ADMIN)
   if (session.user.role !== "ADMIN" && session.user.role !== "HR") {
-    redirect("/unauthorized");
+    redirect(`/${businessUnitId}/unauthorized`);
   }
-
-  const { businessUnitId } = await params;
   
   try {
     const departments = await getDepartments();

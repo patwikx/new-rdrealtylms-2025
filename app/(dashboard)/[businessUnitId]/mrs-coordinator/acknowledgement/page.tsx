@@ -18,12 +18,12 @@ export default async function AcknowledgementPage({ params }: AcknowledgementPag
     redirect("/auth/sign-in")
   }
 
+const { businessUnitId } = await params
+ 
   // Check if user can create acknowledgements
-  if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
-    redirect("/unauthorized")
+  if (!["ADMIN", "PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+    redirect(`/${businessUnitId}/unauthorized`)
   }
-
-  const { businessUnitId } = await params
 
   return (
     <Suspense fallback={<AcknowledgementSkeleton />}>

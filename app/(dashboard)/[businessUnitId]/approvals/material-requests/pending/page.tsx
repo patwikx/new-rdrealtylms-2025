@@ -24,12 +24,12 @@ export default async function PendingMaterialRequestsPage({
     redirect("/auth/sign-in");
   }
   
-  // Check if user has approval permissions
-  if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
-    redirect("/unauthorized");
-  }
-
   const { businessUnitId } = await params;
+  
+  // Check if user has approval permissions
+  if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER" ) {
+    redirect(`/${businessUnitId}/unauthorized`);
+  }
   const { status, type, page = "1" } = await searchParams;
   
   try {

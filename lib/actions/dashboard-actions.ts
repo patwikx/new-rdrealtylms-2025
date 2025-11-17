@@ -75,6 +75,16 @@ async function checkBusinessUnitAccess(businessUnitId: string) {
     throw new Error("User not assigned to any business unit");
   }
   
+  // Special handling for the "unauthorized" case - this suggests a navigation issue
+  if (businessUnitId === "unauthorized") {
+    console.error("Navigation error detected: businessUnitId is 'unauthorized'", {
+      userBusinessUnitId: session.user.businessUnit.id,
+      userRole: session.user.role,
+      userName: session.user.name
+    });
+    throw new Error(`Navigation error: Invalid business unit ID 'unauthorized'. User should be accessing /${session.user.businessUnit.id} instead.`);
+  }
+  
   if (session.user.businessUnit.id !== businessUnitId) {
     throw new Error(`Access denied: User business unit ${session.user.businessUnit.id} does not match requested ${businessUnitId}`);
   }

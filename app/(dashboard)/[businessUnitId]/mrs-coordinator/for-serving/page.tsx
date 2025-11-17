@@ -18,12 +18,12 @@ export default async function ToServeRequestsPage({ params }: ToServeRequestsPag
     redirect("/auth/sign-in")
   }
 
-  // Check if user can serve requests (PURCHASER role)
-  if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
-    redirect("/unauthorized")
-  }
-
   const { businessUnitId } = await params
+
+  // Check if user can serve requests (PURCHASER and PURCHASING_MANAGER roles)
+  if (!["ADMIN", "PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+    redirect(`/${businessUnitId}/unauthorized`)
+  }
 
   return (
     <Suspense fallback={<ToServeRequestsSkeleton />}>

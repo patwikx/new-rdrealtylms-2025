@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { Input } from "@/components/ui/input"
 import { Search, Save, Users } from "lucide-react"
 import { toast } from "sonner"
-import { getDepartmentApprovers, createDepartmentApprover, createMultipleDepartmentApprovers } from "@/lib/actions/mrs-actions/department-approver-actions"
+import { getDepartmentApprovers, createMultipleDepartmentApprovers } from "@/lib/actions/mrs-actions/department-approver-actions"
 import { getUsers } from "@/lib/actions/mrs-actions/user-actions"
 import { ApproverType, UserRole } from "@prisma/client"
 import { cn } from "@/lib/utils"
@@ -91,11 +91,12 @@ export function DepartmentApproversDialog({
     })
   }
 
-  // Filter users based on search term
+  // Filter users based on search term and exclude USER role (regular staff)
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.role !== "USER" && // Exclude USER role (regular staff)
+    (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+    user.role.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   const handleUserSelect = (userId: string, checked: boolean) => {

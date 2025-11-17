@@ -22,12 +22,13 @@ export default async function AdminLeaveBalancesPage({ params, searchParams }: A
     redirect("/auth/sign-in");
   }
   
+  const { businessUnitId } = await params
+  
   // Check if user has admin permissions
   if (session.user.role !== "ADMIN" && session.user.role !== "HR") {
-    redirect("/unauthorized");
+    redirect(`/${businessUnitId}/unauthorized`);
   }
 
-  const { businessUnitId } = await params;
   const { year, leaveTypeId, userId, page = "1" } = await searchParams;
   
   try {

@@ -17,18 +17,17 @@ export default async function AssetDetailsPage({ params }: AssetDetailsPageProps
     redirect("/auth/sign-in")
   }
   
-  // Check if user has asset management permissions
-  if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
-    redirect("/unauthorized")
-  }
-
   const { businessUnitId, id } = await params
+  
+  // Check if user has asset management permissions
+  if (!["ADMIN", "ACCTG_MANAGER", "ACCTG"].includes(session.user.role)) {
+    redirect(`/${businessUnitId}/unauthorized`)
+  }
   
   try {
     const assetData = await getAssetDetails(id, businessUnitId)
     
     if (!assetData) {
-      console.error(`Asset not found: ID=${id}, BusinessUnit=${businessUnitId}`)
       redirect(`/${businessUnitId}/asset-management/assets`)
     }
     

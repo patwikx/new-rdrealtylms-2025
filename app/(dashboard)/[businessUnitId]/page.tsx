@@ -8,11 +8,13 @@ import {
   getPendingApprovals
 } from "@/lib/actions/dashboard-actions";
 import { getDepreciationNotificationCount } from "@/lib/actions/depreciation-notification-actions";
+import { getMRSNotificationCount } from "@/lib/actions/mrs-notification-actions";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentRequests } from "@/components/dashboard/recent-requests";
 import { LeaveBalanceCard } from "@/components/dashboard/leave-balance";
 import { PendingForApproval } from "@/components/dashboard/pending-for-approval";
 import { DepreciationNotificationDialog } from "@/components/dashboard/depreciation-notification-dialog";
+import { MRSNotificationDialog } from "@/components/dashboard/mrs-notification-dialog";
 
 interface DashboardPageProps {
   params: Promise<{
@@ -40,6 +42,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
                             session.user.role === "ACCTG_MANAGER" || 
                             session.user.role === "ACCTG";
 
+  // Check if user can see MRS notifications
+  const canSeeMRS = session.user.role === "PURCHASER" || 
+                   session.user.role === "PURCHASING_MANAGER";
+
   // Fetch all dashboard data in parallel
   const [
     stats,
@@ -48,6 +54,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
     leaveBalances,
     pendingApprovals,
     depreciationCount,
+    mrsCount,
   ] = await Promise.all([
     getDashboardStats(businessUnitId),
     getRecentLeaveRequests(businessUnitId),
@@ -55,6 +62,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
     getUserLeaveBalances(businessUnitId),
     canApprove ? getPendingApprovals(businessUnitId) : Promise.resolve({ leaveRequests: [], overtimeRequests: [] }),
     canSeeDepreciation ? getDepreciationNotificationCount(businessUnitId) : Promise.resolve(0),
+    canSeeMRS ? getMRSNotificationCount(businessUnitId) : Promise.resolve(0),
   ]);
 
   return (
@@ -114,6 +122,15 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
         <DepreciationNotificationDialog
           businessUnitId={businessUnitId}
           initialCount={depreciationCount}
+          userRole={session.user.role}
+        />
+      )}
+
+      {/* MRS Notification Dialog */}
+      {canSeeMRS && (
+        <MRSNotificationDialog
+          businessUnitId={businessUnitId}
+          initialCount={mrsCount}
           userRole={session.user.role}
         />
       )}

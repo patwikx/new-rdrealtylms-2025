@@ -25,12 +25,12 @@ export default async function AssetManagementPage({ params, searchParams }: Asse
     redirect("/auth/sign-in")
   }
   
+  const { businessUnitId } = await params
+  
   // Check if user has asset management permissions
   if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
-    redirect("/unauthorized")
+    redirect(`/${businessUnitId}/unauthorized`)
   }
-
-  const { businessUnitId } = await params
   const { categoryId, status, isActive, search, assignedTo, page = "1" } = await searchParams
   
   try {

@@ -17,12 +17,12 @@ export default async function EditDepartmentPage({ params }: EditDepartmentPageP
     redirect("/auth/sign-in");
   }
   
+  const { businessUnitId, id } = await params;
+  
   // Check if user has department management permissions (HR or ADMIN)
   if (session.user.role !== "ADMIN" && session.user.role !== "HR") {
-    redirect("/unauthorized");
+    redirect(`/${businessUnitId}/unauthorized`);
   }
-
-  const { businessUnitId, id } = await params;
   
   try {
     // Fetch department data and available managers in parallel

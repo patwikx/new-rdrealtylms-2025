@@ -18,12 +18,12 @@ export default async function DoneRequestsPage({ params }: DoneRequestsPageProps
     redirect("/auth/sign-in")
   }
 
+  const { businessUnitId } = await params
   // Check if user can view done requests
-  if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
-    redirect("/unauthorized")
+  if (!["ADMIN", "MANAGER", "PURCHASER", "PURCHASING_MANAGER", "STOCKROOM"].includes(session.user.role)) {
+    redirect(`/${businessUnitId}/unauthorized`)
   }
 
-  const { businessUnitId } = await params
 
   return (
     <Suspense fallback={<DoneRequestsSkeleton />}>
