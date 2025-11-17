@@ -64,14 +64,15 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
           title: "My Requests",
           url: `/${businessUnitId}/leave-requests`,
         },
-        {
-          title: "Submit Request",
-          url: `/${businessUnitId}/leave-requests/create`,
-        },
-        {
+                {
           title: "Leave Balance",
           url: `/${businessUnitId}/leave-balances`,
         },
+        {
+          title: "Submit Leave Request",
+          url: `/${businessUnitId}/leave-requests/create`,
+        },
+
       ],
     },
     {
@@ -84,7 +85,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
           url: `/${businessUnitId}/overtime-requests`,
         },
         {
-          title: "Submit Request",
+          title: "Submit Overtime Request",
           url: `/${businessUnitId}/overtime-requests/create`,
         },
       ],
@@ -99,7 +100,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
           url: `/${businessUnitId}/material-requests`,
         },
         {
-          title: "Create Request",
+          title: "Create Material Request",
           url: `/${businessUnitId}/material-requests/create`,
         },
       ],
@@ -124,6 +125,10 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
               {
           title: "Material Requests",
           url: `/${businessUnitId}/approvals/material-requests/pending`,
+        },
+        {
+          title: "Approval History",
+          url: `/${businessUnitId}/approvals/history`,
         },
       ],
     });
@@ -205,34 +210,41 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
         url: `/${businessUnitId}/reports`,
         icon: FileText,
         items: [
-          {
+          // Only show Leave Reports if user is ADMIN or HR
+          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
             title: "Leave Reports",
             url: `/${businessUnitId}/reports/leave`,
-          },
-          {
+          }] : []),
+          // Only show Overtime Reports if user is ADMIN or HR
+          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
             title: "Overtime Reports",
             url: `/${businessUnitId}/reports/overtime`,
-          },
-          {
+          }] : []),
+          // Only show Asset Reports if user has accounting access
+          ...(isAcctg ? [{
             title: "Asset Reports",
             url: `/${businessUnitId}/reports/assets`,
-          },
-                    {
+          }] : []),
+          // Only show Depreciation Reports if user has accounting access
+          ...(isAcctg ? [{
             title: "Depreciation Reports",
             url: `/${businessUnitId}/reports/depreciation`,
-          },
-          {
+          }] : []),
+          // Only show Deployment Reports if user has accounting access
+          ...(isAcctg ? [{
             title: "Deployment Reports",
             url: `/${businessUnitId}/reports/deployments`,
-          },
-          {
+          }] : []),
+          // Only show MRS Reports if user has accounting or purchaser access
+          ...(isAcctg || isPurchaser ? [{
             title: "MRS Reports",
             url: `/${businessUnitId}/reports/material-requests`,
-          },
-          {
+          }] : []),
+          // Only show Employee Reports if user is ADMIN or HR
+          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
             title: "Employee Reports",
             url: `/${businessUnitId}/reports/employees`,
-          },
+          }] : []),
           {
             title: "Audit Logs",
             url: `/${businessUnitId}/audit-logs`,

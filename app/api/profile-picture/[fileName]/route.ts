@@ -21,8 +21,11 @@ export async function GET(
 
     const decodedFileName = decodeURIComponent(fileName);
 
-    // Verify the file belongs to the user (security check)
-    if (!decodedFileName.startsWith(`profile-pictures/${session.user.id}/`)) {
+    // Verify the file belongs to the user OR user is ADMIN/HR (security check)
+    const isOwnFile = decodedFileName.startsWith(`profile-pictures/${session.user.id}/`);
+    const canAccessOtherFiles = session.user.role === 'ADMIN' || session.user.role === 'HR';
+    
+    if (!isOwnFile && !canAccessOtherFiles) {
       return NextResponse.json({ error: 'Unauthorized to access this file' }, { status: 403 });
     }
 

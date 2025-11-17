@@ -393,7 +393,7 @@ export function ApprovalHistoryView({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <User className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-medium">Manager:</span>
+                          <span className="text-xs font-medium">Approver:</span>
                           {request.managerComments !== null ? (
                             <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'default'} className="text-xs">
                               {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}

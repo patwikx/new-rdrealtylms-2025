@@ -38,7 +38,7 @@ interface PendingOvertimeApprovalsViewProps {
 function formatRequestStatus(status: string): string {
   switch (status.toUpperCase()) {
     case 'PENDING_MANAGER':
-      return 'Pending Manager';
+      return 'Pending Approver';
     case 'PENDING_HR':
       return 'Pending HR';
     default:

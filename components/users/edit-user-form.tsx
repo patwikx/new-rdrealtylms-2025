@@ -37,6 +37,16 @@ import {
 import { UserRole } from "@prisma/client";
 import { Shield, User, UserCheck, Key, Building } from "lucide-react";
 
+// Helper function to get user initials
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 interface EditUserFormProps {
   user: UserWithDetails;
   businessUnitId: string;
@@ -78,8 +88,10 @@ export function EditUserForm({
   const [isLoading, setIsLoading] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [businessUnitDialogOpen, setBusinessUnitDialogOpen] = useState(false);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [selectedBusinessUnit, setSelectedBusinessUnit] = useState(user.businessUnit?.id || "");
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: user.name,
@@ -94,6 +106,29 @@ export function EditUserForm({
     isAcctg: user.isAcctg ?? false,
     isPurchaser: user.isPurchaser ?? false,
   });
+
+  // Load existing profile picture on mount
+  useEffect(() => {
+    const loadProfilePicture = async () => {
+      const profilePic = (user as UserWithDetails & { profilePicture?: string | null }).profilePicture;
+      
+      if (profilePic) {
+        try {
+          const url = `/api/profile-picture/${encodeURIComponent(profilePic)}`;
+          const response = await fetch(url);
+          const result = await response.json();
+          
+          if (result.success && result.fileUrl) {
+            setProfileImageUrl(result.fileUrl);
+          }
+        } catch (error) {
+          console.error('Error loading profile picture:', error);
+        }
+      }
+    };
+
+    loadProfilePicture();
+  }, [user]);
 
   // Debug: Log initial values (remove in production)
   useEffect(() => {
@@ -240,11 +275,49 @@ export function EditUserForm({
 
   const RoleIcon = getRoleIcon(user.role);
 
+  const userInitials = getUserInitials(user.name);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Profile Picture and Action Buttons */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          {/* Profile Picture - Square with Click to Enlarge */}
+          <div 
+            className="relative h-24 w-24 overflow-hidden rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => profileImageUrl && setImagePreviewOpen(true)}
+          >
+            {profileImageUrl ? (
+              <img 
+                src={profileImageUrl} 
+                alt={user.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-muted">
+                <span className="text-2xl font-semibold">{userInitials}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Image Preview Dialog */}
+          <Dialog open={imagePreviewOpen} onOpenChange={setImagePreviewOpen}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>{user.name} - Profile Picture</DialogTitle>
+              </DialogHeader>
+              <div className="flex items-center justify-center p-4">
+                {profileImageUrl && (
+                  <img 
+                    src={profileImageUrl} 
+                    alt={user.name}
+                    className="max-h-[70vh] w-auto object-contain rounded-md"
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+          
           <div className="flex items-center gap-3">
             <RoleIcon className="h-6 w-6 text-muted-foreground" />
             <div>
@@ -253,9 +326,24 @@ export function EditUserForm({
             </div>
           </div>
         </div>
-        <div className="text-right text-sm">
-          <div className="font-medium">{user.businessUnit?.name || "—"}</div>
-          <div className="text-muted-foreground">{user.department?.name || "No Department"}</div>
+        
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push(`/${businessUnitId}/${pageType === "employees" ? "employees" : "admin/users"}`)}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            onClick={handleSubmit}
+          >
+            {isLoading ? "Updating..." : "Update User"}
+          </Button>
         </div>
       </div>
 
@@ -479,21 +567,6 @@ export function EditUserForm({
                 </Select>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push(`/${businessUnitId}/${pageType === "employees" ? "employees" : "admin/users"}`)}
-                  disabled={isLoading}
-                  className="h-9"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isLoading} className="h-9">
-                  {isLoading ? "Updating..." : "Update User"}
-                </Button>
-              </div>
             </form>
           </div>
         </div>
