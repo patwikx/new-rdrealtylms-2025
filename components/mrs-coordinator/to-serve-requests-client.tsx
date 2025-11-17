@@ -24,6 +24,7 @@ import { MaterialRequest } from "@/types/material-request-types"
 interface ToServeRequestsClientProps {
   initialRequests: MaterialRequest[]
   userRole: string
+  isPurchaser: boolean
   businessUnitId: string
 }
 
@@ -36,7 +37,7 @@ function getUserInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function ToServeRequestsClient({ initialRequests, userRole, businessUnitId }: ToServeRequestsClientProps) {
+export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, businessUnitId }: ToServeRequestsClientProps) {
   const [requests, setRequests] = useState<MaterialRequest[]>(initialRequests)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null)
@@ -341,8 +342,8 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
     printWindow.document.close()
   }
 
-  const canMarkAsServed = (role: string): boolean => {
-    return ["ADMIN", "PURCHASER"].includes(role)
+  const canMarkAsServed = (role: string, hasPurchaserPermission: boolean): boolean => {
+    return role === "ADMIN" || hasPurchaserPermission
   }
 
   const getRequestTypeBadge = (type: string) => {
@@ -465,7 +466,7 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {canMarkAsServed(userRole) && (
+                          {canMarkAsServed(userRole, isPurchaser) && (
                             <>
                               <DropdownMenuItem onClick={() => handleMarkAsServed(request)}>
                                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -558,7 +559,7 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                 )}
 
                 <div className="flex gap-2 pt-2">
-                  {canMarkAsServed(userRole) && (
+                  {canMarkAsServed(userRole, isPurchaser) && (
                     <Button
                       variant="outline"
                       size="sm"

@@ -27,15 +27,15 @@ export default async function ToServeRequestsPage({ params }: ToServeRequestsPag
 
   return (
     <Suspense fallback={<ToServeRequestsSkeleton />}>
-      <ToServeRequestsContent userRole={session.user.role} businessUnitId={businessUnitId} />
+      <ToServeRequestsContent userRole={session.user.role} isPurchaser={session.user.isPurchaser || false} businessUnitId={businessUnitId} />
     </Suspense>
   )
 }
 
-async function ToServeRequestsContent({ userRole, businessUnitId }: { userRole: string; businessUnitId: string }) {
+async function ToServeRequestsContent({ userRole, isPurchaser, businessUnitId }: { userRole: string; isPurchaser: boolean; businessUnitId: string }) {
   const requests = await getRequestsToServe({ businessUnitId })
   
-  return <ToServeRequestsClient initialRequests={requests} userRole={userRole} businessUnitId={businessUnitId} />
+  return <ToServeRequestsClient initialRequests={requests} userRole={userRole} isPurchaser={isPurchaser} businessUnitId={businessUnitId} />
 }
 
 function ToServeRequestsSkeleton() {

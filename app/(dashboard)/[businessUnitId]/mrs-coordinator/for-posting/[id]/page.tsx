@@ -19,8 +19,8 @@ export default async function PostedRequestDetail({ params }: PostedRequestDetai
     redirect("/auth/sign-in")
   }
 
-  // Check if user can view posted requests
-  if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
+  // Check if user can view posted requests (ADMIN or users with isAcctg permission)
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
     redirect("/unauthorized")
   }
 
