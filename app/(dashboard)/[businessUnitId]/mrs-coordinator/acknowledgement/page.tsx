@@ -18,10 +18,10 @@ export default async function AcknowledgementPage({ params }: AcknowledgementPag
     redirect("/auth/sign-in")
   }
 
-const { businessUnitId } = await params
+  const { businessUnitId } = await params
  
-  // Check if user can create acknowledgements
-  if (!["ADMIN", "PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+  // Check if user can create acknowledgements (ADMIN or users with isPurchaser permission)
+  if (session.user.role !== "ADMIN" && !session.user.isPurchaser) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
 
@@ -57,38 +57,6 @@ function AcknowledgementSkeleton() {
 
       {/* Results count */}
       <Skeleton className="h-4 w-[200px]" />
-
-      {/* Desktop Table */}
-      <div className="rounded-md border hidden sm:block">
-        <div className="p-4 space-y-3">
-          {/* Table header */}
-          <div className="flex space-x-4">
-            <Skeleton className="h-4 w-[120px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[150px]" />
-            <Skeleton className="h-4 w-[120px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[100px]" />
-            <Skeleton className="h-4 w-[80px]" />
-          </div>
-          
-          {/* Table rows */}
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex space-x-4">
-              <Skeleton className="h-4 w-[120px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[150px]" />
-              <Skeleton className="h-4 w-[120px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[100px]" />
-              <Skeleton className="h-4 w-[80px]" />
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Mobile Cards */}
       <div className="sm:hidden space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (

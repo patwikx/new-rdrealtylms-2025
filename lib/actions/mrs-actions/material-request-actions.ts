@@ -674,11 +674,6 @@ export async function getForPostingRequests(filters?: {
       return []
     }
 
-    // Check if user has permission to view for posting requests
-    if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
-      return []
-    }
-
     const whereClause: any = {
       status: MRSRequestStatus.FOR_POSTING
     }
@@ -896,11 +891,6 @@ export async function getDoneRequests(filters?: {
       return []
     }
 
-    // Check if user has permission to view done requests
-    if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
-      return []
-    }
-
     const whereClause: any = {
       status: MRSRequestStatus.POSTED
     }
@@ -1004,11 +994,6 @@ export async function getRequestsToServe(filters?: {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return []
-    }
-
-    // Check if user has permission to serve requests (PURCHASER role)
-    if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
       return []
     }
 

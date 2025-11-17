@@ -18,8 +18,8 @@ export default async function ForPostingRequestsPage({ params }: ForPostingReque
     redirect("/auth/sign-in")
   }
   const { businessUnitId } = await params
-  // Check if user can view for posting requests
-  if (!["ADMIN", "MANAGER", "PURCHASER", "PURCHASING_MANAGER", "STOCKROOM"].includes(session.user.role)) {
+  // Check if user can view for posting requests (ADMIN or users with isAcctg or isPurchaser permission)
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg && !session.user.isPurchaser) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
 

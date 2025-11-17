@@ -19,8 +19,8 @@ export default async function DoneRequestsPage({ params }: DoneRequestsPageProps
   }
 
   const { businessUnitId } = await params
-  // Check if user can view done requests
-  if (!["ADMIN", "MANAGER", "PURCHASER", "PURCHASING_MANAGER", "STOCKROOM"].includes(session.user.role)) {
+  // Check if user can view done requests (ADMIN or users with isPurchaser permission)
+  if (session.user.role !== "ADMIN" && !session.user.isPurchaser) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
 

@@ -20,8 +20,8 @@ export default async function ToServeRequestsPage({ params }: ToServeRequestsPag
 
   const { businessUnitId } = await params
 
-  // Check if user can serve requests (PURCHASER and PURCHASING_MANAGER roles)
-  if (!["ADMIN", "PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+  // Check if user can serve requests (ADMIN or users with isPurchaser permission)
+  if (session.user.role !== "ADMIN" && !session.user.isPurchaser) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
 
