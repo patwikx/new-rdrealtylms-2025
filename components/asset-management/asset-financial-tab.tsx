@@ -157,10 +157,33 @@ export function AssetFinancialTab({ asset, businessUnitId }: AssetFinancialTabPr
           <div className="p-4 bg-card border rounded-lg">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Useful Life</label>
             <div className="text-sm font-medium mt-2">
-              {asset.usefulLifeYears || asset.usefulLifeMonths
-                ? `${(asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0)} months`
-                : 'Not Set'
-              }
+              {(() => {
+                // Handle both old format (years + months) and new format (total months)
+                let totalMonths = 0;
+                
+                if (asset.usefulLifeMonths && asset.usefulLifeMonths > 12) {
+                  // New format: total months stored in usefulLifeMonths
+                  totalMonths = asset.usefulLifeMonths;
+                } else {
+                  // Old format: years * 12 + additional months
+                  totalMonths = (asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0);
+                }
+                
+                if (totalMonths === 0) {
+                  return 'Not Set';
+                }
+                
+                const years = Math.floor(totalMonths / 12);
+                const months = totalMonths % 12;
+                
+                if (years > 0 && months > 0) {
+                  return `${years} years, ${months} months (${totalMonths} months total)`;
+                } else if (years > 0) {
+                  return `${years} years (${totalMonths} months total)`;
+                } else {
+                  return `${months} months`;
+                }
+              })()}
             </div>
           </div>
           <div className="p-4 bg-card border rounded-lg">

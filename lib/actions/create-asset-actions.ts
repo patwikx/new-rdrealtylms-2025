@@ -236,9 +236,18 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
     
     if (data.depreciationMethod) {
       // Handle pre-depreciated assets
-      if (data.isPreDepreciated && data.systemEntryBookValue && data.originalUsefulLifeYears) {
+      if (data.isPreDepreciated && data.systemEntryBookValue && (data.originalUsefulLifeYears || (data.originalUsefulLifeMonths && data.originalUsefulLifeMonths > 0))) {
         const remainingBookValue = data.systemEntryBookValue - (data.salvageValue || 0)
-        const originalTotalMonths = (data.originalUsefulLifeYears * 12) + (data.originalUsefulLifeMonths || 0)
+        
+        // Calculate original total months - handle both formats
+        let originalTotalMonths = 0;
+        if (data.originalUsefulLifeMonths && data.originalUsefulLifeMonths > 12) {
+          // New format: total months stored in originalUsefulLifeMonths
+          originalTotalMonths = data.originalUsefulLifeMonths;
+        } else {
+          // Old format: years * 12 + additional months
+          originalTotalMonths = (data.originalUsefulLifeYears || 0) * 12 + (data.originalUsefulLifeMonths || 0);
+        }
         const priorMonths = data.priorDepreciationMonths || 0
         const remainingMonths = originalTotalMonths - priorMonths
         
@@ -251,14 +260,23 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
         }
       }
       // Standard depreciation calculation
-      else if (data.purchasePrice && data.usefulLifeYears) {
+      else if (data.purchasePrice && (data.usefulLifeYears || (data.usefulLifeMonths && data.usefulLifeMonths > 0))) {
         const purchasePrice = data.purchasePrice
         const salvageValue = data.salvageValue || 0
         const depreciableAmount = purchasePrice - salvageValue
         
+        // Calculate total months - handle both formats
+        let totalMonths = 0;
+        if (data.usefulLifeMonths && data.usefulLifeMonths > 12) {
+          // New format: total months stored in usefulLifeMonths
+          totalMonths = data.usefulLifeMonths;
+        } else {
+          // Old format: years * 12 + additional months
+          totalMonths = (data.usefulLifeYears || 0) * 12 + (data.usefulLifeMonths || 0);
+        }
+        
         switch (data.depreciationMethod) {
           case 'STRAIGHT_LINE':
-            const totalMonths = (data.usefulLifeYears * 12) + (data.usefulLifeMonths || 0)
             calculatedValues = {
               monthlyDepreciation: totalMonths > 0 ? depreciableAmount / totalMonths : 0,
               currentBookValue: purchasePrice
@@ -287,7 +305,8 @@ export async function createAsset(data: CreateAssetData, businessUnitId: string)
             break
             
           case 'SUM_OF_YEARS_DIGITS':
-            const totalYears = data.usefulLifeYears
+            // Calculate total years from months
+            const totalYears = Math.ceil(totalMonths / 12)
             const sumOfYears = (totalYears * (totalYears + 1)) / 2
             const firstYearDepreciation = (depreciableAmount * totalYears) / sumOfYears
             calculatedValues = {

@@ -128,7 +128,16 @@ export function EditAssetDialog({
       isActive: asset.isActive,
       depreciationMethod: asset.depreciationMethod || "none",
       usefulLifeYears: asset.usefulLifeYears || undefined,
-      usefulLifeMonths: asset.usefulLifeMonths || undefined,
+      usefulLifeMonths: (() => {
+        // Handle both old format (years + months) and new format (total months)
+        if (asset.usefulLifeMonths && asset.usefulLifeMonths > 12) {
+          // New format: total months stored in usefulLifeMonths
+          return asset.usefulLifeMonths;
+        } else {
+          // Old format: years * 12 + additional months
+          return (asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0);
+        }
+      })(),
       salvageValue: asset.salvageValue || undefined,
       depreciationStartDate: asset.depreciationStartDate ? new Date(asset.depreciationStartDate) : undefined,
       assetAccountId: asset.assetAccount?.id || "none",
@@ -167,14 +176,17 @@ export function EditAssetDialog({
   const onSubmit = async (data: UpdateAssetData) => {
     setIsLoading(true)
     try {
-      // Convert "none" values to undefined
+      // Convert "none" values to undefined and handle useful life conversion
       const processedData = {
         ...data,
         departmentId: data.departmentId === "none" ? undefined : data.departmentId,
         assetAccountId: data.assetAccountId === "none" ? undefined : data.assetAccountId,
         depreciationExpenseAccountId: data.depreciationExpenseAccountId === "none" ? undefined : data.depreciationExpenseAccountId,
         accumulatedDepAccountId: data.accumulatedDepAccountId === "none" ? undefined : data.accumulatedDepAccountId,
-        depreciationMethod: data.depreciationMethod === "none" ? undefined : data.depreciationMethod
+        depreciationMethod: data.depreciationMethod === "none" ? undefined : data.depreciationMethod,
+        // Convert total months back to years and months for backward compatibility
+        usefulLifeYears: data.usefulLifeMonths ? Math.floor(data.usefulLifeMonths / 12) : undefined,
+        usefulLifeMonths: data.usefulLifeMonths // Keep the total months in this field
       }
       
       const result = await updateAsset(asset.id, processedData, businessUnitId)
@@ -605,40 +617,42 @@ export function EditAssetDialog({
 
                       <FormField
                         control={form.control}
-                        name="usefulLifeYears"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Useful Life (Years)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                placeholder="0" 
-                                {...field}
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name="usefulLifeMonths"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Additional Months</FormLabel>
+                            <FormLabel>Useful Life (Months)</FormLabel>
                             <FormControl>
                               <Input 
                                 type="number" 
-                                min="0"
-                                max="11"
+                                min="1"
                                 placeholder="0" 
                                 {...field}
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                onChange={(e) => {
+                                  const months = e.target.value ? parseInt(e.target.value) : undefined;
+                                  field.onChange(months);
+                                  // Auto-calculate years for backward compatibility
+                                  if (months) {
+                                    const years = Math.floor(months / 12);
+                                    const remainingMonths = months % 12;
+                                    form.setValue("usefulLifeYears", years);
+                                    // Update the months field to only store remaining months
+                                    setTimeout(() => {
+                                      field.onChange(months); // Keep total months in this field
+                                    }, 0);
+                                  } else {
+                                    form.setValue("usefulLifeYears", undefined);
+                                  }
+                                }}
                               />
                             </FormControl>
                             <FormMessage />
+                            <div className="text-xs text-muted-foreground">
+                              {field.value && field.value > 0 && (
+                                <span>
+                                  {Math.floor(field.value / 12)} years, {field.value % 12} months
+                                </span>
+                              )}
+                            </div>
                           </FormItem>
                         )}
                       />

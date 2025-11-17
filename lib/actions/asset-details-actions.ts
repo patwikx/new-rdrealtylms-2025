@@ -488,11 +488,23 @@ export async function updateAsset(assetId: string, data: UpdateAssetData, busine
     let calculatedValues = {}
     let nextDepreciationDate = null
 
-    if (data.depreciationMethod && data.purchasePrice && data.usefulLifeYears) {
+    // Check if we have depreciation method, purchase price, and useful life (in years or months)
+    const hasUsefulLife = data.usefulLifeYears || (data.usefulLifeMonths && data.usefulLifeMonths > 0);
+    
+    if (data.depreciationMethod && data.purchasePrice && hasUsefulLife) {
       const purchasePrice = data.purchasePrice
       const salvageValue = data.salvageValue || 0
       const depreciableAmount = purchasePrice - salvageValue
-      const totalMonths = (data.usefulLifeYears * 12) + (data.usefulLifeMonths || 0)
+      
+      // Calculate total months - handle both formats
+      let totalMonths = 0;
+      if (data.usefulLifeMonths && data.usefulLifeMonths > 12) {
+        // New format: total months stored in usefulLifeMonths
+        totalMonths = data.usefulLifeMonths;
+      } else {
+        // Old format: years * 12 + additional months
+        totalMonths = (data.usefulLifeYears || 0) * 12 + (data.usefulLifeMonths || 0);
+      }
 
       switch (data.depreciationMethod) {
         case 'STRAIGHT_LINE':

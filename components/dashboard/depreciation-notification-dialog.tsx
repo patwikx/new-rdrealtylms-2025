@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { AlertTriangle, Calendar, DollarSign, Package, X } from "lucide-react"
+import { AlertTriangle, Calendar, DollarSign, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
@@ -25,8 +25,6 @@ export function DepreciationNotificationDialog({
   const [isOpen, setIsOpen] = useState(false)
   const [assets, setAssets] = useState<AssetNeedingDepreciation[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [hasShownToday, setHasShownToday] = useState(false)
-
   // Check if we should show the notification
   useEffect(() => {
     // Only show to users who can manage assets
@@ -34,14 +32,35 @@ export function DepreciationNotificationDialog({
       return
     }
 
-    // Check if we've already shown the notification today
-    const today = new Date().toDateString()
-    const lastShown = localStorage.getItem(`depreciation-notification-${businessUnitId}`)
+    // Check if we've shown the notification in the last 5 minutes
+    const now = new Date().getTime()
+    const lastShownTime = localStorage.getItem(`depreciation-notification-time-${businessUnitId}`)
+    const fiveMinutesAgo = now - (5 * 60 * 1000) // 5 minutes in milliseconds
     
-    if (initialCount > 0 && lastShown !== today) {
+    // Only show if there are assets needing depreciation and it's been more than 5 minutes since last shown
+    if (initialCount > 0 && (!lastShownTime || parseInt(lastShownTime) < fiveMinutesAgo)) {
       setIsOpen(true)
-      localStorage.setItem(`depreciation-notification-${businessUnitId}`, today)
     }
+  }, [initialCount, businessUnitId, userRole])
+
+  // Set up interval to check and show notification every 5 minutes
+  useEffect(() => {
+    if (!["ADMIN", "MANAGER", "ACCTG"].includes(userRole) || initialCount === 0) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      const now = new Date().getTime()
+      const lastShownTime = localStorage.getItem(`depreciation-notification-time-${businessUnitId}`)
+      const fiveMinutesAgo = now - (5 * 60 * 1000)
+      
+      // Show notification if it's been more than 5 minutes since last shown
+      if (!lastShownTime || parseInt(lastShownTime) < fiveMinutesAgo) {
+        setIsOpen(true)
+      }
+    }, 5 * 60 * 1000) // Check every 5 minutes
+
+    return () => clearInterval(interval)
   }, [initialCount, businessUnitId, userRole])
 
   // Load assets when dialog opens
@@ -65,11 +84,17 @@ export function DepreciationNotificationDialog({
 
   const handleViewDepreciation = () => {
     setIsOpen(false)
-    router.push(`/${businessUnitId}/asset-management/depreciation`)
+    // Mark the current time as last shown
+    const now = new Date().getTime()
+    localStorage.setItem(`depreciation-notification-time-${businessUnitId}`, now.toString())
+    router.push(`/${businessUnitId}/asset-management/depreciation/calculate`)
   }
 
   const handleDismiss = () => {
     setIsOpen(false)
+    // Mark the current time as last shown
+    const now = new Date().getTime()
+    localStorage.setItem(`depreciation-notification-time-${businessUnitId}`, now.toString())
   }
 
   const formatCurrency = (amount: number) => {
@@ -102,14 +127,6 @@ export function DepreciationNotificationDialog({
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDismiss}
-            className="h-8 w-8 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
@@ -169,7 +186,6 @@ export function DepreciationNotificationDialog({
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <DollarSign className="h-3 w-3 text-muted-foreground" />
                             <span className="font-medium">
                               {formatCurrency(asset.monthlyDepreciation)}
                             </span>

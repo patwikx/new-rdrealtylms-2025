@@ -62,7 +62,16 @@ export async function getAssetDepreciationSchedule(
   }
 
   // Calculate total useful life in months
-  const totalMonths = (asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0);
+  // Handle both old format (years + months) and new format (total months)
+  let totalMonths = 0;
+  
+  if (asset.usefulLifeMonths && asset.usefulLifeMonths > 12) {
+    // New format: total months stored in usefulLifeMonths
+    totalMonths = asset.usefulLifeMonths;
+  } else {
+    // Old format: years * 12 + additional months
+    totalMonths = (asset.usefulLifeYears || 0) * 12 + (asset.usefulLifeMonths || 0);
+  }
   
   if (totalMonths === 0) {
     return [];
