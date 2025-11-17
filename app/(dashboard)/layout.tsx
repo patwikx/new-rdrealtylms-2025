@@ -74,10 +74,13 @@ export default async function DashboardLayout({
 
   // Check if user is admin based on their role
   const isAdmin = isUserAdmin(session.user.role);
+  
+  // Check if user has purchaser access
+  const isPurchaser = session.user.isPurchaser || false;
 
   // Check if user is authorized for the requested business unit
-  // Admins can access any unit, regular users can only access their assigned unit
-  const isAuthorizedForUnit = isAdmin || session.user.businessUnit.id === businessUnitId;
+  // Admins and purchaser users can access any unit, regular users can only access their assigned unit
+  const isAuthorizedForUnit = isAdmin || isPurchaser || session.user.businessUnit.id === businessUnitId;
 
   // Force logout if user is not authorized for the requested unit
   if (!isAuthorizedForUnit) {
@@ -86,8 +89,8 @@ export default async function DashboardLayout({
 
   let businessUnits: BusinessUnitItem[] = [];
 
-  // If the user is an admin, fetch all business units from the database
-  if (isAdmin) {
+  // If the user is an admin or has purchaser access, fetch all business units from the database
+  if (isAdmin || isPurchaser) {
     try {
       businessUnits = await prisma.businessUnit.findMany({
         orderBy: { name: "asc" },
