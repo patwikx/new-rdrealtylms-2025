@@ -24,9 +24,9 @@ export function QRCodeCard({ assetId, assetData, initialQRCode }: QRCodeCardProp
     return str.startsWith('data:image/') || str.startsWith('data:image/png;base64,') || str.startsWith('data:image/jpeg;base64,')
   }
   
-  const [qrCodeDataURL, setQRCodeDataURL] = useState<string | null>(
-    isValidDataURL(initialQRCode) ? initialQRCode : null
-  )
+  const [qrCodeDataURL, setQRCodeDataURL] = useState<string | null>(() => {
+    return isValidDataURL(initialQRCode) ? initialQRCode! : null
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
