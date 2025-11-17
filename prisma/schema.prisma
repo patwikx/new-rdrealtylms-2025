@@ -52,6 +52,8 @@ model User {
   classification EmployeeClassification?
   profilePicture String?
   deptId         String?
+  isAcctg        Boolean                 @default(false)
+  isPurchaser    Boolean                 @default(false)
   approverId     String?
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt

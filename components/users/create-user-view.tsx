@@ -79,10 +79,12 @@ export function CreateUserView({
     departmentId: "",
     approverId: "",
     businessUnitId: businessUnitId,
-    isActive: true
+    isActive: true,
+    isAcctg: false,
+    isPurchaser: false
   })
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -140,7 +142,9 @@ export function CreateUserView({
         departmentId: formData.departmentId,
         approverId: formData.approverId,
         businessUnitId: formData.businessUnitId,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        isAcctg: formData.isAcctg,
+        isPurchaser: formData.isPurchaser
       })
 
       if (!result.success) {
@@ -239,6 +243,32 @@ export function CreateUserView({
                   id="isActive"
                   checked={formData.isActive}
                   onCheckedChange={(checked) => handleInputChange('isActive', checked)}
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Special Permissions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="isAcctg" className="text-sm">Accounting Access</Label>
+              <div className="flex items-center justify-between h-8 px-3 border rounded-md">
+                <span className="text-sm">{formData.isAcctg ? "Has Access" : "No Access"}</span>
+                <Switch
+                  id="isAcctg"
+                  checked={formData.isAcctg}
+                  onCheckedChange={(checked) => handleInputChange('isAcctg', checked)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="isPurchaser" className="text-sm">Purchaser Access</Label>
+              <div className="flex items-center justify-between h-8 px-3 border rounded-md">
+                <span className="text-sm">{formData.isPurchaser ? "Has Access" : "No Access"}</span>
+                <Switch
+                  id="isPurchaser"
+                  checked={formData.isPurchaser}
+                  onCheckedChange={(checked) => handleInputChange('isPurchaser', checked)}
                 />
               </div>
             </div>
@@ -343,11 +373,6 @@ export function CreateUserView({
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="MANAGER">Approver</SelectItem>
                   <SelectItem value="HR">PMD</SelectItem>
-                   <SelectItem value="ACCTG">Accounting</SelectItem>
-                    <SelectItem value="ACCTG_MANAGER">Accounting Manager</SelectItem>
-                  <SelectItem value="PURCHASER">Purchaser</SelectItem>
-                    <SelectItem value="PURCHASING_MANAGER">Purchasing Manager</SelectItem>
-                  <SelectItem value="MRS_COORDINATOR">MRS Coordinator</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
               </Select>
@@ -400,7 +425,7 @@ export function CreateUserView({
 
             {/* Summary */}
             <div className="p-3 bg-muted/20 rounded-md">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Name:</span>
                   <p className="font-medium">{formData.name || "Not specified"}</p>
@@ -416,6 +441,14 @@ export function CreateUserView({
                 <div>
                   <span className="text-muted-foreground">Status:</span>
                   <p className="font-medium">{formData.isActive ? "Active" : "Inactive"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Accounting:</span>
+                  <p className="font-medium">{formData.isAcctg ? "Yes" : "No"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Purchaser:</span>
+                  <p className="font-medium">{formData.isPurchaser ? "Yes" : "No"}</p>
                 </div>
               </div>
             </div>

@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Users, Calendar, Settings, ChartBar as BarChart3, FileText, Shield, CheckSquare, Clock, Package, ClipboardList, Truck } from "lucide-react"
+import { Calendar, Settings, ChartBar as BarChart3, FileText, Shield, CheckSquare, Clock, Package, ClipboardList, Truck } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -25,16 +25,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 
 // Helper function to check if user is an approver
-const isApprover = (userRole: string) => {
+const isApprover = (userRole: string, isAcctg: boolean = false, isPurchaser: boolean = false) => {
   // Users who can be approvers (this should match your department approver logic)
-  const approverRoles = ['ADMIN', 'MANAGER', 'HR', 'ACCTG_MANAGER', 'PURCHASING_MANAGER']
-  return approverRoles.includes(userRole)
+  const approverRoles = ['ADMIN', 'MANAGER', 'HR']
+  return approverRoles.includes(userRole) || isAcctg || isPurchaser
 }
 
 // Define navigation items based on your hybrid LMS + Asset Management system
-const getNavigationItems = (businessUnitId: string, userRole: string) => {
-  // Define roles that can access MRS Coordinator functions
-  const mrsCoordinatorRoles = ['ADMIN', 'MRS_COORDINATOR', 'PURCHASING_MANAGER', 'PURCHASER']
+const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: boolean = false, isPurchaser: boolean = false) => {
+  // Users with purchaser access or specific roles can access MRS Coordinator functions
+  const canAccessMRS = isPurchaser || ['ADMIN', 'MRS_COORDINATOR'].includes(userRole)
   
   // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
   const baseItems = [
@@ -48,8 +48,8 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
           title: "LMS Dashboard",
           url: `/${businessUnitId}`,
         },
-        // Only show Asset Management Dashboard for ADMIN and ACCTG users
-        ...(userRole === "ADMIN" || userRole === "ACCTG" || userRole === 'ACCTG_MANAGER' ? [{
+        // Only show Asset Management Dashboard for ADMIN and users with accounting access
+        ...(userRole === "ADMIN" || isAcctg ? [{
           title: "Asset Mngt. Dashboard",
           url: `/${businessUnitId}/asset-management`,
         }] : []),
@@ -107,7 +107,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
   ];
 
   // Add approver-specific items (Leave, Overtime, Asset, MRS approvals)
-  if (isApprover(userRole)) {
+  if (isApprover(userRole, isAcctg, isPurchaser)) {
     baseItems.push({
       title: "Approvals",
       url: `/${businessUnitId}/approvals`,
@@ -129,8 +129,8 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
     });
   }
 
-  // Add MRS Coordinator section for authorized roles
-  if (mrsCoordinatorRoles.includes(userRole)) {
+  // Add MRS Coordinator section for users with purchaser access or specific roles
+  if (canAccessMRS) {
     baseItems.push({
       title: "MRS Coordinator",
       url: `/${businessUnitId}/mrs-coordinator`,
@@ -154,8 +154,8 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
 
   
 
-  // Add management items for ADMIN and HR roles
-  if (userRole === "ADMIN" || userRole === "ACCTG" || userRole === "ACCTG_MANAGER") {
+  // Add management items for ADMIN and users with accounting access
+  if (userRole === "ADMIN" || isAcctg) {
     baseItems.push(
       {
         title: "Asset Management",
@@ -311,23 +311,31 @@ export function AppSidebar({
   ...props 
 }: AppSidebarProps) {
   const navItems = React.useMemo(() => 
-    getNavigationItems(currentBusinessUnitId, session.user.role),
-    [currentBusinessUnitId, session.user.role]
+    getNavigationItems(
+      currentBusinessUnitId, 
+      session.user.role, 
+      session.user.isAcctg || false,
+      session.user.isPurchaser || false
+    ),
+    [currentBusinessUnitId, session.user.role, session.user.isAcctg, session.user.isPurchaser]
   )
 
 
 
-  const userData = React.useMemo(() => ({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email ?? '',
-    avatar: '', // No avatar field in current schema
-    employeeId: session.user.employeeId,
-    position: session.user.classification ?? 'Employee', // Use classification as position
-    businessUnit: session.user.businessUnit?.name ?? 'No Business Unit',
-    role: session.user.role, // Role is already a string enum value
-    profilePicture: (session.user as any).profilePicture || null,
-  }), [session.user])
+  const userData = React.useMemo(() => {
+    const user = session.user as typeof session.user & { profilePicture?: string | null }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email ?? '',
+      avatar: '', // No avatar field in current schema
+      employeeId: user.employeeId,
+      position: user.classification ?? 'Employee', // Use classification as position
+      businessUnit: user.businessUnit?.name ?? 'No Business Unit',
+      role: user.role, // Role is already a string enum value
+      profilePicture: user.profilePicture || null,
+    }
+  }, [session.user])
 
   return (
     <Sidebar collapsible="icon" {...props}>

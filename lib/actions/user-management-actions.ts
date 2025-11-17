@@ -16,6 +16,8 @@ export interface UserWithDetails {
   terminateDate: Date | null;
   lastLoginAt: Date | null;
   createdAt: Date;
+  isAcctg: boolean | null;
+  isPurchaser: boolean | null;
   businessUnit: {
     id: string;
     name: string;
@@ -103,7 +105,17 @@ export async function getUsers({
     await checkUserManagementPermissions(businessUnitId);
     
     // Build where clause
-    let whereClause: any = {
+    let whereClause: {
+      businessUnitId: string;
+      employeeId: { notIn: string[] };
+      role?: UserRole;
+      departmentId?: string;
+      OR?: Array<{
+        name?: { contains: string; mode: "insensitive" };
+        email?: { contains: string; mode: "insensitive" };
+        employeeId?: { contains: string; mode: "insensitive" };
+      }>;
+    } = {
       businessUnitId,
       employeeId: {
         notIn: ["T-123", "admin"]
@@ -239,6 +251,8 @@ export async function createUser(data: {
   departmentId?: string;
   approverId?: string;
   isActive?: boolean;
+  isAcctg?: boolean;
+  isPurchaser?: boolean;
 }): Promise<{ success?: string; error?: string }> {
   try {
     await checkUserManagementPermissions(data.businessUnitId);
@@ -284,8 +298,9 @@ export async function createUser(data: {
         approverId: data.approverId || null,
         password: hashedPassword,
         deptId: data.departmentId || null,
-        // Note: isActive field not yet implemented in schema
-        // isActive: data.isActive ?? true,
+        isActive: data.isActive ?? true,
+        isAcctg: data.isAcctg ?? false,
+        isPurchaser: data.isPurchaser ?? false,
       },
     });
     
@@ -315,6 +330,8 @@ export async function updateUser(
     approverId?: string;
     isActive?: boolean;
     terminateDate?: Date | null;
+    isAcctg?: boolean;
+    isPurchaser?: boolean;
   }
 ): Promise<{ success?: string; error?: string }> {
   try {
@@ -373,6 +390,8 @@ export async function updateUser(
         ...(data.departmentId !== undefined && { deptId: data.departmentId || null }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
         ...(data.terminateDate !== undefined && { terminateDate: data.terminateDate }),
+        ...(data.isAcctg !== undefined && { isAcctg: data.isAcctg }),
+        ...(data.isPurchaser !== undefined && { isPurchaser: data.isPurchaser }),
       },
     });
     

@@ -55,6 +55,8 @@ export const {
         token.classification = user.classification;
         token.businessUnit = user.businessUnit;
         token.department = user.department;
+        token.isAcctg = user.isAcctg;
+        token.isPurchaser = user.isPurchaser;
         
         // Create session record in database for tracking
         const sessionToken = randomUUID();
@@ -85,6 +87,8 @@ export const {
             classification: token.classification,
             businessUnit: token.businessUnit,
             department: token.department,
+            isAcctg: token.isAcctg,
+            isPurchaser: token.isPurchaser,
           },
         };
       }

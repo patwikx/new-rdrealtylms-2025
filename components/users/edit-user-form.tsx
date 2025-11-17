@@ -91,6 +91,8 @@ export function EditUserForm({
     approverId: user.approver?.id || (managers.length > 0 ? managers[0].id : ""),
     isActive: user.isActive ?? true,
     terminateDate: user.terminateDate || null,
+    isAcctg: user.isAcctg ?? false,
+    isPurchaser: user.isPurchaser ?? false,
   });
 
   // Debug: Log initial values (remove in production)
@@ -137,6 +139,8 @@ export function EditUserForm({
         approverId: formData.approverId,
         isActive: formData.isActive,
         terminateDate: formData.terminateDate,
+        isAcctg: formData.isAcctg,
+        isPurchaser: formData.isPurchaser,
       });
 
       if (result.error) {
@@ -215,7 +219,9 @@ export function EditUserForm({
   const handleInputChange = (field: string, value: string | boolean | Date | null) => {
     setFormData(prev => ({
       ...prev,
-      [field]: field === "isActive" ? value === "true" || value === true : value
+      [field]: ["isActive", "isAcctg", "isPurchaser"].includes(field) 
+        ? value === "true" || value === true 
+        : value
     }));
   };
 
@@ -353,6 +359,37 @@ export function EditUserForm({
                 </div>
               </div>
 
+              {/* Special Permissions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="isAcctg" className="text-sm font-medium">Accounting Access</Label>
+                  <div className="flex items-center space-x-2 h-9">
+                    <Switch
+                      id="isAcctg"
+                      checked={formData.isAcctg}
+                      onCheckedChange={(checked) => handleInputChange("isAcctg", checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {formData.isAcctg ? "Has Accounting Access" : "No Accounting Access"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="isPurchaser" className="text-sm font-medium">Purchaser Access</Label>
+                  <div className="flex items-center space-x-2 h-9">
+                    <Switch
+                      id="isPurchaser"
+                      checked={formData.isPurchaser}
+                      onCheckedChange={(checked) => handleInputChange("isPurchaser", checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {formData.isPurchaser ? "Has Purchaser Access" : "No Purchaser Access"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {/* Department */}
               <div className="space-y-2">
                 <Label htmlFor="department" className="text-sm font-medium">Department <span className="text-red-500">*</span></Label>
@@ -390,11 +427,6 @@ export function EditUserForm({
                     <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="MANAGER">Approver</SelectItem>
                   <SelectItem value="HR">PMD</SelectItem>
-                   <SelectItem value="ACCTG">Accounting</SelectItem>
-                    <SelectItem value="ACCTG_MANAGER">Accounting Manager</SelectItem>
-                  <SelectItem value="PURCHASER">Purchaser</SelectItem>
-                    <SelectItem value="PURCHASING_MANAGER">Purchasing Manager</SelectItem>
-                  <SelectItem value="MRS_COORDINATOR">MRS Coordinator</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                     </SelectContent>
                   </Select>
@@ -507,6 +539,24 @@ export function EditUserForm({
                 <span className="text-muted-foreground">System Permissions:</span>
                 <span className="font-medium text-right">
                   {roles.find(r => r.id === user.roleId)?.name || "None"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Accounting Access:</span>
+                <span className={cn(
+                  "font-medium",
+                  user.isAcctg ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                )}>
+                  {user.isAcctg ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Purchaser Access:</span>
+                <span className={cn(
+                  "font-medium",
+                  user.isPurchaser ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                )}>
+                  {user.isPurchaser ? "Yes" : "No"}
                 </span>
               </div>
             </div>

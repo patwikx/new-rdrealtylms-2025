@@ -37,6 +37,8 @@ export const authConfig = {
               classification: user.classification,
               businessUnit: user.businessUnit || null,
               department: user.department || null,
+              isAcctg: user.isAcctg || null,
+              isPurchaser: user.isPurchaser || null,
             };
           }
         }

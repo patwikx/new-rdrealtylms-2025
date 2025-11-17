@@ -30,6 +30,8 @@ declare module "next-auth" {
       classification: EmployeeClassification | null; // Uses the EmployeeClassification enum from Prisma
       businessUnit: UserBusinessUnit | null;
       department: UserDepartment | null;
+      isAcctg: boolean | null;
+      isPurchaser: boolean | null;
     } & Omit<DefaultSession["user"], "email" | "name">;
   }
 
@@ -42,6 +44,8 @@ declare module "next-auth" {
     classification: EmployeeClassification | null;
     businessUnit: UserBusinessUnit | null;
     department: UserDepartment | null;
+    isAcctg: boolean | null;
+    isPurchaser: boolean | null;
   }
 }
 
@@ -55,6 +59,8 @@ declare module "next-auth/jwt" {
     classification: EmployeeClassification | null;
     businessUnit: UserBusinessUnit | null;
     department: UserDepartment | null;
+    isAcctg: boolean | null;
+    isPurchaser: boolean | null;
     sessionToken?: string; // For hybrid session tracking
   }
 }
