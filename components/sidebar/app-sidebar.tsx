@@ -183,12 +183,8 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
             url: `/${businessUnitId}/asset-management/transfers`,
           },
           {
-            title: "Retirements",
+            title: "Retirements & Disposals",
             url: `/${businessUnitId}/asset-management/retirements`,
-          },
-          {
-            title: "Disposals",
-            url: `/${businessUnitId}/asset-management/disposals`,
           },
           {
             title: "Categories",

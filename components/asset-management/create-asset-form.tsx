@@ -1043,6 +1043,9 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 disabled={(date) => date > new Date()}
+                                captionLayout="dropdown"
+                                fromYear={new Date().getFullYear() - 5}
+                                toYear={new Date().getFullYear() + 5}
                               />
                             </PopoverContent>
                           </Popover>
@@ -1103,6 +1106,9 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                                 selected={field.value}
                                 onSelect={field.onChange}
                                 disabled={(date) => date > new Date()}
+                                captionLayout="dropdown"
+                                fromYear={new Date().getFullYear() - 5}
+                                toYear={new Date().getFullYear() + 5}
                               />
                             </PopoverContent>
                           </Popover>
@@ -1177,7 +1183,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       name="priorDepreciationAmount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Prior Depreciation Amount <span className="text-red-500">*</span></FormLabel>
+                          <FormLabel>Accumulated Depreciated Amount <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -1198,7 +1204,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                       name="priorDepreciationMonths"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Prior Depreciation Months <span className="text-red-500">*</span></FormLabel>
+                          <FormLabel>Accumulated Depreciated Months <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -1218,7 +1224,7 @@ export function CreateAssetForm({ businessUnitId }: CreateAssetFormProps) {
                     name="systemEntryBookValue"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>System Entry Book Value <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel>Remaining Book Value <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input
                             type="number"

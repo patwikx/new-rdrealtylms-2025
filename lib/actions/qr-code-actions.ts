@@ -12,7 +12,8 @@ export async function generateAssetQRCode(assetId: string) {
         itemCode: true,
         description: true,
         serialNumber: true,
-        businessUnitId: true
+        businessUnitId: true,
+        barcodeValue: true
       }
     })
 
@@ -20,6 +21,23 @@ export async function generateAssetQRCode(assetId: string) {
       throw new Error("Asset not found")
     }
 
+    // Check if we already have a valid QR code
+    const isValidDataURL = (str: string | null): boolean => {
+      if (!str) return false
+      return str.startsWith('data:image/') || str.startsWith('data:image/png;base64,') || str.startsWith('data:image/jpeg;base64,')
+    }
+
+    console.log('QR Code check for asset:', asset.itemCode)
+    console.log('Existing barcodeValue:', asset.barcodeValue ? asset.barcodeValue.substring(0, 50) + '...' : 'null')
+    console.log('Is valid data URL:', isValidDataURL(asset.barcodeValue))
+
+    if (isValidDataURL(asset.barcodeValue)) {
+      console.log('Using existing QR code from database')
+      return { success: true, qrCode: asset.barcodeValue }
+    }
+
+    // Generate new QR code
+    console.log('Generating new QR code for asset:', asset.itemCode)
     const qrCodeDataURL = await generateQRCode({
       itemCode: asset.itemCode,
       description: asset.description,
@@ -28,6 +46,16 @@ export async function generateAssetQRCode(assetId: string) {
       assetId: asset.id
     })
 
+    // Save the generated QR code to the database
+    await prisma.asset.update({
+      where: { id: assetId },
+      data: {
+        barcodeValue: qrCodeDataURL,
+        barcodeGenerated: new Date()
+      }
+    })
+
+    console.log('QR code generated and saved to database')
     return { success: true, qrCode: qrCodeDataURL }
   } catch (error) {
     console.error("Error generating QR code:", error)

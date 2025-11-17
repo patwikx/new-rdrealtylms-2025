@@ -157,30 +157,30 @@ export async function getAssetDetails(assetId: string, businessUnitId: string): 
     
     const isValidId = (id: string) => uuidRegex.test(id) || cuidRegex.test(id)
     
-    if (!isValidId(assetId)) {
-      console.log(`Invalid asset ID format: ${assetId}`)
-      return null
-    }
-    
     if (!isValidId(businessUnitId)) {
       console.log(`Invalid business unit ID format: ${businessUnitId}`)
       return null
     }
     
-    const asset = await prisma.asset.findFirst({
-      where: {
-        id: assetId,
-        businessUnitId
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            description: true
-          }
+    // Try to find asset by ID first, then by item code as fallback
+    let asset = null
+    
+    if (isValidId(assetId)) {
+      // Standard UUID/CUID lookup
+      asset = await prisma.asset.findFirst({
+        where: {
+          id: assetId,
+          businessUnitId
         },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              description: true
+            }
+          },
         businessUnit: {
           select: {
             id: true,
@@ -261,9 +261,107 @@ export async function getAssetDetails(assetId: string, businessUnitId: string): 
         }
       }
     })
+    } else {
+      // Fallback: try to find by item code
+      console.log(`Trying to find asset by item code: ${assetId}`)
+      asset = await prisma.asset.findFirst({
+        where: {
+          itemCode: assetId,
+          businessUnitId
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              description: true
+            }
+          },
+          businessUnit: {
+            select: {
+              id: true,
+              name: true,
+              code: true
+            }
+          },
+          department: {
+            select: {
+              id: true,
+              name: true,
+              code: true
+            }
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          assetAccount: {
+            select: {
+              id: true,
+              accountCode: true,
+              accountName: true
+            }
+          },
+          depreciationExpenseAccount: {
+            select: {
+              id: true,
+              accountCode: true,
+              accountName: true
+            }
+          },
+          accumulatedDepAccount: {
+            select: {
+              id: true,
+              accountCode: true,
+              accountName: true
+            }
+          },
+          deployments: {
+            where: {
+              status: {
+                in: ['DEPLOYED', 'APPROVED']
+              },
+              returnedDate: null
+            },
+            include: {
+              employee: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  employeeId: true
+                }
+              }
+            },
+            orderBy: {
+              deployedDate: 'desc'
+            },
+            take: 1
+          },
+          assetHistories: {
+            include: {
+              employee: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            },
+            orderBy: {
+              performedAt: 'desc'
+            },
+            take: 10
+          }
+        }
+      })
+    }
 
     if (!asset) {
-      console.log(`Asset not found in database: ID=${assetId}, BusinessUnit=${businessUnitId}`)
+      console.log(`Asset not found in database: ID/ItemCode=${assetId}, BusinessUnit=${businessUnitId}`)
       return null
     }
     

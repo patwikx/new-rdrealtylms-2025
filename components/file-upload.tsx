@@ -42,7 +42,7 @@ export function FileUpload({
   onUploadError,
   disabled = false,
   maxSize = 16,
-  accept = '.pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.webp',
+  accept = '.pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif,.webp,.csv',
   className,
   multiple = false,
   maxFiles = 5,

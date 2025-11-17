@@ -21,7 +21,7 @@ export default async function PendingOvertimePage({ params, searchParams }: Pend
   }
   
   // Check if user has approval permissions
-  if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.role !== "MANAGER") {
+if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.role !== "MANAGER" && session.user.role !== "ACCTG_MANAGER" && session.user.role !== "PURCHASING_MANAGER") {
     redirect("/unauthorized");
   }
 

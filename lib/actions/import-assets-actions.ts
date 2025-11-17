@@ -8,7 +8,7 @@ import { generateQRCode } from "@/lib/utils/qr-code-generator"
 export interface ImportAssetRow {
   itemCode: string
   description: string
-  categoryCode: string
+  categoryName: string
   serialNumber?: string
   modelNumber?: string
   brand?: string
@@ -19,7 +19,6 @@ export interface ImportAssetRow {
   location?: string
   notes?: string
   status?: string
-  usefulLifeYears?: number
   usefulLifeMonths?: number
   salvageValue?: number
   depreciationMethod?: string
@@ -44,11 +43,37 @@ export interface ImportResult {
   errors: ImportError[]
 }
 
-export async function downloadImportTemplate(): Promise<string> {
+export async function downloadImportTemplate(
+  businessUnitId: string, 
+  categoryId?: string, 
+  numberOfRows: number = 10,
+  defaultDepartmentId?: string,
+  defaultLocation?: string
+): Promise<string> {
+  try {
+    // Get actual categories and departments from database
+    const [categories, departments] = await Promise.all([
+      prisma.assetCategory.findMany({
+        where: { 
+          businessUnitId,
+          isActive: true,
+          ...(categoryId ? { id: categoryId } : {})
+        },
+        select: { id: true, name: true, code: true }
+      }),
+      prisma.department.findMany({
+        where: { 
+          businessUnitId,
+          isActive: true 
+        },
+        select: { code: true }
+      })
+    ])
+
   const headers = [
     'itemCode',
     'description', 
-    'categoryCode',
+    'categoryName',
     'serialNumber',
     'modelNumber',
     'brand',
@@ -59,7 +84,6 @@ export async function downloadImportTemplate(): Promise<string> {
     'location',
     'notes',
     'status',
-    'usefulLifeYears',
     'usefulLifeMonths',
     'salvageValue',
     'depreciationMethod',
@@ -69,61 +93,163 @@ export async function downloadImportTemplate(): Promise<string> {
     'accumulatedDepAccountCode'
   ]
 
-  const exampleRows = [
-    [
-      'COMP001',
-      'Dell Laptop Inspiron 15',
-      'COMP',
-      'DL123456789',
-      'Inspiron 15 3000',
-      'Dell',
-      '2024-01-15',
-      '45000',
-      '2027-01-15',
-      'IT',
-      'IT Office - Floor 2',
-      'Standard office laptop',
-      'AVAILABLE',
-      '3',
-      '0',
-      '5000',
-      'STRAIGHT_LINE',
-      '2024-01-15',
-      '1200',
-      '5120',
-      '1210'
-    ],
-    [
-      'FURN001',
-      'Office Desk Executive',
-      'FURN',
-      'OD987654321',
-      'Executive Pro',
-      'Steelcase',
-      '2024-02-01',
-      '25000',
+  // Generate example rows with auto-generated item codes
+  const exampleRows = []
+  const selectedCategory = categories[0]
+  
+  if (selectedCategory) {
+    // Get the next available item codes for this category
+    const lastAsset = await prisma.asset.findFirst({
+      where: {
+        itemCode: {
+          startsWith: `${selectedCategory.code}-`
+        }
+      },
+      orderBy: {
+        itemCode: 'desc'
+      },
+      select: {
+        itemCode: true
+      }
+    })
+    
+    let nextNumber = 1
+    if (lastAsset) {
+      const parts = lastAsset.itemCode.split('-')
+      if (parts.length >= 2) {
+        const currentNumber = parseInt(parts[parts.length - 1]) || 0
+        nextNumber = currentNumber + 1
+      }
+    }
+    
+    // Generate the requested number of rows
+    for (let i = 0; i < numberOfRows; i++) {
+      const itemCode = `${selectedCategory.code}-${(nextNumber + i).toString().padStart(5, '0')}`
+      
+      exampleRows.push([
+        itemCode,
+        `Sample Asset ${i + 1}`, // Generic description
+        selectedCategory.name,
+        '', // serialNumber - optional
+        '', // modelNumber - optional  
+        '', // brand - optional
+        '2024-01-15', // purchaseDate
+        '10000', // purchasePrice
+        '', // warrantyExpiry - optional
+        defaultDepartmentId || '', // departmentCode (actually department ID)
+        defaultLocation || '', // location
+        '', // notes - optional
+        'AVAILABLE', // status
+        '36', // usefulLifeMonths (3 years)
+        '0', // salvageValue
+        'STRAIGHT_LINE', // depreciationMethod
+        '2024-01-15', // depreciationStartDate
+        '', // assetAccountCode - optional
+        '', // depreciationExpenseAccountCode - optional
+        '' // accumulatedDepAccountCode - optional
+      ])
+    }
+  } else {
+    // Fallback if no category found
+    exampleRows.push([
+      'SAMPLE-00001',
+      'Sample Asset 1',
+      'Sample Category',
       '',
-      'HR',
-      'HR Office - Floor 1',
-      'Executive office desk',
-      'DEPLOYED',
-      '5',
+      '',
+      '',
+      '2024-01-15',
+      '10000',
+      '',
+      '',
+      '',
+      '',
+      'AVAILABLE',
+      '36',
       '0',
-      '2000',
       'STRAIGHT_LINE',
-      '2024-02-01',
-      '1300',
-      '5130',
-      '1310'
-    ]
-  ]
+      '2024-01-15',
+      '',
+      '',
+      ''
+    ])
+  }
+
+  // Helper function to escape CSV values
+  const escapeCSVValue = (value: string): string => {
+    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`
+    }
+    return value
+  }
 
   const csvContent = [
     headers.join(','),
-    ...exampleRows.map(row => row.join(','))
+    ...exampleRows.map(row => row.map(cell => escapeCSVValue(cell.toString())).join(','))
   ].join('\n')
 
+  console.log('Generated CSV template:', csvContent)
   return csvContent
+  
+  } catch (error) {
+    console.error('Error generating template:', error)
+    
+    // Fallback template with default values
+    const fallbackHeaders = [
+      'itemCode',
+      'description', 
+      'categoryName',
+      'serialNumber',
+      'modelNumber',
+      'brand',
+      'purchaseDate',
+      'purchasePrice',
+      'warrantyExpiry',
+      'departmentCode',
+      'location',
+      'notes',
+      'status',
+      'usefulLifeMonths',
+      'salvageValue',
+      'depreciationMethod',
+      'depreciationStartDate',
+      'assetAccountCode',
+      'depreciationExpenseAccountCode',
+      'accumulatedDepAccountCode'
+    ]
+
+    const fallbackRows = [
+      [
+        'COMP001',
+        'Dell Laptop Inspiron 15',
+        'Computer Equipment',
+        'DL123456789',
+        'Inspiron 15 3000',
+        'Dell',
+        '2024-01-15',
+        '45000',
+        '2027-01-15',
+        'IT',
+        'IT Office - Floor 2',
+        'Standard office laptop',
+        'AVAILABLE',
+        '36',
+        '5000',
+        'STRAIGHT_LINE',
+        '2024-01-15',
+        '1200',
+        '5120',
+        '1210'
+      ]
+    ]
+
+    const fallbackContent = [
+      fallbackHeaders.join(','),
+      ...fallbackRows.map(row => row.join(','))
+    ].join('\n')
+
+    return fallbackContent
+  }
 }
 
 export async function validateAndImportAssets(
@@ -152,11 +278,20 @@ export async function validateAndImportAssets(
     // Get reference data for validation
     const [categories, departments, glAccounts] = await Promise.all([
       prisma.assetCategory.findMany({
-        where: { isActive: true },
+        where: { 
+          businessUnitId,
+          isActive: true 
+        },
         select: { id: true, code: true, name: true }
       }),
       prisma.department.findMany({
-        where: { isActive: true },
+        where: {
+          OR: [
+            { businessUnitId },
+            { businessUnitId: null }
+          ],
+          isActive: { not: false } // This includes true and null values, same as UI
+        },
         select: { id: true, code: true, name: true }
       }),
       prisma.gLAccount.findMany({
@@ -165,9 +300,9 @@ export async function validateAndImportAssets(
       })
     ])
 
-    // Create lookup maps
-    const categoryMap = new Map(categories.map(c => [c.code, c]))
-    const departmentMap = new Map(departments.map(d => [d.code, d]))
+    // Create lookup maps - use category name instead of code
+    const categoryMap = new Map(categories.map(c => [c.name, c]))
+    const departmentMap = new Map(departments.map(d => [d.id, d])) // Use department ID instead of code
     const glAccountMap = new Map(glAccounts.map(a => [a.accountCode, a]))
 
     // Get existing item codes to check for duplicates
@@ -196,15 +331,19 @@ export async function validateAndImportAssets(
         rowErrors.push("Description is required")
       }
 
-      if (!row.categoryCode?.trim()) {
-        rowErrors.push("Category code is required")
-      } else if (!categoryMap.has(row.categoryCode)) {
-        rowErrors.push(`Category code '${row.categoryCode}' not found`)
+      if (!row.categoryName?.trim()) {
+        rowErrors.push("Category name is required")
+      } else if (!categoryMap.has(row.categoryName)) {
+        rowErrors.push(`Category '${row.categoryName}' not found`)
       }
 
-      // Validate optional department code
-      if (row.departmentCode && !departmentMap.has(row.departmentCode)) {
-        rowErrors.push(`Department code '${row.departmentCode}' not found`)
+      // Validate optional department ID (only if provided)
+      if (row.departmentCode && row.departmentCode.trim()) {
+        console.log('Validating department ID:', row.departmentCode)
+        console.log('Available department IDs:', Array.from(departmentMap.keys()))
+        if (!departmentMap.has(row.departmentCode)) {
+          rowErrors.push(`Department ID '${row.departmentCode}' not found`)
+        }
       }
 
       // Validate status
@@ -219,14 +358,14 @@ export async function validateAndImportAssets(
         rowErrors.push(`Invalid depreciation method '${row.depreciationMethod}'. Valid values: ${validMethods.join(', ')}`)
       }
 
-      // Validate GL account codes
-      if (row.assetAccountCode && !glAccountMap.has(row.assetAccountCode)) {
+      // Validate GL account codes (only if provided)
+      if (row.assetAccountCode && row.assetAccountCode.trim() && !glAccountMap.has(row.assetAccountCode)) {
         rowErrors.push(`Asset account code '${row.assetAccountCode}' not found`)
       }
-      if (row.depreciationExpenseAccountCode && !glAccountMap.has(row.depreciationExpenseAccountCode)) {
+      if (row.depreciationExpenseAccountCode && row.depreciationExpenseAccountCode.trim() && !glAccountMap.has(row.depreciationExpenseAccountCode)) {
         rowErrors.push(`Depreciation expense account code '${row.depreciationExpenseAccountCode}' not found`)
       }
-      if (row.accumulatedDepAccountCode && !glAccountMap.has(row.accumulatedDepAccountCode)) {
+      if (row.accumulatedDepAccountCode && row.accumulatedDepAccountCode.trim() && !glAccountMap.has(row.accumulatedDepAccountCode)) {
         rowErrors.push(`Accumulated depreciation account code '${row.accumulatedDepAccountCode}' not found`)
       }
 
@@ -248,11 +387,8 @@ export async function validateAndImportAssets(
       if (row.salvageValue !== undefined && (isNaN(row.salvageValue) || row.salvageValue < 0)) {
         rowErrors.push("Salvage value must be a valid positive number")
       }
-      if (row.usefulLifeYears !== undefined && (isNaN(row.usefulLifeYears) || row.usefulLifeYears <= 0)) {
-        rowErrors.push("Useful life years must be a positive number")
-      }
-      if (row.usefulLifeMonths !== undefined && (isNaN(row.usefulLifeMonths) || row.usefulLifeMonths < 0 || row.usefulLifeMonths > 11)) {
-        rowErrors.push("Useful life months must be between 0 and 11")
+      if (row.usefulLifeMonths !== undefined && (isNaN(row.usefulLifeMonths) || row.usefulLifeMonths <= 0)) {
+        rowErrors.push("Useful life months must be a positive number")
       }
 
       if (rowErrors.length > 0) {
@@ -263,8 +399,13 @@ export async function validateAndImportAssets(
         })
       } else {
         // Prepare valid asset data
-        const category = categoryMap.get(row.categoryCode)!
-        const department = row.departmentCode ? departmentMap.get(row.departmentCode) : null
+        const category = categoryMap.get(row.categoryName)!
+        const department = (row.departmentCode && row.departmentCode.trim()) ? departmentMap.get(row.departmentCode) : null
+        
+        // Convert months to years and months for depreciation calculation
+        const totalMonths = row.usefulLifeMonths || 0
+        const usefulLifeYears = Math.floor(totalMonths / 12)
+        const remainingMonths = totalMonths % 12
         
         const assetData = {
           itemCode: row.itemCode,
@@ -281,26 +422,26 @@ export async function validateAndImportAssets(
           purchaseDate: row.purchaseDate ? new Date(row.purchaseDate) : null,
           purchasePrice: row.purchasePrice || null,
           warrantyExpiry: row.warrantyExpiry ? new Date(row.warrantyExpiry) : null,
-          usefulLifeYears: row.usefulLifeYears || null,
-          usefulLifeMonths: row.usefulLifeMonths || 0,
+          usefulLifeYears: usefulLifeYears > 0 ? usefulLifeYears : null,
+          usefulLifeMonths: remainingMonths,
           salvageValue: row.salvageValue || 0,
           depreciationMethod: (row.depreciationMethod as DepreciationMethod) || DepreciationMethod.STRAIGHT_LINE,
           depreciationStartDate: row.depreciationStartDate ? new Date(row.depreciationStartDate) : null,
-          assetAccountId: row.assetAccountCode ? glAccountMap.get(row.assetAccountCode)?.id : null,
-          depreciationExpenseAccountId: row.depreciationExpenseAccountCode ? glAccountMap.get(row.depreciationExpenseAccountCode)?.id : null,
-          accumulatedDepAccountId: row.accumulatedDepAccountCode ? glAccountMap.get(row.accumulatedDepAccountCode)?.id : null,
+          assetAccountId: (row.assetAccountCode && row.assetAccountCode.trim()) ? glAccountMap.get(row.assetAccountCode)?.id : null,
+          depreciationExpenseAccountId: (row.depreciationExpenseAccountCode && row.depreciationExpenseAccountCode.trim()) ? glAccountMap.get(row.depreciationExpenseAccountCode)?.id : null,
+          accumulatedDepAccountId: (row.accumulatedDepAccountCode && row.accumulatedDepAccountCode.trim()) ? glAccountMap.get(row.accumulatedDepAccountCode)?.id : null,
           createdById: session.user.id,
           isActive: true,
           quantity: 1
         }
 
         // Calculate depreciation values if applicable
-        if (assetData.purchasePrice && assetData.usefulLifeYears) {
+        if (assetData.purchasePrice && totalMonths > 0) {
           const depreciationCalc = calculateDepreciation(
             assetData.purchasePrice,
             assetData.salvageValue,
-            assetData.usefulLifeYears,
-            assetData.usefulLifeMonths,
+            usefulLifeYears,
+            remainingMonths,
             assetData.depreciationMethod
           )
           
@@ -335,9 +476,9 @@ export async function validateAndImportAssets(
         const asset = await prisma.asset.create({
           data: {
             ...assetData,
-            barcodeValue: assetData.itemCode, // Store item code as barcode value for reference
+            // Don't set barcodeValue - let it be generated on-demand
             barcodeType: 'QR_CODE',
-            barcodeGenerated: new Date()
+            barcodeGenerated: null // Will be set when QR code is actually generated
           }
         })
 

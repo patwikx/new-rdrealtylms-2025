@@ -20,7 +20,8 @@ import {
   User,
   Hash,
   Tag,
-  TrendingDown
+  TrendingDown,
+  Plus
 } from "lucide-react"
 import {
   Select,
@@ -73,12 +74,14 @@ interface AssetDisposalViewProps {
     search?: string
     page: number
   }
+  showCreateButton?: boolean
 }
 
 export function AssetDisposalView({ 
   disposableAssetsData, 
   businessUnitId, 
-  currentFilters 
+  currentFilters,
+  showCreateButton = false
 }: AssetDisposalViewProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState(currentFilters.search || "")
@@ -160,6 +163,12 @@ export function AssetDisposalView({
         </div>
         
         <div className="flex items-center gap-2">
+          {showCreateButton && (
+            <Button onClick={() => router.push(`/${businessUnitId}/asset-management/disposals/create`)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Dispose Assets
+            </Button>
+          )}
           <Badge variant="outline" className="font-mono">
             {selectedAssets.size} selected
           </Badge>

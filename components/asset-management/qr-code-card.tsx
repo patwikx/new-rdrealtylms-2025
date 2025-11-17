@@ -18,11 +18,19 @@ interface QRCodeCardProps {
 }
 
 export function QRCodeCard({ assetId, assetData, initialQRCode }: QRCodeCardProps) {
-  const [qrCodeDataURL, setQRCodeDataURL] = useState<string | null>(initialQRCode || null)
+  // Check if initialQRCode is a valid data URL or just an item code
+  const isValidDataURL = (str: string | null | undefined): boolean => {
+    if (!str) return false
+    return str.startsWith('data:image/') || str.startsWith('data:image/png;base64,') || str.startsWith('data:image/jpeg;base64,')
+  }
+  
+  const [qrCodeDataURL, setQRCodeDataURL] = useState<string | null>(
+    isValidDataURL(initialQRCode) ? initialQRCode : null
+  )
   const [isLoading, setIsLoading] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  // Auto-generate QR code if it doesn't exist
+  // Auto-generate QR code if it doesn't exist or is invalid
   useEffect(() => {
     if (!qrCodeDataURL && !isLoading) {
       console.log("Auto-generating QR code for asset:", assetId)
@@ -39,7 +47,7 @@ export function QRCodeCard({ assetId, assetData, initialQRCode }: QRCodeCardProp
         console.error("Error generating QR code:", result.error)
         toast.error("Failed to generate QR code")
       } else if (result.qrCode) {
-        console.log("QR code generated successfully:", result.qrCode.substring(0, 50) + "...")
+        console.log("QR code generated successfully")
         setQRCodeDataURL(result.qrCode)
       }
     } catch (error) {
@@ -96,8 +104,14 @@ export function QRCodeCard({ assetId, assetData, initialQRCode }: QRCodeCardProp
               onError={(e) => {
                 console.error("QR code image failed to load:", qrCodeDataURL?.substring(0, 100))
                 console.error("Image error event:", e)
-                // Fallback to regenerating QR code
+                // Clear the invalid QR code and trigger regeneration
                 setQRCodeDataURL(null)
+                // Don't try to regenerate immediately to avoid infinite loops
+                setTimeout(() => {
+                  if (!isLoading) {
+                    generateQRCode()
+                  }
+                }, 1000)
               }}
             />
             <div className="flex gap-1">

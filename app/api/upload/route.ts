@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { minioClient, DOCUMENTS_BUCKET, generateFileName, initializeBucket, generatePublicUrl } from '@/lib/minio';
+import { minioClient, DOCUMENTS_BUCKET, generateFileName, initializeBucket } from '@/lib/minio';
 
 export async function POST(request: NextRequest) {
     try {
@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'text/plain',
+        'text/csv', // CSV files
+        'application/csv', // Alternative CSV MIME type
         'video/mp4',
         'video/webm',
         'video/quicktime',
@@ -61,8 +63,8 @@ export async function POST(request: NextRequest) {
         }
       );
   
-      // Generate the public URL
-      const fileUrl = generatePublicUrl(fileName);
+      // Generate a presigned URL for temporary access (valid for 1 hour)
+      const fileUrl = await minioClient.presignedGetObject(DOCUMENTS_BUCKET, fileName, 60 * 60);
   
       return NextResponse.json({
         success: true,

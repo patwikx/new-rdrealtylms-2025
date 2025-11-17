@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import { RetirableAssetsResponse } from "@/lib/actions/asset-retirement-actions"
-import { AssetRetirementDialog } from "./asset-retirement-dialog"
+// Removed AssetRetirementDialog - navigating directly to create page
 import { toast } from "sonner"
 import { format } from "date-fns"
 
@@ -72,17 +72,19 @@ interface AssetRetirementViewProps {
     search?: string
     page: number
   }
+  showCreateButton?: boolean
 }
 
 export function AssetRetirementView({ 
   retirableAssetsData, 
   businessUnitId, 
-  currentFilters 
+  currentFilters,
+  showCreateButton = false 
 }: AssetRetirementViewProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState(currentFilters.search || "")
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
-  const [showRetirementDialog, setShowRetirementDialog] = useState(false)
+
 
   const filteredAssets = useMemo(() => {
     if (!searchTerm) return retirableAssetsData.assets
@@ -133,20 +135,11 @@ export function AssetRetirementView({
       toast.error("Please select at least one asset to retire")
       return
     }
-    setShowRetirementDialog(true)
+    
+    // Navigate to create page with selected asset IDs
+    const assetIds = Array.from(selectedAssets).join(',')
+    router.push(`/${businessUnitId}/asset-management/retirements/create?assetIds=${assetIds}`)
   }
-
-  const selectedAssetsData = useMemo(() => {
-    return retirableAssetsData.assets.filter(asset => selectedAssets.has(asset.id))
-  }, [retirableAssetsData.assets, selectedAssets])
-
-  const handleRetirementSuccess = () => {
-    setSelectedAssets(new Set())
-    setShowRetirementDialog(false)
-    // Refresh the page to show updated asset status
-    router.refresh()
-  }
-
 
 
   return (
@@ -161,6 +154,7 @@ export function AssetRetirementView({
         </div>
         
         <div className="flex items-center gap-2">
+
           <Badge variant="outline" className="font-mono">
             {selectedAssets.size} selected
           </Badge>
@@ -583,16 +577,7 @@ export function AssetRetirementView({
         </div>
       )}
 
-      {/* Retirement Dialog */}
-      {showRetirementDialog && (
-        <AssetRetirementDialog
-          assets={selectedAssetsData}
-          businessUnitId={businessUnitId}
-          open={showRetirementDialog}
-          onOpenChange={setShowRetirementDialog}
-          onSuccess={handleRetirementSuccess}
-        />
-      )}
+
     </div>
   )
 }

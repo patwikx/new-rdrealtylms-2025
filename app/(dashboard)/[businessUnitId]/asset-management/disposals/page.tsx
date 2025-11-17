@@ -1,95 +1,29 @@
-import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getDisposableAssets } from "@/lib/actions/asset-disposal-actions"
-import { AssetDisposalView } from "@/components/asset-management/asset-disposal-view"
 
-interface AssetDisposalPageProps {
+interface DisposalsRedirectPageProps {
   params: Promise<{
     businessUnitId: string
   }>
   searchParams: Promise<{
-    categoryId?: string
-    search?: string
-    page?: string
+    [key: string]: string | string[] | undefined
   }>
 }
 
-export default async function AssetDisposalPage({ params, searchParams }: AssetDisposalPageProps) {
-  const session = await auth()
-  
-  if (!session?.user?.id) {
-    redirect("/auth/sign-in")
-  }
-  
-  // Check if user has asset management permissions
-  if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
-    redirect("/unauthorized")
-  }
-
+export default async function DisposalsRedirectPage({ params, searchParams }: DisposalsRedirectPageProps) {
   const { businessUnitId } = await params
-  const { categoryId, search, page = "1" } = await searchParams
+  const searchParamsObj = await searchParams
   
-  try {
-    // Get business unit info
-    const businessUnit = await getBusinessUnit(businessUnitId)
-    
-    if (!businessUnit) {
-      redirect("/unauthorized")
+  // Create new search params with tab=disposals
+  const newSearchParams = new URLSearchParams()
+  newSearchParams.set('tab', 'disposals')
+  
+  // Preserve other search params
+  Object.entries(searchParamsObj).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      newSearchParams.set(key, value)
     }
-
-    // Get assets available for disposal
-    const disposableAssetsData = await getDisposableAssets({
-      businessUnitId,
-      categoryId,
-      search,
-      page: parseInt(page),
-      limit: 100
-    })
-    
-    return (
-      <div className="space-y-6">
-        <AssetDisposalView 
-          disposableAssetsData={disposableAssetsData}
-          businessUnitId={businessUnitId}
-          currentFilters={{
-            categoryId,
-            search,
-            page: parseInt(page)
-          }}
-        />
-      </div>
-    )
-  } catch (error) {
-    console.error("Error loading asset disposal page:", error)
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Asset Disposals</h1>
-          </div>
-        </div>
-        
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Unable to load assets. Please try again later.</p>
-        </div>
-      </div>
-    )
-  }
-}
-
-async function getBusinessUnit(businessUnitId: string) {
-  try {
-    const { prisma } = await import("@/lib/prisma")
-    return await prisma.businessUnit.findUnique({
-      where: { id: businessUnitId },
-      select: {
-        id: true,
-        name: true,
-        code: true
-      }
-    })
-  } catch (error) {
-    console.error("Error fetching business unit:", error)
-    return null
-  }
+  })
+  
+  // Redirect to the consolidated retirements page with disposals tab
+  redirect(`/${businessUnitId}/asset-management/retirements?${newSearchParams.toString()}`)
 }

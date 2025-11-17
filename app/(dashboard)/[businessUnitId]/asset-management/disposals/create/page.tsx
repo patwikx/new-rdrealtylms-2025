@@ -1,22 +1,20 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getRetirableAssets } from "@/lib/actions/asset-retirement-actions"
 import { getDisposableAssets } from "@/lib/actions/asset-disposal-actions"
-import { AssetRetirementDisposalView } from "@/components/asset-management/asset-retirement-disposal-view"
+import { AssetDisposalCreateView } from "@/components/asset-management/asset-disposal-create-view"
 
-interface AssetRetirementDisposalPageProps {
+interface AssetDisposalCreatePageProps {
   params: Promise<{
     businessUnitId: string
   }>
   searchParams: Promise<{
-    tab?: 'retirements' | 'disposals'
+    assetIds?: string
     categoryId?: string
     search?: string
-    page?: string
   }>
 }
 
-export default async function AssetRetirementDisposalPage({ params, searchParams }: AssetRetirementDisposalPageProps) {
+export default async function AssetDisposalCreatePage({ params, searchParams }: AssetDisposalCreatePageProps) {
   const session = await auth()
   
   if (!session?.user?.id) {
@@ -29,7 +27,7 @@ export default async function AssetRetirementDisposalPage({ params, searchParams
   }
 
   const { businessUnitId } = await params
-  const { tab = 'retirements', categoryId, search, page = "1" } = await searchParams
+  const { assetIds, categoryId, search } = await searchParams
   
   try {
     // Get business unit info
@@ -39,51 +37,39 @@ export default async function AssetRetirementDisposalPage({ params, searchParams
       redirect("/unauthorized")
     }
 
-    // Get both retirable and disposable assets
-    const [retirableAssetsData, disposableAssetsData] = await Promise.all([
-      getRetirableAssets({
-        businessUnitId,
-        categoryId,
-        search,
-        page: parseInt(page),
-        limit: 100
-      }),
-      getDisposableAssets({
-        businessUnitId,
-        categoryId,
-        search,
-        page: parseInt(page),
-        limit: 100
-      })
-    ])
+    // Get disposable assets (for selection if no specific assets provided)
+    const disposableAssetsData = await getDisposableAssets({
+      businessUnitId,
+      categoryId,
+      search,
+      page: 1,
+      limit: 1000 // Get all for selection
+    })
+    
+    // Parse selected asset IDs if provided
+    const selectedAssetIds = assetIds ? assetIds.split(',') : []
     
     return (
       <div className="space-y-6">
-        <AssetRetirementDisposalView 
-          retirableAssetsData={retirableAssetsData}
+        <AssetDisposalCreateView 
           disposableAssetsData={disposableAssetsData}
           businessUnitId={businessUnitId}
-          currentFilters={{
-            tab,
-            categoryId,
-            search,
-            page: parseInt(page)
-          }}
+          preSelectedAssetIds={selectedAssetIds}
         />
       </div>
     )
   } catch (error) {
-    console.error("Error loading asset retirement/disposal page:", error)
+    console.error("Error loading asset disposal create page:", error)
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Asset Retirements & Disposals</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Asset Disposal</h1>
           </div>
         </div>
         
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Unable to load assets. Please try again later.</p>
+          <p className="text-muted-foreground">Unable to load disposal form. Please try again later.</p>
         </div>
       </div>
     )
