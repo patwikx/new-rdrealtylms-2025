@@ -6,6 +6,7 @@ export interface MaterialRequestItem {
   description: string
   uom: string
   quantity: number
+  quantityServed?: { toNumber: () => number } | number | null
   unitPrice: number | null
   totalPrice: number | null
   remarks: string | null

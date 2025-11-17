@@ -1079,6 +1079,7 @@ export async function markRequestAsServed(params: {
   supplierBPCode?: string
   supplierName?: string
   purchaseOrderNumber?: string
+  servedQuantities?: Record<string, number>
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const session = await auth()
@@ -1087,7 +1088,8 @@ export async function markRequestAsServed(params: {
     }
 
     // Check if user has permission to mark as served
-    if (!["ADMIN", "PURCHASER"].includes(session.user.role)) {
+    const isPurchaser = session.user.isPurchaser || false
+    if (session.user.role !== "ADMIN" && !isPurchaser) {
       return { success: false, error: "You don't have permission to mark requests as served" }
     }
 
@@ -1097,6 +1099,9 @@ export async function markRequestAsServed(params: {
         id: params.requestId,
         businessUnitId: params.businessUnitId,
         status: MRSRequestStatus.FOR_SERVING
+      },
+      include: {
+        items: true
       }
     })
 
@@ -1104,11 +1109,41 @@ export async function markRequestAsServed(params: {
       return { success: false, error: "Request not found or not in FOR_SERVING status" }
     }
 
-    // Update the request status to SERVED, then to FOR_POSTING
+    // Update item quantities served
+    if (params.servedQuantities) {
+      for (const item of request.items) {
+        const servedQty = params.servedQuantities[item.id]
+        if (servedQty !== undefined && servedQty > 0) {
+          await prisma.materialRequestItem.update({
+            where: { id: item.id },
+            data: {
+              quantityServed: (item.quantityServed?.toNumber() || 0) + servedQty
+            }
+          })
+        }
+      }
+    }
+
+    // Check if all items are fully served
+    const updatedRequest = await prisma.materialRequest.findUnique({
+      where: { id: params.requestId },
+      include: { items: true }
+    })
+
+    const allItemsFullyServed = updatedRequest?.items.every(item => {
+      const served = item.quantityServed?.toNumber() || 0
+      const requested = item.quantity.toNumber()
+      return served >= requested
+    })
+
+    // Determine the new status
+    const newStatus = allItemsFullyServed ? MRSRequestStatus.FOR_POSTING : MRSRequestStatus.FOR_SERVING
+
+    // Update the request
     await prisma.materialRequest.update({
       where: { id: params.requestId },
       data: {
-        status: MRSRequestStatus.FOR_POSTING,
+        status: newStatus,
         servedAt: new Date(),
         servedBy: session.user.id,
         servedNotes: params.notes,
@@ -1121,12 +1156,17 @@ export async function markRequestAsServed(params: {
 
     // Revalidate relevant paths
     revalidatePath(`/${params.businessUnitId}/mrs-coordinator/to-serve`)
-    revalidatePath(`/${params.businessUnitId}/mrs-coordinator/posted`)
+    revalidatePath(`/${params.businessUnitId}/mrs-coordinator/for-serving`)
+    revalidatePath(`/${params.businessUnitId}/mrs-coordinator/for-posting`)
     revalidatePath(`/${params.businessUnitId}/material-requests/${params.requestId}`)
+
+    const statusMessage = allItemsFullyServed 
+      ? "has been fully served and is now ready for posting"
+      : "has been partially served and remains in 'For Serving' status"
 
     return {
       success: true,
-      message: `Request ${request.docNo} has been marked as served and is now ready for posting`
+      message: `Request ${request.docNo} ${statusMessage}`
     }
   } catch (error) {
     console.error("Error marking request as served:", error)

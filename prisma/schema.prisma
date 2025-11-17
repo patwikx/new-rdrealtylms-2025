@@ -985,13 +985,14 @@ model MaterialRequestItem {
   materialRequestId String
   materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
 
-  itemCode    String?
-  description String
-  uom         String
-  quantity    Decimal  @db.Decimal(10, 2)
-  unitPrice   Decimal? @db.Decimal(10, 2)
-  totalPrice  Decimal? @db.Decimal(10, 2)
-  remarks     String?
+  itemCode       String?
+  description    String
+  uom            String
+  quantity       Decimal  @db.Decimal(10, 2)
+  quantityServed Decimal? @default(0) @db.Decimal(10, 2)
+  unitPrice      Decimal? @db.Decimal(10, 2)
+  totalPrice     Decimal? @db.Decimal(10, 2)
+  remarks        String?
 
   acknowledgmentItems MRSAcknowledgmentItem[]
 
