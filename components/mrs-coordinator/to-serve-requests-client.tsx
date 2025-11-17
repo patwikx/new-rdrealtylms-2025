@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
 import {
   DropdownMenu,
@@ -24,6 +25,15 @@ interface ToServeRequestsClientProps {
   initialRequests: MaterialRequest[]
   userRole: string
   businessUnitId: string
+}
+
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export function ToServeRequestsClient({ initialRequests, userRole, businessUnitId }: ToServeRequestsClientProps) {
@@ -414,9 +424,18 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                   </TableCell>
                   <TableCell>{getRequestTypeBadge(request.type)}</TableCell>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{request.requestedBy.name}</div>
-                      <div className="text-sm text-muted-foreground">{request.requestedBy.employeeId}</div>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 rounded-md">
+                        <AvatarImage 
+                          src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                          alt={request.requestedBy.name}
+                        />
+                        <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{request.requestedBy.name}</div>
+                        <div className="text-sm text-muted-foreground">{request.requestedBy.employeeId}</div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -498,12 +517,21 @@ export function ToServeRequestsClient({ initialRequests, userRole, businessUnitI
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="h-10 w-10 rounded-md">
+                    <AvatarImage 
+                      src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                      alt={request.requestedBy.name}
+                    />
+                    <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                  </Avatar>
                   <div>
-                    <span className="text-muted-foreground">Requested By:</span>
+                    <p className="text-xs text-muted-foreground">Requested By</p>
                     <p className="font-medium">{request.requestedBy.name}</p>
                     <p className="text-xs text-muted-foreground">{request.requestedBy.employeeId}</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Department:</span>
                     <p className="font-medium">

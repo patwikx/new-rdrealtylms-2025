@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Search, 
   Calendar, 
@@ -86,6 +87,15 @@ function getSessionDisplay(session: string) {
     default:
       return 'Full Day';
   }
+}
+
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 const typeOptions = [
@@ -328,8 +338,14 @@ export function ApprovalHistoryView({
                 return (
                   <TableRow key={`${request.type}-${request.id}`}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 rounded-md">
+                          <AvatarImage 
+                            src={request.user.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.user.profilePicture)}?direct=true` : undefined}
+                            alt={request.user.name}
+                          />
+                          <AvatarFallback>{getUserInitials(request.user.name)}</AvatarFallback>
+                        </Avatar>
                         <div>
                           <div className="font-medium">{request.user.name}</div>
                           <div className="text-sm text-muted-foreground">{request.user.employeeId}</div>
@@ -474,10 +490,18 @@ export function ApprovalHistoryView({
               <Card key={`${request.type}-${request.id}`}>
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{request.user.name}</span>
-                      <span className="text-sm text-muted-foreground">({request.user.employeeId})</span>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 rounded-md">
+                        <AvatarImage 
+                          src={request.user.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.user.profilePicture)}?direct=true` : undefined}
+                          alt={request.user.name}
+                        />
+                        <AvatarFallback>{getUserInitials(request.user.name)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <span className="font-medium">{request.user.name}</span>
+                        <div className="text-sm text-muted-foreground">{request.user.employeeId}</div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {request.actionTaken === 'APPROVED' ? (

@@ -707,6 +707,7 @@ export async function getForPostingRequests(filters?: {
             name: true,
             email: true,
             employeeId: true,
+            profilePicture: true,
           }
         },
         recApprover: {
@@ -948,6 +949,7 @@ export async function getDoneRequests(filters?: {
             name: true,
             email: true,
             employeeId: true,
+            profilePicture: true,
           }
         },
         recApprover: {
@@ -969,7 +971,7 @@ export async function getDoneRequests(filters?: {
         acknowledgmentForm: true,
       },
       orderBy: {
-        dateReceived: 'desc'
+        datePosted: 'desc'
       }
     })
 
@@ -1038,6 +1040,7 @@ export async function getRequestsToServe(filters?: {
             name: true,
             email: true,
             employeeId: true,
+            profilePicture: true,
           }
         },
         recApprover: {

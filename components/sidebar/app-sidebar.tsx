@@ -20,9 +20,35 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   session: Session
   businessUnits: BusinessUnitItem[]
   currentBusinessUnitId: string
+  pendingCounts?: {
+    leave?: number
+    overtime?: number
+    materialRequests?: number
+    mrsForServing?: number
+    mrsForPosting?: number
+    mrsDoneUnacknowledged?: number
+    assetsNeedingDepreciation?: number
+  }
 }
 
 
+
+// Type for navigation sub-items
+type NavSubItem = {
+  title: string
+  url: string
+  badge?: number
+}
+
+// Type for navigation items
+type NavItem = {
+  title: string
+  url: string
+  icon: typeof Calendar
+  isActive?: boolean
+  badge?: number
+  items?: NavSubItem[]
+}
 
 // Helper function to check if user is an approver
 const isApprover = (userRole: string, isAcctg: boolean = false, isPurchaser: boolean = false) => {
@@ -32,12 +58,26 @@ const isApprover = (userRole: string, isAcctg: boolean = false, isPurchaser: boo
 }
 
 // Define navigation items based on your hybrid LMS + Asset Management system
-const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: boolean = false, isPurchaser: boolean = false) => {
+const getNavigationItems = (
+  businessUnitId: string, 
+  userRole: string, 
+  isAcctg: boolean = false, 
+  isPurchaser: boolean = false,
+  pendingCounts?: {
+    leave?: number;
+    overtime?: number;
+    materialRequests?: number;
+    mrsForServing?: number;
+    mrsForPosting?: number;
+    mrsDoneUnacknowledged?: number;
+    assetsNeedingDepreciation?: number;
+  }
+): NavItem[] => {
   // Users with purchaser access or specific roles can access MRS Coordinator functions
   const canAccessMRS = isPurchaser || ['ADMIN', 'MRS_COORDINATOR'].includes(userRole)
   
   // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
-  const baseItems = [
+  const baseItems: NavItem[] = [
     {
       title: "Dashboard",
       url: `/${businessUnitId}`,
@@ -109,51 +149,69 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
 
   // Add approver-specific items (Leave, Overtime, Asset, MRS approvals)
   if (isApprover(userRole, isAcctg, isPurchaser)) {
+    const approvalItems: NavSubItem[] = [
+      {
+        title: "Pending Leave",
+        url: `/${businessUnitId}/approvals/leave/pending`,
+        badge: pendingCounts?.leave,
+      },
+      {
+        title: "Pending Overtime",
+        url: `/${businessUnitId}/approvals/overtime/pending`,
+        badge: pendingCounts?.overtime,
+      },
+      {
+        title: "Material Requests",
+        url: `/${businessUnitId}/approvals/material-requests/pending`,
+        badge: pendingCounts?.materialRequests,
+      },
+      {
+        title: "Approval History",
+        url: `/${businessUnitId}/approvals/history`,
+      },
+    ];
+    
+    // Calculate total pending count (leave + overtime + material requests)
+    const totalPending = (pendingCounts?.leave || 0) + (pendingCounts?.overtime || 0) + (pendingCounts?.materialRequests || 0);
+    
     baseItems.push({
       title: "Approvals",
       url: `/${businessUnitId}/approvals`,
       icon: CheckSquare,
-      items: [
-        {
-          title: "Pending Leave",
-          url: `/${businessUnitId}/approvals/leave/pending`,
-        },
-        {
-          title: "Pending Overtime",
-          url: `/${businessUnitId}/approvals/overtime/pending`,
-        },
-              {
-          title: "Material Requests",
-          url: `/${businessUnitId}/approvals/material-requests/pending`,
-        },
-        {
-          title: "Approval History",
-          url: `/${businessUnitId}/approvals/history`,
-        },
-      ],
+      badge: totalPending > 0 ? totalPending : undefined,
+      items: approvalItems,
     });
   }
 
   // Add MRS Coordinator section for users with purchaser access or specific roles
   if (canAccessMRS) {
+    const mrsItems: NavSubItem[] = [
+      {
+        title: "For Serving - MRS",
+        url: `/${businessUnitId}/mrs-coordinator/for-serving`,
+        badge: pendingCounts?.mrsForServing,
+      },
+      {
+        title: "For Posting - MRS",
+        url: `/${businessUnitId}/mrs-coordinator/for-posting`,
+        badge: pendingCounts?.mrsForPosting,
+      },
+      {
+        title: "Done Requests",
+        url: `/${businessUnitId}/mrs-coordinator/done-requests`,
+        badge: pendingCounts?.mrsDoneUnacknowledged,
+      }
+    ];
+    
+    // Calculate total MRS pending count (including unacknowledged done requests)
+    const totalMRS = (pendingCounts?.mrsForServing || 0) + (pendingCounts?.mrsForPosting || 0) + (pendingCounts?.mrsDoneUnacknowledged || 0);
+    
     baseItems.push({
       title: "MRS Coordinator",
       url: `/${businessUnitId}/mrs-coordinator`,
       icon: Truck,
-      items: [
-        {
-          title: "For Serving - MRS",
-          url: `/${businessUnitId}/mrs-coordinator/for-serving`,
-        },
-        {
-          title: "For Posting - MRS",
-          url: `/${businessUnitId}/mrs-coordinator/for-posting`,
-        },
-        {
-          title: "Done Requests",
-          url: `/${businessUnitId}/mrs-coordinator/done-requests`,
-        }
-      ],
+      badge: totalMRS > 0 ? totalMRS : undefined,
+      items: mrsItems,
     });
   }
 
@@ -161,49 +219,53 @@ const getNavigationItems = (businessUnitId: string, userRole: string, isAcctg: b
 
   // Add management items for ADMIN and users with accounting access
   if (userRole === "ADMIN" || isAcctg) {
+    const assetManagementItems: NavSubItem[] = [
+      {
+        title: "All Assets",
+        url: `/${businessUnitId}/asset-management/assets`,
+      },
+      {
+        title: "Deployments",
+        url: `/${businessUnitId}/asset-management/deployments`,
+      },
+      {
+        title: "Asset Return",
+        url: `/${businessUnitId}/asset-management/returns`,
+      },
+      {
+        title: "Asset QR Printing",
+        url: `/${businessUnitId}/asset-management/asset-printing`,
+      },
+      {
+        title: "Transfers",
+        url: `/${businessUnitId}/asset-management/transfers`,
+      },
+      {
+        title: "Retirements & Disposals",
+        url: `/${businessUnitId}/asset-management/retirements`,
+      },
+      {
+        title: "Categories",
+        url: `/${businessUnitId}/asset-management/categories`,
+      },
+      {
+        title: "Depreciation",
+        url: `/${businessUnitId}/asset-management/depreciation`,
+        badge: pendingCounts?.assetsNeedingDepreciation,
+      },
+      {
+        title: "Inventory Verification",
+        url: `/${businessUnitId}/asset-management/inventory`,
+      },
+    ];
+    
     baseItems.push(
       {
         title: "Asset Management",
         url: `/${businessUnitId}/asset-management`,
         icon: Package,
-        items: [
-          {
-            title: "All Assets",
-            url: `/${businessUnitId}/asset-management/assets`,
-          },
-          {
-            title: "Deployments",
-            url: `/${businessUnitId}/asset-management/deployments`,
-          },
-                    {
-            title: "Asset Return",
-            url: `/${businessUnitId}/asset-management/returns`,
-          },
-                    {
-            title: "Asset QR Printing",
-            url: `/${businessUnitId}/asset-management/asset-printing`,
-          },
-          {
-            title: "Transfers",
-            url: `/${businessUnitId}/asset-management/transfers`,
-          },
-          {
-            title: "Retirements & Disposals",
-            url: `/${businessUnitId}/asset-management/retirements`,
-          },
-          {
-            title: "Categories",
-            url: `/${businessUnitId}/asset-management/categories`,
-          },
-          {
-            title: "Depreciation",
-            url: `/${businessUnitId}/asset-management/depreciation`,
-          },
-          {
-            title: "Inventory Verification",
-            url: `/${businessUnitId}/asset-management/inventory`,
-          },
-        ],
+        badge: pendingCounts?.assetsNeedingDepreciation,
+        items: assetManagementItems,
       },
       {
         title: "Reports",
@@ -320,6 +382,7 @@ export function AppSidebar({
   session, 
   businessUnits, 
   currentBusinessUnitId,
+  pendingCounts,
   ...props 
 }: AppSidebarProps) {
   const navItems = React.useMemo(() => 
@@ -327,9 +390,10 @@ export function AppSidebar({
       currentBusinessUnitId, 
       session.user.role, 
       session.user.isAcctg || false,
-      session.user.isPurchaser || false
+      session.user.isPurchaser || false,
+      pendingCounts
     ),
-    [currentBusinessUnitId, session.user.role, session.user.isAcctg, session.user.isPurchaser]
+    [currentBusinessUnitId, session.user.role, session.user.isAcctg, session.user.isPurchaser, pendingCounts]
   )
 
 

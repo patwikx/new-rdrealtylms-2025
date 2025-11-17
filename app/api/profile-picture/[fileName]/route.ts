@@ -21,12 +21,36 @@ export async function GET(
 
     const decodedFileName = decodeURIComponent(fileName);
 
-    // Verify the file belongs to the user OR user is ADMIN/HR (security check)
+    // Verify the file belongs to the user OR user is ADMIN/HR/MANAGER (security check)
     const isOwnFile = decodedFileName.startsWith(`profile-pictures/${session.user.id}/`);
-    const canAccessOtherFiles = session.user.role === 'ADMIN' || session.user.role === 'HR';
+    const canAccessOtherFiles = session.user.role === 'ADMIN' || session.user.role === 'HR' || session.user.role === 'MANAGER';
     
     if (!isOwnFile && !canAccessOtherFiles) {
       return NextResponse.json({ error: 'Unauthorized to access this file' }, { status: 403 });
+    }
+
+    // Check if direct image streaming is requested
+    const { searchParams } = new URL(request.url);
+    const direct = searchParams.get('direct') === 'true';
+
+    if (direct) {
+      // Stream the image directly
+      const stream = await minioClient.getObject(DOCUMENTS_BUCKET, decodedFileName);
+      
+      // Determine content type based on file extension
+      const extension = decodedFileName.split('.').pop()?.toLowerCase();
+      const contentType = extension === 'png' ? 'image/png' 
+        : extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg'
+        : extension === 'gif' ? 'image/gif'
+        : extension === 'webp' ? 'image/webp'
+        : 'application/octet-stream';
+
+      return new NextResponse(stream as unknown as ReadableStream, {
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
     }
 
     // Generate a presigned URL for the file (valid for 1 hour)

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Package, Eye, CheckCircle2, MoreVertical, FileCheck, Link2, FileSignature } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -22,6 +23,15 @@ interface DoneRequestsClientProps {
   initialRequests: MaterialRequest[]
   userRole: string
   businessUnitId: string
+}
+
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export function DoneRequestsClient({ 
@@ -84,6 +94,14 @@ export function DoneRequestsClient({
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-8 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-l-yellow-400 dark:border-l-yellow-600 rounded-sm" />
+          <span className="text-muted-foreground">Needs Acknowledgement</span>
+        </div>
+      </div>
+
       {/* Results count */}
       <div className="text-sm text-muted-foreground">
         Showing {filteredRequests.length} of {requests.length} posted requests
@@ -121,14 +139,32 @@ export function DoneRequestsClient({
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRequests.map((request) => (
-                <TableRow key={request.id}>
+              filteredRequests.map((request) => {
+                const needsAcknowledgement = !request.acknowledgedAt;
+                
+                return (
+                <TableRow 
+                  key={request.id}
+                  className={needsAcknowledgement ? "bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 border-l-4 border-l-yellow-400 dark:border-l-yellow-600" : ""}
+                >
                   <TableCell className="font-medium">{request.docNo}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{request.type}</Badge>
                   </TableCell>
                   <TableCell>
-                    {request.requestedBy.name}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 rounded-md">
+                        <AvatarImage 
+                          src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                          alt={request.requestedBy.name}
+                        />
+                        <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{request.requestedBy.name}</div>
+                        <div className="text-sm text-muted-foreground">{request.requestedBy.employeeId}</div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>{request.department?.name || "N/A"}</TableCell>
                   <TableCell>
@@ -181,7 +217,8 @@ export function DoneRequestsClient({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              )
+              })
             )}
           </TableBody>
         </Table>
@@ -200,8 +237,14 @@ export function DoneRequestsClient({
             </CardContent>
           </Card>
         ) : (
-          filteredRequests.map((request) => (
-            <Card key={request.id}>
+          filteredRequests.map((request) => {
+            const needsAcknowledgement = !request.acknowledgedAt;
+            
+            return (
+            <Card 
+              key={request.id}
+              className={needsAcknowledgement ? "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700 border-l-4 border-l-yellow-400 dark:border-l-yellow-600" : ""}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -218,13 +261,21 @@ export function DoneRequestsClient({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar className="h-10 w-10 rounded-md">
+                    <AvatarImage 
+                      src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                      alt={request.requestedBy.name}
+                    />
+                    <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                  </Avatar>
                   <div>
-                    <span className="text-muted-foreground">Requested by:</span>
-                    <p className="font-medium">
-                      {request.requestedBy.name}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Requested By</p>
+                    <p className="font-medium">{request.requestedBy.name}</p>
+                    <p className="text-xs text-muted-foreground">{request.requestedBy.employeeId}</p>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Department:</span>
                     <p className="font-medium">{request.department?.name || "N/A"}</p>
@@ -302,7 +353,8 @@ export function DoneRequestsClient({
                 </div>
               </CardContent>
             </Card>
-          ))
+          )
+          })
         )}
       </div>
     </div>

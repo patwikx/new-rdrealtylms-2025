@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Search, 
   Calendar, 
   Clock3,
-  Filter,
-  User
+  Filter
 } from "lucide-react";
 import {
   Select,
@@ -60,6 +60,15 @@ const statusOptions = [
   { value: 'PENDING_MANAGER', label: 'Pending Manager', icon: Clock3 },
   { value: 'PENDING_HR', label: 'Pending HR', icon: Clock3 }
 ];
+
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export function PendingOvertimeApprovalsView({ 
   approvalsData, 
@@ -241,8 +250,14 @@ export function PendingOvertimeApprovalsView({
                 return (
                   <TableRow key={request.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 rounded-md">
+                          <AvatarImage 
+                            src={request.user.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.user.profilePicture)}?direct=true` : undefined}
+                            alt={request.user.name}
+                          />
+                          <AvatarFallback>{getUserInitials(request.user.name)}</AvatarFallback>
+                        </Avatar>
                         <div>
                           <div className="font-medium">{request.user.name}</div>
                           <div className="text-sm text-muted-foreground">{request.user.employeeId}</div>
@@ -301,12 +316,18 @@ export function PendingOvertimeApprovalsView({
               <Card key={request.id}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 rounded-md">
+                        <AvatarImage 
+                          src={request.user.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.user.profilePicture)}?direct=true` : undefined}
+                          alt={request.user.name}
+                        />
+                        <AvatarFallback>{getUserInitials(request.user.name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
                         <CardTitle className="text-base">{request.user.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{request.user.employeeId}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{request.user.employeeId}</p>
                     </div>
                     <Badge variant={getStatusVariant(request.status)}>
                       {formatRequestStatus(request.status)}

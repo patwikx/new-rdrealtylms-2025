@@ -122,7 +122,12 @@ export function PostedRequestsClient({ initialRequests, userRole, businessUnitId
             ) : (
               filteredRequests.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell className="font-medium">{request.docNo}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-mono font-medium">{request.docNo}</span>
+                    </div>
+                    </TableCell>
                   <TableCell>
                     <Badge variant="outline">{request.type}</Badge>
                   </TableCell>

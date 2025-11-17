@@ -5,6 +5,7 @@ import * as React from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
 import {
   Collapsible,
   CollapsibleContent,
@@ -27,9 +28,11 @@ interface NavMainItem {
   url: string
   icon?: LucideIcon
   isActive?: boolean
+  badge?: number
   items?: {
     title: string
     url: string
+    badge?: number
   }[]
 }
 
@@ -78,7 +81,15 @@ export function NavMain({ items }: NavMainProps) {
                       >
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
-                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                            {item.badge}
+                          </Badge>
+                        )}
+                        <ChevronRight className={cn(
+                          "transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90",
+                          item.badge !== undefined && item.badge > 0 ? "ml-2" : "ml-auto"
+                        )} />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -95,6 +106,11 @@ export function NavMain({ items }: NavMainProps) {
                               >
                                 <Link href={subItem.url}>
                                   <span>{subItem.title}</span>
+                                  {subItem.badge !== undefined && subItem.badge > 0 && (
+                                    <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                                      {subItem.badge}
+                                    </Badge>
+                                  )}
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>

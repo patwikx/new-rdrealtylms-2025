@@ -63,104 +63,80 @@ interface BreadcrumbItem {
   isCurrentPage?: boolean;
 }
 
-const routeConfig: Record<string, { label: string; icon?: React.ComponentType<{ className?: string }> }> = {
+const routeConfig: Record<string, { label: string; icon?: React.ComponentType<{ className?: string }>; isClickable?: boolean }> = {
   '': { label: 'Dashboard', icon: Home },
-  
-  // Employee Management
-  'employees': { label: 'Employees', icon: Users },
-  'employees/create': { label: 'Create Employee', icon: UserPlus },
   
   // Department Management
   'departments': { label: 'Departments', icon: Building2 },
-  'departments/create': { label: 'Create Department', icon: Plus },
-  
-  // Business Unit Management
-  'business-units': { label: 'Business Units', icon: Building2 },
-  'business-units/create': { label: 'Create Business Unit', icon: Plus },
   
   // Leave Management
   'leave-requests': { label: 'Leave Requests', icon: Calendar },
   'leave-requests/create': { label: 'Submit Leave Request', icon: Plus },
-  'overtime-requests': { label: 'Overtime Requests', icon: Activity },
-  'overtime-requests/create': { label: 'Submit Overtime Request', icon: Plus },
-  'leave-types': { label: 'Leave Types', icon: FolderOpen },
-  'leave-types/create': { label: 'Create Leave Type', icon: Plus },
   'leave-balances': { label: 'Leave Balances', icon: Calculator },
+  
+  // Overtime Management
+  'overtime-requests': { label: 'Overtime Requests', icon: Clock },
+  'overtime-requests/create': { label: 'Submit Overtime Request', icon: Plus },
   
   // Material Request System (MRS)
   'material-requests': { label: 'Material Requests', icon: Package },
   'material-requests/create': { label: 'Create Material Request', icon: Plus },
   
-  // MRS Coordinator
-  'mrs-coordinator': { label: 'MRS Coordinator', icon: UserCog },
-  'mrs-coordinator/posted': { label: 'Posted Requests', icon: CheckCircle2 },
-  'mrs-coordinator/acknowledgement': { label: 'Create Acknowledgements', icon: FileText },
+  // MRS Coordinator (parent route doesn't have a page)
+  'mrs-coordinator': { label: 'MRS Coordinator', icon: UserCog, isClickable: false },
+  'mrs-coordinator/for-serving': { label: 'For Serving', icon: Package },
+  'mrs-coordinator/for-posting': { label: 'For Posting', icon: FileText },
+  'mrs-coordinator/acknowledgement': { label: 'Acknowledgements', icon: Edit },
   'mrs-coordinator/done-requests': { label: 'Done Requests', icon: CheckCircle2 },
   
-  // Approvals
-  'approvals': { label: 'Approvals', icon: ClipboardCheck },
-  'approvals/leave': { label: 'Leave Approvals', icon: Calendar },
-  'approvals/leave/pending': { label: 'Pending Leave Approvals', icon: Clock },
-  'approvals/overtime': { label: 'Overtime Approvals', icon: Activity },
-  'approvals/overtime/pending': { label: 'Pending Overtime Approvals', icon: Clock },
-  'approvals/material-requests': { label: 'Material Request Approvals', icon: Package },
-  'approvals/material-requests/pending': { label: 'Pending Material Request Approvals', icon: Clock },
+  // Approvals (parent routes don't have pages)
+  'approvals': { label: 'Approvals', icon: ClipboardCheck, isClickable: false },
+  'approvals/leave': { label: 'Leave Approvals', icon: Calendar, isClickable: false },
+  'approvals/leave/pending': { label: 'Pending Leave', icon: Clock },
+  'approvals/overtime': { label: 'Overtime Approvals', icon: Clock, isClickable: false },
+  'approvals/overtime/pending': { label: 'Pending Overtime', icon: Clock },
+  'approvals/material-requests': { label: 'Material Request Approvals', icon: Package, isClickable: false },
+  'approvals/material-requests/pending': { label: 'Pending Material Requests', icon: Clock },
+  'approvals/history': { label: 'Approval History', icon: FileText },
   
   // Reports
-  'reports': { label: 'Reports', icon: FileText },
-  'reports/leave': { label: 'Leave Reports', icon: FileText },
-  'reports/overtime': { label: 'Overtime Reports', icon: FileText },
-  'reports/employees': { label: 'Employee Reports', icon: FileText },
+  'reports': { label: 'Reports', icon: FileText, isClickable: false },
+  'reports/leave': { label: 'Leave Reports', icon: Calendar },
+  'reports/overtime': { label: 'Overtime Reports', icon: Clock },
+  'reports/employees': { label: 'Employee Reports', icon: Users },
+  'reports/material-requests': { label: 'MRS Reports', icon: Package },
   'reports/depreciation': { label: 'Depreciation Reports', icon: Calculator },
-  'reports/depreciation/schedule': { label: 'Depreciation Schedule', icon: Calendar },
-  'reports/depreciation/schedule/preview': { label: 'Schedule Preview', icon: Eye },
-  'reports/depreciation/netbook': { label: 'Net Book Value', icon: BarChart3 },
-  'reports/depreciation/netbook/preview': { label: 'Net Book Value Preview', icon: Eye },
-  'reports/depreciation/damaged-loss': { label: 'Damaged & Loss', icon: FileText },
-  'reports/depreciation/damaged-loss/preview': { label: 'Damaged & Loss Preview', icon: Eye },
-  
-  // Analytics
-  'analytics': { label: 'Analytics', icon: BarChart3 },
+  'reports/deployments': { label: 'Deployment Reports', icon: User },
+  'reports/damaged-loss': { label: 'Damaged & Loss Reports', icon: FileText },
   
   // Asset Management
   'asset-management': { label: 'Asset Management', icon: Package },
   'asset-management/assets': { label: 'All Assets', icon: Package },
-  'asset-management/assets/create': { label: 'Create Asset', icon: Plus },
   'asset-management/deployments': { label: 'Deployments', icon: User },
   'asset-management/returns': { label: 'Asset Returns', icon: Package },
   'asset-management/asset-printing': { label: 'Asset QR Printing', icon: Package },
-  'asset-management/asset-printing/preview': { label: 'QR Code Preview', icon: Eye },
   'asset-management/transfers': { label: 'Transfers', icon: Package },
-  'asset-management/retirements': { label: 'Retirements', icon: Package },
+  'asset-management/retirements': { label: 'Retirements & Disposals', icon: Package },
   'asset-management/disposals': { label: 'Disposals', icon: Package },
   'asset-management/categories': { label: 'Categories', icon: FolderOpen },
   'asset-management/depreciation': { label: 'Depreciation', icon: Calculator },
   'asset-management/inventory': { label: 'Inventory Verification', icon: ClipboardCheck },
-  'asset-management/inventory/create': { label: 'Create Verification', icon: Plus },
 
-  // Administration
-  'admin': { label: 'Administration', icon: Settings },
+  // Administration (parent route doesn't have a page)
+  'admin': { label: 'Administration', icon: Shield, isClickable: false },
   'admin/users': { label: 'User Management', icon: Users },
-  'admin/users/create': { label: 'Create User', icon: UserPlus },
-  'admin/departments': { label: 'Department Management', icon: Building2 },
-  'admin/department-approvers': { label: 'Department Approvers', icon: UserCog },
-  'admin/business-units': { label: 'Business Unit Management', icon: Building2 },
-  'admin/leave-types': { label: 'Leave Type Management', icon: FolderOpen },
+  'admin/business-units': { label: 'Business Units', icon: Building2 },
+  'admin/leave-types': { label: 'Leave Types', icon: FolderOpen },
+  'admin/leave-balances': { label: 'Leave Balances', icon: Calculator },
   'admin/gl-accounts': { label: 'GL Accounts', icon: Calculator },
-  'admin/system-settings': { label: 'System Settings', icon: Settings },
-
-  // Roles Management
-  'roles': { label: 'Roles', icon: Shield },
-  'roles/create': { label: 'Create Role', icon: Plus },
-  
-  // System Permissions (Admin)
   'admin/system-permissions': { label: 'System Permissions', icon: Shield },
+  'admin/audit-logs': { label: 'Audit Logs', icon: FileText },
   
-  // Profile & Settings
+  // Profile
   'profile': { label: 'Profile', icon: UserCheck },
-  'settings': { label: 'Settings', icon: Settings },
-  'settings/profile': { label: 'Profile Settings', icon: UserCheck },
-  'settings/preferences': { label: 'Preferences', icon: Settings },
+  
+  // Unauthorized
+  'unauthorized': { label: 'Unauthorized Access', icon: Shield },
 };
 
 export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) {
@@ -211,9 +187,13 @@ export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) 
         const config = routeConfig[currentPath];
         const isLastSegment = i === pathSegments.length - 1;
         
+        // Determine if this breadcrumb should have a link
+        // Don't link if: it's the last segment, or config says it's not clickable
+        const shouldHaveLink = !isLastSegment && (config?.isClickable !== false);
+        
         breadcrumbs.push({
           label: config?.label || segment.charAt(0).toUpperCase() + segment.slice(1).replace('-', ' '),
-          href: isLastSegment ? undefined : `/${businessUnitId}/${actualPath}`,
+          href: shouldHaveLink ? `/${businessUnitId}/${actualPath}` : undefined,
           icon: config?.icon,
           isCurrentPage: isLastSegment
         });
@@ -237,13 +217,18 @@ export function DynamicBreadcrumbs({ businessUnitId }: DynamicBreadcrumbsProps) 
                     {crumb.icon && <crumb.icon className="h-4 w-4" />}
                     {crumb.label}
                   </BreadcrumbPage>
-                ) : (
+                ) : crumb.href ? (
                   <BreadcrumbLink asChild>
-                    <Link href={crumb.href!} className="flex items-center gap-2">
+                    <Link href={crumb.href} className="flex items-center gap-2">
                       {crumb.icon && <crumb.icon className="h-4 w-4" />}
                       {crumb.label}
                     </Link>
                   </BreadcrumbLink>
+                ) : (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    {crumb.icon && <crumb.icon className="h-4 w-4" />}
+                    {crumb.label}
+                  </span>
                 )}
               </BreadcrumbItem>
               {index < breadcrumbs.length - 1 && (

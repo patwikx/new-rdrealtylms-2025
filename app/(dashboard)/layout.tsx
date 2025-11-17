@@ -183,6 +183,176 @@ export default async function DashboardLayout({
     },
   };
 
+  // Fetch pending counts for approvers
+  let pendingCounts = undefined;
+  const isApprover = ['ADMIN', 'MANAGER', 'HR'].includes(session.user.role) || session.user.isAcctg || isPurchaser;
+  
+  if (isApprover) {
+    try {
+      const userId = session.user.id;
+      const userRole = session.user.role;
+
+      // Build where clauses based on role
+      let leaveWhereClause: any = {};
+      let overtimeWhereClause: any = {};
+      let materialRequestWhereClause: any = {};
+
+      if (userRole === "ADMIN") {
+        leaveWhereClause = {
+          user: { 
+            businessUnitId,
+            employeeId: { notIn: ["T-123", "admin"] }
+          },
+          status: { in: ["PENDING_MANAGER", "PENDING_HR"] },
+        };
+        overtimeWhereClause = {
+          user: { 
+            businessUnitId,
+            employeeId: { notIn: ["T-123", "admin"] }
+          },
+          status: { in: ["PENDING_MANAGER", "PENDING_HR"] },
+        };
+      } else if (userRole === "HR") {
+        leaveWhereClause = {
+          user: { employeeId: { notIn: ["T-123", "admin"] } },
+          status: "PENDING_HR",
+          managerActionBy: { not: null },
+        };
+        overtimeWhereClause = {
+          user: { employeeId: { notIn: ["T-123", "admin"] } },
+          status: "PENDING_HR",
+          managerActionBy: { not: null },
+        };
+      } else if (userRole === "MANAGER") {
+        leaveWhereClause = {
+          user: { 
+            approverId: userId,
+            employeeId: { notIn: ["T-123", "admin"] }
+          },
+          status: "PENDING_MANAGER",
+        };
+        overtimeWhereClause = {
+          user: { 
+            approverId: userId,
+            employeeId: { notIn: ["T-123", "admin"] }
+          },
+          status: "PENDING_MANAGER",
+        };
+      }
+
+      // Material request where clause
+      materialRequestWhereClause = {
+        businessUnitId,
+        OR: [
+          {
+            AND: [
+              { recApproverId: userId },
+              { status: "FOR_REC_APPROVAL" },
+              {
+                OR: [
+                  { recApprovalStatus: null },
+                  { recApprovalStatus: "PENDING" }
+                ]
+              }
+            ]
+          },
+          {
+            AND: [
+              { finalApproverId: userId },
+              { status: "FOR_FINAL_APPROVAL" },
+              { recApprovalStatus: "APPROVED" },
+              {
+                OR: [
+                  { finalApprovalStatus: null },
+                  { finalApprovalStatus: "PENDING" }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      // MRS Coordinator counts (for users with purchaser access)
+      let mrsForServingWhereClause: Record<string, unknown> = {};
+      let mrsForPostingWhereClause: Record<string, unknown> = {};
+      let mrsDoneUnacknowledgedWhereClause: Record<string, unknown> = {};
+      
+      if (isPurchaser || userRole === "ADMIN") {
+        mrsForServingWhereClause = {
+          businessUnitId,
+          status: "FOR_SERVING"
+        };
+        
+        mrsForPostingWhereClause = {
+          businessUnitId,
+          status: "FOR_POSTING"
+        };
+        
+        // Count done requests (POSTED status) that haven't been acknowledged yet
+        mrsDoneUnacknowledgedWhereClause = {
+          businessUnitId,
+          status: "POSTED",
+          acknowledgedAt: null
+        };
+      }
+
+      // Asset depreciation count (for ADMIN and users with accounting access)
+      // Count assets that need depreciation run (same logic as depreciation notification)
+      const hasAssetAccess = isAdmin || session.user.isAcctg;
+      let assetsNeedingDepreciationCount = 0;
+      
+      if (hasAssetAccess) {
+        try {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          assetsNeedingDepreciationCount = await prisma.asset.count({
+            where: {
+              businessUnitId,
+              isActive: true,
+              status: {
+                not: "DISPOSED"
+              },
+              isFullyDepreciated: false,
+              nextDepreciationDate: {
+                lte: today
+              },
+              depreciationMethod: {
+                not: null
+              },
+              monthlyDepreciation: {
+                gt: 0
+              }
+            }
+          });
+        } catch (error) {
+          console.error("Failed to fetch asset depreciation count:", error);
+        }
+      }
+
+      const [leaveCount, overtimeCount, materialRequestCount, mrsForServingCount, mrsForPostingCount, mrsDoneUnacknowledgedCount] = await Promise.all([
+        prisma.leaveRequest.count({ where: leaveWhereClause }),
+        prisma.overtimeRequest.count({ where: overtimeWhereClause }),
+        prisma.materialRequest.count({ where: materialRequestWhereClause }),
+        (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsForServingWhereClause }) : Promise.resolve(0),
+        (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsForPostingWhereClause }) : Promise.resolve(0),
+        (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsDoneUnacknowledgedWhereClause }) : Promise.resolve(0),
+      ]);
+
+      pendingCounts = {
+        leave: leaveCount,
+        overtime: overtimeCount,
+        materialRequests: materialRequestCount,
+        mrsForServing: mrsForServingCount,
+        mrsForPosting: mrsForPostingCount,
+        mrsDoneUnacknowledged: mrsDoneUnacknowledgedCount,
+        assetsNeedingDepreciation: assetsNeedingDepreciationCount,
+      };
+    } catch (error) {
+      console.error("Failed to fetch pending counts:", error);
+    }
+  }
+
   return (
     <SidebarWrapper>
       {/* Security Monitor - Client-side security checks */}
@@ -200,6 +370,7 @@ export default async function DashboardLayout({
           session={enhancedSession}
           businessUnits={businessUnits}
           currentBusinessUnitId={businessUnitId}
+          pendingCounts={pendingCounts}
         />
         
         {/* Main Content Area */}

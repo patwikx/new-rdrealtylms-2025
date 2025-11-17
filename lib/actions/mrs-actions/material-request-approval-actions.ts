@@ -22,6 +22,7 @@ export interface PendingMaterialRequest {
     id: string
     name: string
     employeeId: string
+    profilePicture?: string | null
   }
   businessUnit: {
     id: string
@@ -142,7 +143,8 @@ export async function getPendingMaterialRequests({
           select: {
             id: true,
             name: true,
-            employeeId: true
+            employeeId: true,
+            profilePicture: true
           }
         },
         businessUnit: {

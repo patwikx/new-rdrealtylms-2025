@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { useTheme } from "next-themes"
-import { logUserLogout } from "@/lib/actions/audit-log-actions"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,26 +72,13 @@ export function NavUser({ user }: NavUserProps) {
     setMounted(true)
   }, [])
 
-  // Load profile picture on mount
+  // Set profile picture URL directly using the direct streaming endpoint
   React.useEffect(() => {
     if (!mounted) return
 
-    const loadProfilePicture = async () => {
-      if (user.profilePicture) {
-        try {
-          const response = await fetch(`/api/profile-picture/${encodeURIComponent(user.profilePicture)}`);
-          const result = await response.json();
-          
-          if (result.success && result.fileUrl) {
-            setProfileImageUrl(result.fileUrl);
-          }
-        } catch (error) {
-          console.error('Error loading profile picture in nav:', error);
-        }
-      }
-    };
-
-    loadProfilePicture();
+    if (user.profilePicture) {
+      setProfileImageUrl(`/api/profile-picture/${encodeURIComponent(user.profilePicture)}?direct=true`);
+    }
   }, [user.profilePicture, mounted]);
 
   const handleSignOut = React.useCallback(async () => {
@@ -149,19 +136,15 @@ export function NavUser({ user }: NavUserProps) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted/50 flex items-center justify-center">
-                {avatarSrc ? (
-                  <img 
-                    src={avatarSrc} 
-                    alt={user.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                    {userInitials}
-                  </div>
-                )}
-              </div>
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage 
+                  src={avatarSrc || undefined}
+                  alt={user.name}
+                />
+                <AvatarFallback className="rounded-lg">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">
@@ -179,19 +162,15 @@ export function NavUser({ user }: NavUserProps) {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <div className="h-8 w-8 rounded-lg overflow-hidden bg-muted/50 flex items-center justify-center">
-                  {avatarSrc ? (
-                    <img 
-                      src={avatarSrc} 
-                      alt={user.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
-                      {userInitials}
-                    </div>
-                  )}
-                </div>
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarImage 
+                    src={avatarSrc || undefined}
+                    alt={user.name}
+                  />
+                  <AvatarFallback className="rounded-lg">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="truncate text-xs text-muted-foreground">
@@ -208,12 +187,7 @@ export function NavUser({ user }: NavUserProps) {
                   <BadgeCheck className="h-3 w-3" />
                   <span>ID: {user.employeeId}</span>
                 </div>
-                {user.position && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-3 w-3" />
-                    <span>{user.position}</span>
-                  </div>
-                )}
+
                 <div className="flex items-center gap-2">
                   <Building className="h-3 w-3" />
                   <span>{user.businessUnit}</span>

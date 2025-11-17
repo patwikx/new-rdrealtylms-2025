@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Search, 
   Calendar, 
@@ -15,7 +16,6 @@ import {
   Building2,
   Filter,
   FolderOpen,
-  User,
   FileText,
   Eye
 } from "lucide-react";
@@ -81,6 +81,15 @@ const typeOptions = [
   { value: 'ITEM', label: 'Item Request', icon: Package },
   { value: 'SERVICE', label: 'Service Request', icon: FileText }
 ];
+
+function getUserInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export function PendingMaterialRequestsView({ 
   requestsData, 
@@ -271,8 +280,14 @@ export function PendingMaterialRequestsView({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 rounded-md">
+                          <AvatarImage 
+                            src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                            alt={request.requestedBy.name}
+                          />
+                          <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                        </Avatar>
                         <div>
                           <div className="font-medium">{request.requestedBy.name}</div>
                           <div className="text-sm text-muted-foreground">{request.requestedBy.employeeId}</div>
@@ -355,10 +370,18 @@ export function PendingMaterialRequestsView({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{request.requestedBy.name}</span>
-                    <span className="text-sm text-muted-foreground">({request.requestedBy.employeeId})</span>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 rounded-md">
+                      <AvatarImage 
+                        src={request.requestedBy.profilePicture ? `/api/profile-picture/${encodeURIComponent(request.requestedBy.profilePicture)}?direct=true` : undefined}
+                        alt={request.requestedBy.name}
+                      />
+                      <AvatarFallback>{getUserInitials(request.requestedBy.name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="font-medium">{request.requestedBy.name}</span>
+                      <div className="text-sm text-muted-foreground">{request.requestedBy.employeeId}</div>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2">

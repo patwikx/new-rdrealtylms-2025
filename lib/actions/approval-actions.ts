@@ -17,6 +17,7 @@ export interface PendingLeaveRequest {
     id: string;
     name: string;
     employeeId: string;
+    profilePicture?: string | null;
   };
   leaveType: {
     id: string;
@@ -330,6 +331,7 @@ export async function getPendingLeaveRequests({
               id: true,
               name: true,
               employeeId: true,
+              profilePicture: true,
             },
           },
           leaveType: {
@@ -638,6 +640,7 @@ export interface PendingOvertimeRequest {
     id: string;
     name: string;
     employeeId: string;
+    profilePicture?: string | null;
   };
   managerComments?: string | null;
   hrComments?: string | null;
@@ -728,6 +731,7 @@ export async function getPendingOvertimeRequests({
             id: true,
             name: true,
             employeeId: true,
+            profilePicture: true,
           },
         },
       },
@@ -1012,6 +1016,7 @@ export interface ApprovalHistoryLeaveRequest {
     id: string;
     name: string;
     employeeId: string;
+    profilePicture?: string | null;
   };
   leaveType: {
     id: string;
@@ -1037,6 +1042,7 @@ export interface ApprovalHistoryOvertimeRequest {
     id: string;
     name: string;
     employeeId: string;
+    profilePicture?: string | null;
   };
   managerComments?: string | null;
   hrComments?: string | null;
@@ -1167,6 +1173,7 @@ export async function getApprovalHistory({
                 id: true,
                 name: true,
                 employeeId: true,
+                profilePicture: true,
               },
             },
             leaveType: {
@@ -1310,6 +1317,7 @@ export async function getApprovalHistory({
                 name: true,
                 employeeId: true,
                 approverId: true,
+                profilePicture: true,
               },
             },
           },
@@ -1491,7 +1499,7 @@ export async function getApprovalHistory({
         prisma.leaveRequest.findMany({
           where: leaveWhereClause,
           include: {
-            user: { select: { id: true, name: true, employeeId: true, approverId: true } },
+            user: { select: { id: true, name: true, employeeId: true, approverId: true, profilePicture: true } },
             leaveType: { select: { id: true, name: true } },
           },
           orderBy: [
@@ -1505,7 +1513,7 @@ export async function getApprovalHistory({
         prisma.overtimeRequest.findMany({
           where: overtimeWhereClause,
           include: {
-            user: { select: { id: true, name: true, employeeId: true, approverId: true } },
+            user: { select: { id: true, name: true, employeeId: true, approverId: true, profilePicture: true } },
           },
           orderBy: [
             { managerActionAt: 'desc' },

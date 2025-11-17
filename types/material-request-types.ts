@@ -76,6 +76,7 @@ export interface MaterialRequest {
     name: string
     email: string | null
     employeeId: string
+    profilePicture?: string | null
   }
   recApprover: {
     id: string
