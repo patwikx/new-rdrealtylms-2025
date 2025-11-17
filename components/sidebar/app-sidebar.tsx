@@ -27,14 +27,14 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 // Helper function to check if user is an approver
 const isApprover = (userRole: string) => {
   // Users who can be approvers (this should match your department approver logic)
-  const approverRoles = ['ADMIN', 'MANAGER', 'HR', 'SUPERVISOR', 'DEPARTMENT_HEAD']
+  const approverRoles = ['ADMIN', 'MANAGER', 'HR', 'ACCTG_MANAGER', 'PURCHASING_MANAGER']
   return approverRoles.includes(userRole)
 }
 
 // Define navigation items based on your hybrid LMS + Asset Management system
 const getNavigationItems = (businessUnitId: string, userRole: string) => {
   // Define roles that can access MRS Coordinator functions
-  const mrsCoordinatorRoles = ['ADMIN', 'PURCHASER', 'MRS_COORDINATOR']
+  const mrsCoordinatorRoles = ['ADMIN', 'MRS_COORDINATOR', 'PURCHASING_MANAGER']
   
   // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
   const baseItems = [
@@ -49,7 +49,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
           url: `/${businessUnitId}`,
         },
         // Only show Asset Management Dashboard for ADMIN and ACCTG users
-        ...(userRole === "ADMIN" || userRole === "ACCTG" ? [{
+        ...(userRole === "ADMIN" || userRole === "ACCTG" || userRole === 'ACCTG_MANAGER' ? [{
           title: "Asset Mngt. Dashboard",
           url: `/${businessUnitId}/asset-management`,
         }] : []),
@@ -155,7 +155,7 @@ const getNavigationItems = (businessUnitId: string, userRole: string) => {
   
 
   // Add management items for ADMIN and HR roles
-  if (userRole === "ADMIN" || userRole === "ACCTG" || userRole === "HR") {
+  if (userRole === "ADMIN" || userRole === "ACCTG" || userRole === "ACCTG_MANAGER") {
     baseItems.push(
       {
         title: "Asset Management",

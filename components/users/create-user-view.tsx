@@ -343,7 +343,10 @@ export function CreateUserView({
                   <SelectItem value="USER">User</SelectItem>
                   <SelectItem value="MANAGER">Approver</SelectItem>
                   <SelectItem value="HR">PMD</SelectItem>
+                   <SelectItem value="ACCTG">Accounting</SelectItem>
+                    <SelectItem value="ACCTG_MANAGER">Accounting Manager</SelectItem>
                   <SelectItem value="PURCHASER">Purchaser</SelectItem>
+                    <SelectItem value="PURCHASING_MANAGER">Purchasing Manager</SelectItem>
                   <SelectItem value="MRS_COORDINATOR">MRS Coordinator</SelectItem>
                   <SelectItem value="ADMIN">Admin</SelectItem>
                 </SelectContent>
