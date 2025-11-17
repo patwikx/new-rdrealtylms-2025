@@ -309,7 +309,7 @@ const getNavigationItems = (
           }] : []),
           {
             title: "Audit Logs",
-            url: `/${businessUnitId}/audit-logs`,
+            url: `/${businessUnitId}/admin/audit-logs`,
           },
         ],
       }

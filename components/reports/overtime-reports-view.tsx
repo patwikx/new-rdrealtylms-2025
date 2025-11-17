@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -58,9 +58,18 @@ export function OvertimeReportsView({
   currentFilters
 }: OvertimeReportsViewProps) {
   const router = useRouter();
+  
+  // Helper function to format date for input without timezone issues
+  const formatDateForInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [filters, setFilters] = useState({
-    startDate: currentFilters.startDate ? currentFilters.startDate.toISOString().split('T')[0] : '',
-    endDate: currentFilters.endDate ? currentFilters.endDate.toISOString().split('T')[0] : '',
+    startDate: currentFilters.startDate ? formatDateForInput(currentFilters.startDate) : '',
+    endDate: currentFilters.endDate ? formatDateForInput(currentFilters.endDate) : '',
     departmentId: currentFilters.departmentId || 'all',
     userId: currentFilters.userId || 'all'
   });
@@ -343,8 +352,8 @@ export function OvertimeReportsView({
         <div className="space-y-2">
           <Label className="text-sm font-medium">Start Date</Label>
           <DatePicker
-            date={filters.startDate ? new Date(filters.startDate) : undefined}
-            onDateChange={(date) => handleFilterChange('startDate', date ? date.toISOString().split('T')[0] : '')}
+            date={filters.startDate ? new Date(filters.startDate + 'T00:00:00') : undefined}
+            onDateChange={(date) => handleFilterChange('startDate', date ? formatDateForInput(date) : '')}
             placeholder="Start date"
           />
         </div>
@@ -352,8 +361,8 @@ export function OvertimeReportsView({
         <div className="space-y-2">
           <Label className="text-sm font-medium">End Date</Label>
           <DatePicker
-            date={filters.endDate ? new Date(filters.endDate) : undefined}
-            onDateChange={(date) => handleFilterChange('endDate', date ? date.toISOString().split('T')[0] : '')}
+            date={filters.endDate ? new Date(filters.endDate + 'T00:00:00') : undefined}
+            onDateChange={(date) => handleFilterChange('endDate', date ? formatDateForInput(date) : '')}
             placeholder="End date"
           />
         </div>

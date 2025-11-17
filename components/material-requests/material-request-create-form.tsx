@@ -499,7 +499,7 @@ export function MaterialRequestCreateForm() {
                     </FormItem>
                   )}
                 />
-                                <FormField
+               <FormField
                   control={form.control}
                   name="datePrepared"
                   render={({ field }) => (
@@ -595,7 +595,7 @@ export function MaterialRequestCreateForm() {
                           {recommendingApprovers.length > 0 ? (
                             recommendingApprovers.map((approver) => (
                               <SelectItem key={approver.id} value={approver.id}>
-                                {approver.name} ({approver.employeeId}) - {approver.role}
+                                {approver.name}
                               </SelectItem>
                             ))
                           ) : (
@@ -632,7 +632,7 @@ export function MaterialRequestCreateForm() {
                           {finalApprovers.length > 0 ? (
                             finalApprovers.map((approver) => (
                               <SelectItem key={approver.id} value={approver.id}>
-                                {approver.name} ({approver.employeeId}) - {approver.role}
+                                {approver.name}
                               </SelectItem>
                             ))
                           ) : (
