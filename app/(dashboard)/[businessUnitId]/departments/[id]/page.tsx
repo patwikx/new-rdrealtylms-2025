@@ -28,7 +28,7 @@ export default async function EditDepartmentPage({ params }: EditDepartmentPageP
     // Fetch department data and available managers in parallel
     const [department, availableManagers] = await Promise.all([
       getDepartmentById(id),
-      getAvailableManagers()
+      getAvailableManagers(businessUnitId)
     ]);
     
     if (!department) {

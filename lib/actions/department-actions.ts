@@ -315,16 +315,35 @@ export async function removeManagerFromDepartment(
 }
 
 // Get available managers (users with MANAGER, HR, or ADMIN roles)
-export async function getAvailableManagers() {
+export async function getAvailableManagers(businessUnitId?: string): Promise<{
+  id: string;
+  name: string;
+  employeeId: string;
+  email: string | null;
+  role: string;
+  businessUnit: {
+    name: string;
+  } | null;
+}[]> {
   try {
     await checkDepartmentManagementPermissions();
     
-    const managers = await prisma.user.findMany({
-      where: {
-        role: {
-          in: ["MANAGER", "HR", "ADMIN"],
-        },
+    const whereClause: {
+      role: { in: string[] };
+      businessUnitId?: string;
+    } = {
+      role: {
+        in: ["MANAGER", "HR", "ADMIN"],
       },
+    };
+
+    // Filter by business unit if provided
+    if (businessUnitId) {
+      whereClause.businessUnitId = businessUnitId;
+    }
+    
+    const managers = await prisma.user.findMany({
+      where: whereClause,
       select: {
         id: true,
         name: true,
@@ -340,7 +359,15 @@ export async function getAvailableManagers() {
       orderBy: { name: "asc" },
     });
 
-    return managers;
+    // Map to ensure correct type structure
+    return managers.map(manager => ({
+      id: manager.id,
+      name: manager.name,
+      employeeId: manager.employeeId,
+      email: manager.email,
+      role: manager.role as string,
+      businessUnit: manager.businessUnit,
+    }));
   } catch (error) {
     console.error("Error fetching available managers:", error);
     return [];
