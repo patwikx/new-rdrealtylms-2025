@@ -36,6 +36,7 @@ interface BusinessUnitSwitcherProps {
   items: BusinessUnitItem[]
   className?: string
   userRole?: string
+  isPurchaser?: boolean
 }
 
 // Define icon types for better type safety
@@ -89,7 +90,8 @@ const getBusinessUnitTypeLabel = (name: string): string => {
 export default function BusinessUnitSwitcher({ 
   className, 
   items = [],
-  userRole
+  userRole,
+  isPurchaser = false
 }: BusinessUnitSwitcherProps) {
   const businessUnitModal = useBusinessUnitModal()
   const params = useParams()
@@ -101,8 +103,8 @@ export default function BusinessUnitSwitcher({
   // Type-safe params access
   const businessUnitId = typeof params.businessUnitId === 'string' ? params.businessUnitId : undefined
 
-  // Only ADMIN and HR can switch business units
-  const canSwitchBusinessUnits = userRole === 'ADMIN' || userRole === 'HR'
+  // ADMIN, HR, and users with purchaser access can switch business units
+  const canSwitchBusinessUnits = userRole === 'ADMIN' || userRole === 'HR' || isPurchaser
   const isSwitcherActive = items.length > 1 && canSwitchBusinessUnits
   const currentBusinessUnit = items.find((item) => item.id === businessUnitId)
 

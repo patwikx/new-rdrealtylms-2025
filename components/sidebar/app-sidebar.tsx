@@ -344,6 +344,7 @@ export function AppSidebar({
           items={businessUnits}
           className="px-2"
           userRole={session.user.role}
+          isPurchaser={session.user.isPurchaser || false}
         />
       </SidebarHeader>
       <SidebarContent>
