@@ -355,7 +355,7 @@ export async function getUserById(userId: string) {
   }
 }
 
-export async function getApproversByDepartment(departmentId: string) {
+export async function getApproversByDepartment(departmentId: string, businessUnitId?: string) {
   try {
     const departmentApprovers = await prisma.departmentApprover.findMany({
       where: {
@@ -370,6 +370,7 @@ export async function getApproversByDepartment(departmentId: string) {
             email: true,
             employeeId: true,
             role: true,
+            businessUnitId: true,
           }
         }
       },
@@ -379,8 +380,22 @@ export async function getApproversByDepartment(departmentId: string) {
       ]
     })
 
-    return departmentApprovers.map(da => ({
-      ...da.employee,
+    let filteredApprovers = departmentApprovers
+
+    // If businessUnitId is provided, filter by business unit with exceptions
+    if (businessUnitId) {
+      filteredApprovers = departmentApprovers.filter(da => 
+        da.employee.businessUnitId === businessUnitId || 
+        ["C-002", "L-005"].includes(da.employee.employeeId)
+      )
+    }
+
+    return filteredApprovers.map(da => ({
+      id: da.employee.id,
+      name: da.employee.name,
+      email: da.employee.email,
+      employeeId: da.employee.employeeId,
+      role: da.employee.role,
       approverType: da.approverType
     }))
   } catch (error) {
@@ -389,7 +404,7 @@ export async function getApproversByDepartment(departmentId: string) {
   }
 }
 
-export async function getRecommendingApprovers(departmentId: string) {
+export async function getRecommendingApprovers(departmentId: string, businessUnitId?: string) {
   try {
     const departmentApprovers = await prisma.departmentApprover.findMany({
       where: {
@@ -405,6 +420,7 @@ export async function getRecommendingApprovers(departmentId: string) {
             email: true,
             employeeId: true,
             role: true,
+            businessUnitId: true,
           }
         }
       },
@@ -413,14 +429,30 @@ export async function getRecommendingApprovers(departmentId: string) {
       }
     })
 
-    return departmentApprovers.map(da => da.employee)
+    let filteredApprovers = departmentApprovers
+
+    // If businessUnitId is provided, filter by business unit with exceptions
+    if (businessUnitId) {
+      filteredApprovers = departmentApprovers.filter(da => 
+        da.employee.businessUnitId === businessUnitId || 
+        ["C-002", "L-005"].includes(da.employee.employeeId)
+      )
+    }
+
+    return filteredApprovers.map(da => ({
+      id: da.employee.id,
+      name: da.employee.name,
+      email: da.employee.email,
+      employeeId: da.employee.employeeId,
+      role: da.employee.role,
+    }))
   } catch (error) {
     console.error("Error fetching recommending approvers:", error)
     return []
   }
 }
 
-export async function getFinalApprovers(departmentId: string) {
+export async function getFinalApprovers(departmentId: string, businessUnitId?: string) {
   try {
     const departmentApprovers = await prisma.departmentApprover.findMany({
       where: {
@@ -436,6 +468,7 @@ export async function getFinalApprovers(departmentId: string) {
             email: true,
             employeeId: true,
             role: true,
+            businessUnitId: true,
           }
         }
       },
@@ -444,7 +477,23 @@ export async function getFinalApprovers(departmentId: string) {
       }
     })
 
-    return departmentApprovers.map(da => da.employee)
+    let filteredApprovers = departmentApprovers
+
+    // If businessUnitId is provided, filter by business unit with exceptions
+    if (businessUnitId) {
+      filteredApprovers = departmentApprovers.filter(da => 
+        da.employee.businessUnitId === businessUnitId || 
+        ["C-002", "L-005"].includes(da.employee.employeeId)
+      )
+    }
+
+    return filteredApprovers.map(da => ({
+      id: da.employee.id,
+      name: da.employee.name,
+      email: da.employee.email,
+      employeeId: da.employee.employeeId,
+      role: da.employee.role,
+    }))
   } catch (error) {
     console.error("Error fetching final approvers:", error)
     return []

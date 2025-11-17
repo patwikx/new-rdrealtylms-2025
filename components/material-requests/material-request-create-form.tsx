@@ -167,8 +167,8 @@ export function MaterialRequestCreateForm() {
     const loadApprovers = async () => {
       if (watchedDepartmentId) {
         const [recApproversData, finalApproversData] = await Promise.all([
-          getRecommendingApprovers(watchedDepartmentId),
-          getFinalApprovers(watchedDepartmentId)
+          getRecommendingApprovers(watchedDepartmentId, businessUnitId),
+          getFinalApprovers(watchedDepartmentId, businessUnitId)
         ])
         setRecommendingApprovers(recApproversData)
         setFinalApprovers(finalApproversData)
