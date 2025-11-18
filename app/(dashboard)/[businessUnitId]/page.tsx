@@ -38,13 +38,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
                     session.user.role === "MANAGER";
 
   // Check if user can see depreciation notifications
-  const canSeeDepreciation = session.user.role === "ADMIN" || 
-                            session.user.role === "ACCTG_MANAGER" || 
-                            session.user.role === "ACCTG";
+  const canSeeDepreciation = session.user.role === "ADMIN" || session.user.isAcctg;
 
   // Check if user can see MRS notifications
-  const canSeeMRS = session.user.role === "PURCHASER" || 
-                   session.user.role === "PURCHASING_MANAGER";
+  const canSeeMRS = session.user.isPurchaser;
 
   // Fetch all dashboard data in parallel
   const [

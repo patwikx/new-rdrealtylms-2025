@@ -192,6 +192,7 @@ export async function createMaterialRequest(input: CreateMaterialRequestInput): 
       items: materialRequest.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -317,6 +318,7 @@ export async function updateMaterialRequest(input: UpdateMaterialRequestInput): 
       items: materialRequest.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -541,6 +543,7 @@ export async function getMaterialRequests(filters?: {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -599,6 +602,7 @@ export async function getMaterialRequestById(requestId: string) {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -736,6 +740,7 @@ export async function getForPostingRequests(filters?: {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -871,6 +876,7 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : 0,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : 0,
       }))
@@ -974,6 +980,7 @@ export async function getDoneRequests(filters?: {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -1059,6 +1066,7 @@ export async function getRequestsToServe(filters?: {
       items: request.items.map(item => ({
         ...item,
         quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
         unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
         totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
       }))
@@ -1222,3 +1230,4 @@ export async function markAsPosted(requestId: string) {
     return { success: false, message: "Failed to mark request as posted" }
   }
 }
+

@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { DynamicBreadcrumbs } from '@/components/dynamic-breadcurmbs';
 import { SecurityMonitor } from '@/components/auth/security-monitor';
 import { SessionMonitor } from '@/components/auth/session-monitor';
+import { SessionProvider } from 'next-auth/react';
 
 export const metadata = {
   title: "Dashboard | Leave Management System",
@@ -354,6 +355,8 @@ export default async function DashboardLayout({
   }
 
   return (
+<SessionProvider>
+
     <SidebarWrapper>
       {/* Security Monitor - Client-side security checks */}
       <SecurityMonitor 
@@ -394,5 +397,6 @@ export default async function DashboardLayout({
         <Toaster />
       </div>
     </SidebarWrapper>
+    </SessionProvider>
   )
 }
