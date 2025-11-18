@@ -15,7 +15,8 @@ interface PendingOvertimePageProps {
 
 export default async function PendingOvertimePage({ params, searchParams }: PendingOvertimePageProps) {
   const session = await auth();
-  
+    const { businessUnitId } = await params;
+    
   if (!session?.user?.id) {
     redirect("/auth/sign-in");
   }
@@ -25,7 +26,7 @@ if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.
     redirect(`/${businessUnitId}/unauthorized`);
   }
 
-  const { businessUnitId } = await params;
+
   const { status, page = "1" } = await searchParams;
   
   try {

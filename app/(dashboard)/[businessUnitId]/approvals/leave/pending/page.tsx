@@ -17,6 +17,8 @@ interface PendingLeavePageProps {
 export default async function PendingLeavePage({ params, searchParams }: PendingLeavePageProps) {
   const session = await auth();
   
+  const { businessUnitId } = await params;
+
   if (!session?.user?.id) {
     redirect("/auth/sign-in");
   }
@@ -26,7 +28,7 @@ export default async function PendingLeavePage({ params, searchParams }: Pending
     redirect(`/${businessUnitId}/unauthorized`);
   }
 
-  const { businessUnitId } = await params;
+
   const { status, type, page = "1" } = await searchParams;
   
   try {

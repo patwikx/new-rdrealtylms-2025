@@ -18,6 +18,8 @@ interface ApprovalHistoryPageProps {
 export default async function ApprovalHistoryPage({ params, searchParams }: ApprovalHistoryPageProps) {
   const session = await auth();
   
+  const { businessUnitId } = await params;
+
   if (!session?.user?.id) {
     redirect("/auth/sign-in");
   }
@@ -27,7 +29,7 @@ export default async function ApprovalHistoryPage({ params, searchParams }: Appr
     redirect(`/${businessUnitId}/unauthorized`);
   }
 
-  const { businessUnitId } = await params;
+
   const { type, status, leaveTypeId, page = "1" } = await searchParams;
   
   // Sanitize filter values - convert any 'all-*' values to undefined

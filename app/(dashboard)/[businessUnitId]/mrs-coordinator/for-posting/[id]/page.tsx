@@ -15,6 +15,7 @@ interface PostedRequestDetailProps {
 export default async function PostedRequestDetail({ params }: PostedRequestDetailProps) {
   const session = await auth()
   
+  const { businessUnitId, id } = await params
   if (!session) {
     redirect("/auth/sign-in")
   }
@@ -24,7 +25,6 @@ export default async function PostedRequestDetail({ params }: PostedRequestDetai
     redirect(`/${businessUnitId}/unauthorized`)
   }
 
-  const { businessUnitId, id } = await params
 
   return (
     <div className="flex-1 space-y-4">
