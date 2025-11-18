@@ -27,15 +27,15 @@ export default async function ForPostingRequestsPage({ params }: ForPostingReque
 
   return (
     <Suspense fallback={<ForPostingRequestsSkeleton />}>
-      <ForPostingRequestsContent userRole={session.user.role} businessUnitId={businessUnitId} />
+      <ForPostingRequestsContent userRole={session.user.role} isAcctg={session.user.isAcctg || false} businessUnitId={businessUnitId} />
     </Suspense>
   )
 }
 
-async function ForPostingRequestsContent({ userRole, businessUnitId }: { userRole: string; businessUnitId: string }) {
+async function ForPostingRequestsContent({ userRole, isAcctg, businessUnitId }: { userRole: string; isAcctg: boolean; businessUnitId: string }) {
   const requests = await getForPostingRequests({ businessUnitId })
   
-  return <ForPostingRequestsClient initialRequests={requests} userRole={userRole} businessUnitId={businessUnitId} />
+  return <ForPostingRequestsClient initialRequests={requests} userRole={userRole} isAcctg={isAcctg} businessUnitId={businessUnitId} />
 }
 
 function ForPostingRequestsSkeleton() {

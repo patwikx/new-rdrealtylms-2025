@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
+import { Search, Package, Eye, CheckCircle, MoreVertical } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +23,7 @@ import { MaterialRequest } from "@/types/material-request-types"
 interface ForPostingRequestsClientProps {
   initialRequests: MaterialRequest[]
   userRole: string
+  isAcctg: boolean
   businessUnitId: string
 }
 
@@ -35,11 +36,11 @@ function getUserInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function ForPostingRequestsClient({ initialRequests, userRole, businessUnitId }: ForPostingRequestsClientProps) {
+export function ForPostingRequestsClient({ initialRequests, userRole, isAcctg, businessUnitId }: ForPostingRequestsClientProps) {
   const [requests, setRequests] = useState<MaterialRequest[]>(initialRequests)
   const [searchTerm, setSearchTerm] = useState("")
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null)
   const [isMarkAsPostedDialogOpen, setIsMarkAsPostedDialogOpen] = useState(false)
   const router = useRouter()
@@ -69,8 +70,8 @@ export function ForPostingRequestsClient({ initialRequests, userRole, businessUn
     setSelectedRequest(null)
   }
 
-  const canMarkAsPosted = (userRole: string): boolean => {
-    return ["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(userRole)
+  const canMarkAsPosted = (userRole: string, hasAcctgPermission: boolean): boolean => {
+    return userRole === "ADMIN" || hasAcctgPermission
   }
 
 
@@ -169,7 +170,7 @@ export function ForPostingRequestsClient({ initialRequests, userRole, businessUn
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {canMarkAsPosted(userRole) && (
+                          {canMarkAsPosted(userRole, isAcctg) && (
                             <>
                               <DropdownMenuItem onClick={() => handleMarkAsPosted(request)}>
                                 <CheckCircle className="h-4 w-4 mr-2" />
@@ -257,7 +258,7 @@ export function ForPostingRequestsClient({ initialRequests, userRole, businessUn
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  {canMarkAsPosted(userRole) && (
+                  {canMarkAsPosted(userRole, isAcctg) && (
                     <Button
                       variant="outline"
                       size="sm"

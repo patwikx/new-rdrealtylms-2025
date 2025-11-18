@@ -58,36 +58,64 @@ export function MarkAsPostedDialog({
         </DialogHeader>
 
         {/* Request Summary */}
-        <div className="space-y-3 py-3 border-y">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="font-medium">Request No:</span>
-              <div className="text-muted-foreground">{request.docNo}</div>
-            </div>
-            <div>
-              <span className="font-medium">Type:</span>
-              <div className="text-muted-foreground">
-                <Badge variant="outline">{request.type}</Badge>
+        <div className="border rounded-lg overflow-hidden">
+          <div className="bg-muted/30 px-3 py-2 border-b">
+            <h3 className="text-sm font-semibold">Request Summary</h3>
+          </div>
+          <div className="p-3 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <div className="text-muted-foreground mb-1">Request No</div>
+                <div className="font-mono font-semibold">{request.docNo}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Type</div>
+                <Badge variant="outline" className="text-xs">{request.type}</Badge>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Items</div>
+                <div className="font-medium">{request.items.length} {request.items.length === 1 ? 'item' : 'items'}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Requested By</div>
+                <div className="font-medium truncate">{request.requestedBy.name}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Department</div>
+                <div className="font-medium truncate">{request.department?.name || "N/A"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">Total Amount</div>
+                <div className="font-semibold">₱{request.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
               </div>
             </div>
-            <div>
-              <span className="font-medium">Requested By:</span>
-              <div className="text-muted-foreground">
-                {request.requestedBy.name} 
+
+            {/* Supplier and PO Information */}
+            {(request.supplierBPCode || request.supplierName || request.purchaseOrderNumber) && (
+              <div className="pt-3 border-t">
+                <div className="text-xs text-muted-foreground mb-2">Supplier & Purchase Order</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  {request.supplierBPCode && (
+                    <div>
+                      <div className="text-muted-foreground mb-1">BP Code</div>
+                      <div className="font-mono font-medium">{request.supplierBPCode}</div>
+                    </div>
+                  )}
+                  {request.supplierName && (
+                    <div>
+                      <div className="text-muted-foreground mb-1">Supplier</div>
+                      <div className="font-medium truncate" title={request.supplierName}>{request.supplierName}</div>
+                    </div>
+                  )}
+                  {request.purchaseOrderNumber && (
+                    <div>
+                      <div className="text-muted-foreground mb-1">PO Number</div>
+                      <div className="font-mono font-medium">{request.purchaseOrderNumber}</div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div>
-              <span className="font-medium">Department:</span>
-              <div className="text-muted-foreground">
-                {request.department?.name || "No Department"}
-              </div>
-            </div>
-            <div>
-              <span className="font-medium">Total Amount:</span>
-              <div className="text-muted-foreground font-medium">
-                ₱{request.total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -118,9 +146,7 @@ export function MarkAsPostedDialog({
               </table>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Total: {request.items.length} {request.items.length === 1 ? 'item' : 'items'}
-          </div>
+
         </div>
 
         <DialogFooter className="gap-2 flex-col-reverse sm:flex-row">
