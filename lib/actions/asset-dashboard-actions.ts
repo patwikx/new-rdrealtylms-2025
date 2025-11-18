@@ -80,15 +80,13 @@ async function checkAssetManagementAccess(businessUnitId: string) {
     throw new Error("Not authenticated");
   }
 
-  // Only ADMIN and ACCTG roles can access asset management
-  if (session.user.role !== "ADMIN" && session.user.role !== "ACCTG") {
+  // Only ADMIN and users with isAcctg flag can access asset management
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
     throw new Error("Access denied: Insufficient permissions for asset management");
   }
   
-  // Admins can access any business unit, ACCTG users need to be in the same business unit
-  if (session.user.role === "ACCTG" && session.user.businessUnit?.id !== businessUnitId) {
-    throw new Error("Access denied: Business unit mismatch");
-  }
+  // Admins and Accounting users can access any business unit
+  // No business unit restriction for these roles
   
   return session.user;
 }
