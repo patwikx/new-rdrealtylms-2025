@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { RetirableAssetsResponse } from "@/lib/actions/asset-retirement-actions"
 // Removed AssetRetirementDialog - navigating directly to create page
 import { toast } from "sonner"
@@ -82,6 +82,7 @@ export function AssetRetirementView({
   showCreateButton = false 
 }: AssetRetirementViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState(currentFilters.search || "")
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
 
@@ -98,11 +99,30 @@ export function AssetRetirementView({
     )
   }, [retirableAssetsData.assets, searchTerm])
 
-  const handleSearch = () => {
-    const params = new URLSearchParams()
-    if (searchTerm) params.set('search', searchTerm)
-    if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
+  const updateFilter = (key: string, value: string | undefined) => {
+    const params = new URLSearchParams(searchParams.toString())
     
+    if (value && value !== 'all') {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    
+    // Reset to first page when filters change
+    if (key !== 'page') {
+      params.delete('page')
+    }
+    
+    router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
+  }
+
+  const handleSearch = () => {
+    updateFilter('search', searchTerm || undefined)
+  }
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', page.toString())
     router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
   }
 
@@ -201,12 +221,7 @@ export function AssetRetirementView({
         
         <Select 
           value={currentFilters.categoryId || "all"} 
-          onValueChange={(value) => {
-            const params = new URLSearchParams()
-            if (searchTerm) params.set('search', searchTerm)
-            if (value !== "all") params.set('categoryId', value)
-            router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
-          }}
+          onValueChange={(value) => updateFilter('categoryId', value || undefined)}
         >
           <SelectTrigger className="w-[250px]">
             <div className="flex items-center gap-2">
@@ -539,40 +554,34 @@ export function AssetRetirementView({
       </div>
 
       {/* Pagination */}
-      {retirableAssetsData.totalCount > 100 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {((currentFilters.page - 1) * 100) + 1} to {Math.min(currentFilters.page * 100, retirableAssetsData.totalCount)} of {retirableAssetsData.totalCount} assets
-          </p>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (searchTerm) params.set('search', searchTerm)
-                if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
-                params.set('page', (currentFilters.page - 1).toString())
-                router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
-              }}
-              disabled={currentFilters.page <= 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (searchTerm) params.set('search', searchTerm)
-                if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
-                params.set('page', (currentFilters.page + 1).toString())
-                router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
-              }}
-              disabled={currentFilters.page * 100 >= retirableAssetsData.totalCount}
-            >
-              Next
-            </Button>
+      {Math.ceil(retirableAssetsData.totalCount / 10) > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentFilters.page - 1) * 10) + 1} to{' '}
+            {Math.min(currentFilters.page * 10, retirableAssetsData.totalCount)} of{' '}
+            {retirableAssetsData.totalCount} assets
+          </div>
+          
+          <div className="flex gap-2">
+            {currentFilters.page > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page - 1)}
+              >
+                Previous
+              </Button>
+            )}
+            
+            {currentFilters.page < Math.ceil(retirableAssetsData.totalCount / 10) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page + 1)}
+              >
+                Next
+              </Button>
+            )}
           </div>
         </div>
       )}

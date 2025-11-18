@@ -28,6 +28,7 @@ import { getAssetCategories, getDepartments } from "@/lib/actions/create-asset-a
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface BulkAssetCreationViewProps {
@@ -54,6 +55,7 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
   const [selectedDepartmentCode, setSelectedDepartmentCode] = useState<string>('none')
   const [defaultLocation, setDefaultLocation] = useState<string>('')
   const [numberOfRows, setNumberOfRows] = useState(10)
+  const [isPreDepreciatedTemplate, setIsPreDepreciatedTemplate] = useState(false)
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [currentImportIndex, setCurrentImportIndex] = useState(0)
   const [importedAssets, setImportedAssets] = useState<string[]>([])
@@ -128,7 +130,8 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
         selectedCategoryId, 
         numberOfRows,
         selectedDepartmentCode === 'none' ? undefined : getDepartmentIdForTemplate(selectedDepartmentCode),
-        defaultLocation
+        defaultLocation,
+        isPreDepreciatedTemplate
       )
       console.log('Generated template:', template)
       
@@ -163,7 +166,22 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
         console.log('File content preview:', text.substring(0, 500))
         
         const parsed = parseCSV(text)
-        setParsedData(parsed)
+        
+        // Auto-detect pre-depreciated assets based on presence of pre-depreciation fields
+        const processedData = parsed.map(row => ({
+          ...row,
+          isPreDepreciated: !!(
+            row.originalPurchaseDate || 
+            row.originalPurchasePrice || 
+            row.originalUsefulLifeMonths || 
+            row.priorDepreciationAmount || 
+            row.priorDepreciationMonths || 
+            row.systemEntryDate || 
+            row.systemEntryBookValue
+          )
+        }))
+        
+        setParsedData(processedData)
         
         if (parsed.length === 0) {
           toast.error("No valid data found in the file. Please check the file format and required fields.")
@@ -212,7 +230,22 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
       console.log('File content preview:', text.substring(0, 500))
       
       const parsed = parseCSV(text)
-      setParsedData(parsed)
+      
+      // Auto-detect pre-depreciated assets based on presence of pre-depreciation fields
+      const processedData = parsed.map(row => ({
+        ...row,
+        isPreDepreciated: !!(
+          row.originalPurchaseDate || 
+          row.originalPurchasePrice || 
+          row.originalUsefulLifeMonths || 
+          row.priorDepreciationAmount || 
+          row.priorDepreciationMonths || 
+          row.systemEntryDate || 
+          row.systemEntryBookValue
+        )
+      }))
+      
+      setParsedData(processedData)
       
       if (parsed.length === 0) {
         toast.error("No valid data found in the file. Please check the file format and required fields.")
@@ -355,6 +388,36 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
             break
           case 'accumulatedDepAccountCode':
             row.accumulatedDepAccountCode = value || undefined
+            break
+          // Pre-depreciation fields
+          case 'isPreDepreciated':
+            row.isPreDepreciated = value === 'TRUE' || value === 'true' || value === '1'
+            break
+          case 'originalPurchaseDate':
+            row.originalPurchaseDate = value || undefined
+            break
+          case 'originalPurchasePrice':
+            row.originalPurchasePrice = value && !isNaN(parseFloat(value)) ? parseFloat(value) : undefined
+            break
+          case 'originalUsefulLifeMonths':
+            row.originalUsefulLifeMonths = value && !isNaN(parseInt(value)) ? parseInt(value) : undefined
+            break
+          case 'priorDepreciationAmount':
+          case 'accumulatedDepreciationAmount': // New column name maps to priorDepreciationAmount
+            row.priorDepreciationAmount = value && !isNaN(parseFloat(value)) ? parseFloat(value) : undefined
+            break
+          case 'priorDepreciationMonths':
+          case 'accumulatedDepreciationMonths': // New column name maps to priorDepreciationMonths
+            row.priorDepreciationMonths = value && !isNaN(parseInt(value)) ? parseInt(value) : undefined
+            break
+          case 'systemEntryDate':
+            row.systemEntryDate = value || undefined
+            break
+          case 'systemEntryBookValue':
+            row.systemEntryBookValue = value && !isNaN(parseFloat(value)) ? parseFloat(value) : undefined
+            break
+          case 'useSystemEntryAsStart':
+            row.useSystemEntryAsStart = value === 'TRUE' || value === 'true' || value === '1'
             break
         }
       })
@@ -570,6 +633,31 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
             </div>
             
             <div className="space-y-4">
+              {/* Template Type Selection */}
+              <div className="p-4 border rounded-lg bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Template Type</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {isPreDepreciatedTemplate 
+                        ? "Generate template for assets with existing depreciation from old system"
+                        : "Generate template for newly acquired assets"
+                      }
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="template-type" className="text-sm">
+                      {isPreDepreciatedTemplate ? "Pre-Depreciated Assets" : "New Assets"}
+                    </Label>
+                    <Switch
+                      id="template-type"
+                      checked={isPreDepreciatedTemplate}
+                      onCheckedChange={setIsPreDepreciatedTemplate}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category-select">Category *</Label>
@@ -639,14 +727,21 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
                 disabled={isLoading || !selectedCategoryId}
               >
                 <Download className="h-4 w-4 mr-2" />
-                Download Template ({numberOfRows} rows)
+                Download {isPreDepreciatedTemplate ? "Pre-Depreciated" : "New Assets"} Template ({numberOfRows} rows)
               </Button>
               
               {selectedCategoryId && (
                 <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
                   <p><strong>Selected Category:</strong> {categories.find(c => c.id === selectedCategoryId)?.name}</p>
                   <p><strong>Item Code Format:</strong> {categories.find(c => c.id === selectedCategoryId)?.code}-XXXXX</p>
+                  <p><strong>Template Type:</strong> {isPreDepreciatedTemplate ? "Pre-Depreciated Assets" : "New Assets"}</p>
                   <p><strong>Template will include:</strong> {numberOfRows} pre-generated item codes</p>
+                  {isPreDepreciatedTemplate && (
+                    <p><strong>Fields included:</strong> Original purchase info, prior depreciation, system entry data</p>
+                  )}
+                  {!isPreDepreciatedTemplate && (
+                    <p><strong>Fields included:</strong> Purchase info, depreciation settings, GL accounts</p>
+                  )}
                   {selectedDepartmentCode && selectedDepartmentCode !== 'none' && (
                     <p><strong>Default Department:</strong> {getSelectedDepartmentName(selectedDepartmentCode)}</p>
                   )}
@@ -671,10 +766,21 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
               <AlertDescription className="text-sm space-y-2 mt-2">
                 <div className="space-y-1">
                   <p><strong>Required fields:</strong> itemCode, description, categoryName</p>
-                  <p><strong>Optional fields:</strong> departmentCode, GL account codes, serialNumber, etc.</p>
+                  {isPreDepreciatedTemplate ? (
+                    <>
+                      <p><strong>Pre-Depreciated Required:</strong> originalPurchaseDate, originalPurchasePrice, originalUsefulLifeMonths, systemEntryDate, systemEntryBookValue</p>
+                      <p><strong>Prior Depreciation:</strong> Fill accumulatedDepreciationAmount and accumulatedDepreciationMonths from old system</p>
+                      <p><strong>Boolean fields:</strong> Use TRUE/FALSE for useSystemEntryAsStart (recommended: TRUE)</p>
+                    </>
+                  ) : (
+                    <>
+                      <p><strong>New Asset Fields:</strong> purchaseDate, purchasePrice, usefulLifeMonths, depreciationStartDate</p>
+                      <p><strong>Useful Life:</strong> Enter total months (e.g., 36 for 3 years)</p>
+                    </>
+                  )}
                   <p><strong>Date format:</strong> YYYY-MM-DD (e.g., 2024-01-15)</p>
                   <p><strong>Item Codes:</strong> Pre-generated based on selected category</p>
-                  <p><strong>Useful Life:</strong> Enter total months (e.g., 36 for 3 years)</p>
+                  <p><strong>Optional fields:</strong> departmentCode, GL account codes, serialNumber, etc.</p>
                   <p><strong>Empty fields:</strong> Leave optional fields empty if not needed</p>
                 </div>
               </AlertDescription>
@@ -790,10 +896,26 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
                     <TableHead>Category</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Serial Number</TableHead>
-                    <TableHead>Purchase Price</TableHead>
-                    <TableHead>Useful Life (Months)</TableHead>
+                    {/* Show different columns based on asset type */}
+                    {parsedData.some(row => row.isPreDepreciated) ? (
+                      <>
+                        <TableHead>Original Price</TableHead>
+                        <TableHead>Original Useful Life</TableHead>
+                        <TableHead>Accumulated Months</TableHead>
+                        <TableHead>Depreciated Amount</TableHead>
+                        <TableHead>Book Value</TableHead>
+                        <TableHead>System Entry Date</TableHead>
+                      </>
+                    ) : (
+                      <>
+                        <TableHead>Brand</TableHead>
+                        <TableHead>Serial Number</TableHead>
+                        <TableHead>Purchase Price</TableHead>
+                        <TableHead>Useful Life (Months)</TableHead>
+                        <TableHead>Purchase Date</TableHead>
+                      </>
+                    )}
+                    <TableHead>Asset Type</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -805,10 +927,57 @@ export function BulkAssetCreationView({ businessUnitId }: BulkAssetCreationViewP
                       <TableCell className="text-xs">{row.categoryName}</TableCell>
                       <TableCell className="text-xs">{getDepartmentNameFromCode(row.departmentCode)}</TableCell>
                       <TableCell className="max-w-[120px] truncate text-xs">{row.location || '-'}</TableCell>
-                      <TableCell className="text-xs">{row.brand || '-'}</TableCell>
-                      <TableCell className="font-mono text-xs">{row.serialNumber || '-'}</TableCell>
-                      <TableCell className="text-xs">{row.purchasePrice ? `₱${row.purchasePrice.toLocaleString()}` : '-'}</TableCell>
-                      <TableCell className="text-xs">{row.usefulLifeMonths || '-'}</TableCell>
+                      
+                      {/* Show different data based on asset type */}
+                      {parsedData.some(r => r.isPreDepreciated) ? (
+                        <>
+                          <TableCell className="text-xs">
+                            {row.originalPurchasePrice ? `₱${row.originalPurchasePrice.toLocaleString()}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.originalUsefulLifeMonths ? `${row.originalUsefulLifeMonths} months` : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.priorDepreciationMonths ? `${row.priorDepreciationMonths} months` : '-'}
+                          </TableCell>
+
+                          <TableCell className="text-xs">
+                            {row.priorDepreciationAmount ? `₱${row.priorDepreciationAmount.toLocaleString()}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.systemEntryBookValue ? `₱${row.systemEntryBookValue.toLocaleString()}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.systemEntryDate || '-'}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          <TableCell className="text-xs">{row.brand || '-'}</TableCell>
+                          <TableCell className="font-mono text-xs">{row.serialNumber || '-'}</TableCell>
+                          <TableCell className="text-xs">
+                            {row.purchasePrice ? `₱${row.purchasePrice.toLocaleString()}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.usefulLifeMonths || '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {row.purchaseDate || '-'}
+                          </TableCell>
+                        </>
+                      )}
+                      
+                      <TableCell>
+                        {row.isPreDepreciated ? (
+                          <Badge variant="secondary" className="text-xs">
+                            Pre-Depreciated
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            New Asset
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">
                           {row.status || 'AVAILABLE'}

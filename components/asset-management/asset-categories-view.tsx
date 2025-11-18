@@ -72,14 +72,30 @@ export function AssetCategoriesView({
   const [editingCategory, setEditingCategory] = useState<AssetCategoryWithDetails | null>(null)
   // Removed dialog state - using navigation instead
 
-  const handleSearch = () => {
+  const updateFilter = (key: string, value: string | undefined) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (searchTerm) {
-      params.set('search', searchTerm)
+    
+    if (value && value !== 'all') {
+      params.set(key, value)
     } else {
-      params.delete('search')
+      params.delete(key)
     }
-    params.set('page', '1')
+    
+    // Reset to first page when filters change
+    if (key !== 'page') {
+      params.delete('page')
+    }
+    
+    router.push(`/${businessUnitId}/asset-management/categories?${params.toString()}`)
+  }
+
+  const handleSearch = () => {
+    updateFilter('search', searchTerm || undefined)
+  }
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', page.toString())
     router.push(`/${businessUnitId}/asset-management/categories?${params.toString()}`)
   }
 
@@ -176,7 +192,7 @@ export function AssetCategoriesView({
 
       {/* Results count */}
       <div className="text-sm text-muted-foreground">
-        Showing {filteredCategories.length} of {categoriesData.totalCount} categories
+        Showing {categoriesData.categories.length} of {categoriesData.totalCount} categories (Page {currentFilters.page} of {Math.ceil(categoriesData.totalCount / 10)})
       </div>
 
       {/* Desktop Table */}
@@ -399,36 +415,34 @@ export function AssetCategoriesView({
       </div>
 
       {/* Pagination */}
-      {categoriesData.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {((currentFilters.page - 1) * 20) + 1} to {Math.min(currentFilters.page * 20, categoriesData.totalCount)} of {categoriesData.totalCount} categories
-          </p>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams(searchParams.toString())
-                params.set('page', (currentFilters.page - 1).toString())
-                router.push(`/${businessUnitId}/asset-management/categories?${params.toString()}`)
-              }}
-              disabled={currentFilters.page <= 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams(searchParams.toString())
-                params.set('page', (currentFilters.page + 1).toString())
-                router.push(`/${businessUnitId}/asset-management/categories?${params.toString()}`)
-              }}
-              disabled={currentFilters.page >= categoriesData.totalPages}
-            >
-              Next
-            </Button>
+      {Math.ceil(categoriesData.totalCount / 10) > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentFilters.page - 1) * 10) + 1} to{' '}
+            {Math.min(currentFilters.page * 10, categoriesData.totalCount)} of{' '}
+            {categoriesData.totalCount} categories
+          </div>
+          
+          <div className="flex gap-2">
+            {currentFilters.page > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page - 1)}
+              >
+                Previous
+              </Button>
+            )}
+            
+            {currentFilters.page < Math.ceil(categoriesData.totalCount / 10) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page + 1)}
+              >
+                Next
+              </Button>
+            )}
           </div>
         </div>
       )}

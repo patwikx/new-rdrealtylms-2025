@@ -144,8 +144,16 @@ export function AssetsManagementView({
     }
     
     // Reset to first page when filters change
-    params.delete('page')
+    if (key !== 'page') {
+      params.delete('page')
+    }
     
+    router.push(`/${businessUnitId}/asset-management/assets?${params.toString()}`)
+  }
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', page.toString())
     router.push(`/${businessUnitId}/asset-management/assets?${params.toString()}`)
   }
 
@@ -330,7 +338,7 @@ export function AssetsManagementView({
 
       {/* Results count */}
       <div className="text-sm text-muted-foreground">
-        Showing {filteredAssets.length} of {assetsData.totalCount} assets
+        Showing {assetsData.assets.length} of {assetsData.totalCount} assets (Page {currentFilters.page} of {Math.ceil(assetsData.totalCount / 10)})
       </div>
 
       {/* Desktop Table */}
@@ -346,7 +354,6 @@ export function AssetsManagementView({
               <TableHead>Status</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Assigned To</TableHead>
-              <TableHead>Purchase Price</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -417,15 +424,6 @@ export function AssetsManagementView({
                       </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {asset.purchasePrice ? (
-                      <div className="flex items-center gap-1 text-sm">
-                        <span>{formatCurrency(Number(asset.purchasePrice))}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Not specified</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -621,6 +619,39 @@ export function AssetsManagementView({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Pagination */}
+      {Math.ceil(assetsData.totalCount / 10) > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentFilters.page - 1) * 10) + 1} to{' '}
+            {Math.min(currentFilters.page * 10, assetsData.totalCount)} of{' '}
+            {assetsData.totalCount} assets
+          </div>
+          
+          <div className="flex gap-2">
+            {currentFilters.page > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page - 1)}
+              >
+                Previous
+              </Button>
+            )}
+            
+            {currentFilters.page < Math.ceil(assetsData.totalCount / 10) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page + 1)}
+              >
+                Next
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* QR Code Scanner */}
       <QRCodeScanner

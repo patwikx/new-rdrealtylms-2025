@@ -44,7 +44,7 @@ export default async function AssetPrintingPage({ params, searchParams }: AssetP
       categoryId,
       search,
       page: parseInt(page),
-      limit: 100, // Show more assets for selection
+      limit: 10,
       isActive: true // Only show active assets
     })
     

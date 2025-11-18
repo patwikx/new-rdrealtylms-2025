@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { DisposableAssetsResponse } from "@/lib/actions/asset-disposal-actions"
 import { AssetDisposalDialog } from "./asset-disposal-dialog"
 import { toast } from "sonner"
@@ -84,6 +84,7 @@ export function AssetDisposalView({
   showCreateButton = false
 }: AssetDisposalViewProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState(currentFilters.search || "")
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set())
   const [showDisposalDialog, setShowDisposalDialog] = useState(false)
@@ -100,12 +101,31 @@ export function AssetDisposalView({
     )
   }, [disposableAssetsData.assets, searchTerm])
 
-  const handleSearch = () => {
-    const params = new URLSearchParams()
-    if (searchTerm) params.set('search', searchTerm)
-    if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
+  const updateFilter = (key: string, value: string | undefined) => {
+    const params = new URLSearchParams(searchParams.toString())
     
-    router.push(`/${businessUnitId}/asset-management/disposals?${params.toString()}`)
+    if (value && value !== 'all') {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    
+    // Reset to first page when filters change
+    if (key !== 'page') {
+      params.delete('page')
+    }
+    
+    router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
+  }
+
+  const handleSearch = () => {
+    updateFilter('search', searchTerm || undefined)
+  }
+
+  const goToPage = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', page.toString())
+    router.push(`/${businessUnitId}/asset-management/retirements?${params.toString()}`)
   }
 
   const handleSelectAsset = (assetId: string, checked: boolean) => {
@@ -215,12 +235,7 @@ export function AssetDisposalView({
         
         <Select 
           value={currentFilters.categoryId || "all"} 
-          onValueChange={(value) => {
-            const params = new URLSearchParams()
-            if (searchTerm) params.set('search', searchTerm)
-            if (value !== "all") params.set('categoryId', value)
-            router.push(`/${businessUnitId}/asset-management/disposals?${params.toString()}`)
-          }}
+          onValueChange={(value) => updateFilter('categoryId', value || undefined)}
         >
           <SelectTrigger className="w-[250px]">
             <div className="flex items-center gap-2">
@@ -526,40 +541,34 @@ export function AssetDisposalView({
       </div>
 
       {/* Pagination */}
-      {disposableAssetsData.totalCount > 100 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {((currentFilters.page - 1) * 100) + 1} to {Math.min(currentFilters.page * 100, disposableAssetsData.totalCount)} of {disposableAssetsData.totalCount} assets
-          </p>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (searchTerm) params.set('search', searchTerm)
-                if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
-                params.set('page', (currentFilters.page - 1).toString())
-                router.push(`/${businessUnitId}/asset-management/disposals?${params.toString()}`)
-              }}
-              disabled={currentFilters.page <= 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (searchTerm) params.set('search', searchTerm)
-                if (currentFilters.categoryId) params.set('categoryId', currentFilters.categoryId)
-                params.set('page', (currentFilters.page + 1).toString())
-                router.push(`/${businessUnitId}/asset-management/disposals?${params.toString()}`)
-              }}
-              disabled={currentFilters.page * 100 >= disposableAssetsData.totalCount}
-            >
-              Next
-            </Button>
+      {Math.ceil(disposableAssetsData.totalCount / 10) > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentFilters.page - 1) * 10) + 1} to{' '}
+            {Math.min(currentFilters.page * 10, disposableAssetsData.totalCount)} of{' '}
+            {disposableAssetsData.totalCount} assets
+          </div>
+          
+          <div className="flex gap-2">
+            {currentFilters.page > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page - 1)}
+              >
+                Previous
+              </Button>
+            )}
+            
+            {currentFilters.page < Math.ceil(disposableAssetsData.totalCount / 10) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentFilters.page + 1)}
+              >
+                Next
+              </Button>
+            )}
           </div>
         </div>
       )}

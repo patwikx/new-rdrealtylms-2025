@@ -26,6 +26,16 @@ export interface ImportAssetRow {
   assetAccountCode?: string
   depreciationExpenseAccountCode?: string
   accumulatedDepAccountCode?: string
+  // Pre-depreciation fields for assets with existing depreciation
+  isPreDepreciated?: boolean
+  originalPurchaseDate?: string
+  originalPurchasePrice?: number
+  originalUsefulLifeMonths?: number
+  priorDepreciationAmount?: number
+  priorDepreciationMonths?: number
+  systemEntryDate?: string
+  systemEntryBookValue?: number
+  useSystemEntryAsStart?: boolean
 }
 
 export interface ImportError {
@@ -48,7 +58,8 @@ export async function downloadImportTemplate(
   categoryId?: string, 
   numberOfRows: number = 10,
   defaultDepartmentId?: string,
-  defaultLocation?: string
+  defaultLocation?: string,
+  isPreDepreciatedTemplate: boolean = false
 ): Promise<string> {
   try {
     // Get actual categories and departments from database
@@ -70,20 +81,25 @@ export async function downloadImportTemplate(
       })
     ])
 
-  const headers = [
+  // Define headers based on template type
+  const baseHeaders = [
     'itemCode',
     'description', 
     'categoryName',
     'serialNumber',
     'modelNumber',
     'brand',
-    'purchaseDate',
-    'purchasePrice',
-    'warrantyExpiry',
     'departmentCode',
     'location',
     'notes',
-    'status',
+    'status'
+  ]
+
+  const newAssetHeaders = [
+    ...baseHeaders,
+    'purchaseDate',
+    'purchasePrice',
+    'warrantyExpiry',
     'usefulLifeMonths',
     'salvageValue',
     'depreciationMethod',
@@ -92,6 +108,24 @@ export async function downloadImportTemplate(
     'depreciationExpenseAccountCode',
     'accumulatedDepAccountCode'
   ]
+
+  const preDepreciatedHeaders = [
+    ...baseHeaders,
+    'warrantyExpiry',
+    'depreciationMethod',
+    'salvageValue',
+    // Pre-depreciation specific fields
+    'originalPurchaseDate',
+    'originalPurchasePrice',
+    'originalUsefulLifeMonths',
+    'accumulatedDepreciationAmount',
+    'accumulatedDepreciationMonths',
+    'systemEntryDate',
+    'systemEntryBookValue',
+    'useSystemEntryAsStart'
+  ]
+
+  const headers = isPreDepreciatedTemplate ? preDepreciatedHeaders : newAssetHeaders
 
   // Generate example rows with auto-generated item codes
   const exampleRows = []
@@ -122,57 +156,81 @@ export async function downloadImportTemplate(
       }
     }
     
-    // Generate the requested number of rows
+    // Generate the requested number of rows based on template type
     for (let i = 0; i < numberOfRows; i++) {
       const itemCode = `${selectedCategory.code}-${(nextNumber + i).toString().padStart(5, '0')}`
       
-      exampleRows.push([
-        itemCode,
-        `Sample Asset ${i + 1}`, // Generic description
-        selectedCategory.name,
-        '', // serialNumber - optional
-        '', // modelNumber - optional  
-        '', // brand - optional
-        '2024-01-15', // purchaseDate
-        '10000', // purchasePrice
-        '', // warrantyExpiry - optional
-        defaultDepartmentId || '', // departmentCode (actually department ID)
-        defaultLocation || '', // location
-        '', // notes - optional
-        'AVAILABLE', // status
-        '36', // usefulLifeMonths (3 years)
-        '0', // salvageValue
-        'STRAIGHT_LINE', // depreciationMethod
-        '2024-01-15', // depreciationStartDate
-        '', // assetAccountCode - optional
-        '', // depreciationExpenseAccountCode - optional
-        '' // accumulatedDepAccountCode - optional
-      ])
+      if (isPreDepreciatedTemplate) {
+        // Pre-depreciated asset template
+        exampleRows.push([
+          itemCode,
+          `Pre-Depreciated Asset ${i + 1}`,
+          selectedCategory.name,
+          '', // serialNumber - optional
+          '', // modelNumber - optional  
+          '', // brand - optional
+          defaultDepartmentId || '', // departmentCode
+          defaultLocation || '', // location
+          '', // notes - optional
+          'AVAILABLE', // status
+          '', // warrantyExpiry - optional
+          'STRAIGHT_LINE', // depreciationMethod
+          '0', // salvageValue
+          // Pre-depreciation fields with example values
+          '2022-01-15', // originalPurchaseDate - when originally purchased
+          '15000', // originalPurchasePrice - original cost
+          '60', // originalUsefulLifeMonths - 5 years total
+          '7500', // priorDepreciationAmount - already depreciated 50%
+          '30', // priorDepreciationMonths - 2.5 years already depreciated
+          '2024-11-18', // systemEntryDate - today's date
+          '7500', // systemEntryBookValue - remaining book value
+          'TRUE' // useSystemEntryAsStart - recommended
+        ])
+      } else {
+        // New asset template
+        exampleRows.push([
+          itemCode,
+          `New Asset ${i + 1}`,
+          selectedCategory.name,
+          '', // serialNumber - optional
+          '', // modelNumber - optional  
+          '', // brand - optional
+          defaultDepartmentId || '', // departmentCode
+          defaultLocation || '', // location
+          '', // notes - optional
+          'AVAILABLE', // status
+          '2024-01-15', // purchaseDate
+          '10000', // purchasePrice
+          '', // warrantyExpiry - optional
+          '36', // usefulLifeMonths (3 years)
+          '0', // salvageValue
+          'STRAIGHT_LINE', // depreciationMethod
+          '2024-01-15', // depreciationStartDate
+          '', // assetAccountCode - optional
+          '', // depreciationExpenseAccountCode - optional
+          '' // accumulatedDepAccountCode - optional
+        ])
+      }
     }
   } else {
     // Fallback if no category found
-    exampleRows.push([
-      'SAMPLE-00001',
-      'Sample Asset 1',
-      'Sample Category',
-      '',
-      '',
-      '',
-      '2024-01-15',
-      '10000',
-      '',
-      '',
-      '',
-      '',
-      'AVAILABLE',
-      '36',
-      '0',
-      'STRAIGHT_LINE',
-      '2024-01-15',
-      '',
-      '',
-      ''
-    ])
+    if (isPreDepreciatedTemplate) {
+      exampleRows.push([
+        'SAMPLE-00001',
+        'Pre-Depreciated Asset 1',
+        'Sample Category',
+        '', '', '', '', '', '', 'AVAILABLE', '', 'STRAIGHT_LINE', '0',
+        '2022-01-15', '15000', '60', '7500', '30', '2024-11-18', '7500', 'TRUE'
+      ])
+    } else {
+      exampleRows.push([
+        'SAMPLE-00001',
+        'New Asset 1',
+        'Sample Category',
+        '', '', '', '', '', '', 'AVAILABLE',
+        '2024-01-15', '10000', '', '36', '0', 'STRAIGHT_LINE', '2024-01-15', '', '', ''
+      ])
+    }
   }
 
   // Helper function to escape CSV values
@@ -379,6 +437,14 @@ export async function validateAndImportAssets(
       if (row.depreciationStartDate && !isValidDate(row.depreciationStartDate)) {
         rowErrors.push("Invalid depreciation start date format. Use YYYY-MM-DD")
       }
+      
+      // Validate pre-depreciation dates
+      if (row.originalPurchaseDate && !isValidDate(row.originalPurchaseDate)) {
+        rowErrors.push("Invalid original purchase date format. Use YYYY-MM-DD")
+      }
+      if (row.systemEntryDate && !isValidDate(row.systemEntryDate)) {
+        rowErrors.push("Invalid system entry date format. Use YYYY-MM-DD")
+      }
 
       // Validate numeric fields
       if (row.purchasePrice !== undefined && (isNaN(row.purchasePrice) || row.purchasePrice < 0)) {
@@ -389,6 +455,42 @@ export async function validateAndImportAssets(
       }
       if (row.usefulLifeMonths !== undefined && (isNaN(row.usefulLifeMonths) || row.usefulLifeMonths <= 0)) {
         rowErrors.push("Useful life months must be a positive number")
+      }
+      
+      // Validate pre-depreciation numeric fields
+      if (row.originalPurchasePrice !== undefined && (isNaN(row.originalPurchasePrice) || row.originalPurchasePrice < 0)) {
+        rowErrors.push("Original purchase price must be a valid positive number")
+      }
+      if (row.originalUsefulLifeMonths !== undefined && (isNaN(row.originalUsefulLifeMonths) || row.originalUsefulLifeMonths <= 0)) {
+        rowErrors.push("Original useful life months must be a positive number")
+      }
+      if (row.priorDepreciationAmount !== undefined && (isNaN(row.priorDepreciationAmount) || row.priorDepreciationAmount < 0)) {
+        rowErrors.push("Prior depreciation amount must be a valid positive number")
+      }
+      if (row.priorDepreciationMonths !== undefined && (isNaN(row.priorDepreciationMonths) || row.priorDepreciationMonths < 0)) {
+        rowErrors.push("Prior depreciation months must be a valid positive number")
+      }
+      if (row.systemEntryBookValue !== undefined && (isNaN(row.systemEntryBookValue) || row.systemEntryBookValue < 0)) {
+        rowErrors.push("System entry book value must be a valid positive number")
+      }
+      
+      // Validate pre-depreciation logic
+      if (row.isPreDepreciated) {
+        if (!row.originalPurchaseDate) {
+          rowErrors.push("Original purchase date is required for pre-depreciated assets")
+        }
+        if (!row.originalPurchasePrice) {
+          rowErrors.push("Original purchase price is required for pre-depreciated assets")
+        }
+        if (!row.originalUsefulLifeMonths) {
+          rowErrors.push("Original useful life months is required for pre-depreciated assets")
+        }
+        if (!row.systemEntryDate) {
+          rowErrors.push("System entry date is required for pre-depreciated assets")
+        }
+        if (!row.systemEntryBookValue) {
+          rowErrors.push("System entry book value is required for pre-depreciated assets")
+        }
       }
 
       if (rowErrors.length > 0) {
@@ -432,7 +534,17 @@ export async function validateAndImportAssets(
           accumulatedDepAccountId: (row.accumulatedDepAccountCode && row.accumulatedDepAccountCode.trim()) ? glAccountMap.get(row.accumulatedDepAccountCode)?.id : null,
           createdById: session.user.id,
           isActive: true,
-          quantity: 1
+          quantity: 1,
+          // Pre-depreciation fields
+          isPreDepreciated: row.isPreDepreciated || false,
+          originalPurchaseDate: row.originalPurchaseDate ? new Date(row.originalPurchaseDate) : null,
+          originalPurchasePrice: row.originalPurchasePrice || null,
+          originalUsefulLifeMonths: row.originalUsefulLifeMonths || null,
+          priorDepreciationAmount: row.priorDepreciationAmount || 0,
+          priorDepreciationMonths: row.priorDepreciationMonths || 0,
+          systemEntryDate: row.systemEntryDate ? new Date(row.systemEntryDate) : null,
+          systemEntryBookValue: row.systemEntryBookValue || null,
+          useSystemEntryAsStart: row.useSystemEntryAsStart || false
         }
 
         // Calculate depreciation values if applicable

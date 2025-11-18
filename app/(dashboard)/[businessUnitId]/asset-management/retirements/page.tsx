@@ -46,14 +46,14 @@ export default async function AssetRetirementDisposalPage({ params, searchParams
         categoryId,
         search,
         page: parseInt(page),
-        limit: 100
+        limit: 10
       }),
       getDisposableAssets({
         businessUnitId,
         categoryId,
         search,
         page: parseInt(page),
-        limit: 100
+        limit: 10
       })
     ])
     

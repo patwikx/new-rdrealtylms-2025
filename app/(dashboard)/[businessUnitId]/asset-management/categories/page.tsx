@@ -33,7 +33,7 @@ export default async function AssetCategoriesPage({ params, searchParams }: Asse
       businessUnitId,
       search,
       page: parseInt(page),
-      limit: 20
+      limit: 10
     })
     
     return (

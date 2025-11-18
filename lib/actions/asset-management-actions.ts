@@ -174,7 +174,7 @@ export async function getAssets(filters: AssetFilters): Promise<AssetsResponse> 
           }
         },
         orderBy: [
-          { itemCode: 'asc' }
+          { itemCode: 'desc' }
         ],
         skip: (page - 1) * limit,
         take: limit
