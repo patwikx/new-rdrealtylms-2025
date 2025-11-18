@@ -29,10 +29,12 @@ interface NavMainItem {
   icon?: LucideIcon
   isActive?: boolean
   badge?: number
+  badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   items?: {
     title: string
     url: string
     badge?: number
+    badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   }[]
 }
 
@@ -82,7 +84,7 @@ export function NavMain({ items }: NavMainProps) {
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                         {item.badge !== undefined && item.badge > 0 && (
-                          <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                          <Badge variant={item.badgeVariant || "destructive"} className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
                             {item.badge}
                           </Badge>
                         )}
@@ -107,7 +109,13 @@ export function NavMain({ items }: NavMainProps) {
                                 <Link href={subItem.url}>
                                   <span>{subItem.title}</span>
                                   {subItem.badge !== undefined && subItem.badge > 0 && (
-                                    <Badge variant="destructive" className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full">
+                                    <Badge 
+                                      variant={subItem.badgeVariant || "destructive"} 
+                                      className={cn(
+                                        "ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full",
+                                        subItem.title === "Done Requests" && "bg-green-600 hover:bg-green-600/80 text-white"
+                                      )}
+                                    >
                                       {subItem.badge}
                                     </Badge>
                                   )}

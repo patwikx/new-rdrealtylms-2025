@@ -38,6 +38,7 @@ type NavSubItem = {
   title: string
   url: string
   badge?: number
+  badgeVariant?: "default" | "secondary" | "destructive" | "outline"
 }
 
 // Type for navigation items
@@ -47,6 +48,7 @@ type NavItem = {
   icon: typeof Calendar
   isActive?: boolean
   badge?: number
+  badgeVariant?: "default" | "secondary" | "destructive" | "outline"
   items?: NavSubItem[]
 }
 
@@ -200,11 +202,12 @@ const getNavigationItems = (
         title: "Done Requests",
         url: `/${businessUnitId}/mrs-coordinator/done-requests`,
         badge: pendingCounts?.mrsDoneUnacknowledged,
+        badgeVariant: "default",
       }
     ];
     
-    // Calculate total MRS pending count (including unacknowledged done requests)
-    const totalMRS = (pendingCounts?.mrsForServing || 0) + (pendingCounts?.mrsForPosting || 0) + (pendingCounts?.mrsDoneUnacknowledged || 0);
+    // Calculate total MRS pending count (excluding done requests as they're informational, not urgent)
+    const totalMRS = (pendingCounts?.mrsForServing || 0) + (pendingCounts?.mrsForPosting || 0);
     
     baseItems.push({
       title: "MRS Coordinator",
