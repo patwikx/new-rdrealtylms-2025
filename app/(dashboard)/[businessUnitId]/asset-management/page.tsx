@@ -34,7 +34,7 @@ export default async function AssetManagementDashboard({ params }: AssetManageme
   const { businessUnitId } = await params;
 
   // Check if user has access to asset management
-  if (session.user.role !== "ADMIN" && session.user.role !== "ACCTG") {
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
     // Instead of redirecting, show access denied message
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -44,7 +44,7 @@ export default async function AssetManagementDashboard({ params }: AssetManageme
             You don't have permission to access the Asset Management dashboard.
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            Only ADMIN and ACCTG roles can access this section.
+            Only ADMIN and Accounting users can access this section.
           </p>
           <p className="text-xs text-muted-foreground">
             Your current role: <span className="font-medium">{session.user.role}</span>

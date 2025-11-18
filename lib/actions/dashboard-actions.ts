@@ -63,26 +63,29 @@ async function checkBusinessUnitAccess(businessUnitId: string) {
     throw new Error("Not authenticated");
   }
   
-
+  // Special handling for the "unauthorized" case - this suggests a navigation issue
+  if (businessUnitId === "unauthorized") {
+    console.error("Navigation error detected: businessUnitId is 'unauthorized'", {
+      userBusinessUnitId: session.user.businessUnit?.id,
+      userRole: session.user.role,
+      userName: session.user.name
+    });
+    throw new Error(`Navigation error: Invalid business unit ID 'unauthorized'. User should be accessing /${session.user.businessUnit?.id} instead.`);
+  }
   
-  // Admins and HR can access any business unit
-  if (session.user.role === "ADMIN" || session.user.role === "HR") {
+  // Admins, HR, Accounting, and Purchasing users can access any business unit
+  if (
+    session.user.role === "ADMIN" || 
+    session.user.role === "HR" || 
+    session.user.isAcctg || 
+    session.user.isPurchaser
+  ) {
     return session.user;
   }
   
   // Regular users and managers can only access their own business unit
   if (!session.user.businessUnit?.id) {
     throw new Error("User not assigned to any business unit");
-  }
-  
-  // Special handling for the "unauthorized" case - this suggests a navigation issue
-  if (businessUnitId === "unauthorized") {
-    console.error("Navigation error detected: businessUnitId is 'unauthorized'", {
-      userBusinessUnitId: session.user.businessUnit.id,
-      userRole: session.user.role,
-      userName: session.user.name
-    });
-    throw new Error(`Navigation error: Invalid business unit ID 'unauthorized'. User should be accessing /${session.user.businessUnit.id} instead.`);
   }
   
   if (session.user.businessUnit.id !== businessUnitId) {

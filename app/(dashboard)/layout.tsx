@@ -362,6 +362,8 @@ export default async function DashboardLayout({
       <SecurityMonitor 
         userBusinessUnitId={session.user.businessUnit.id}
         userRole={session.user.role}
+        isAcctg={session.user.isAcctg ?? false}
+        isPurchaser={session.user.isPurchaser ?? false}
       />
       
       {/* Session Monitor - Hybrid JWT + Database session validation */}

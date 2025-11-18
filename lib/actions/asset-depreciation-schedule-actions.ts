@@ -24,8 +24,8 @@ export async function getAssetDepreciationSchedule(
   }
 
   // Check user access to business unit
-  // Check user access - using the same pattern as other actions
-  if (session.user.role !== "ADMIN" && session.user.role !== "ACCTG") {
+  // Check user access - Admins and Accounting users can access any business unit
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
     if (!session.user.businessUnit?.id || session.user.businessUnit.id !== businessUnitId) {
       throw new Error("Access denied to this business unit");
     }

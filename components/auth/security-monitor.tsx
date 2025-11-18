@@ -8,9 +8,11 @@ import { toast } from "sonner";
 interface SecurityMonitorProps {
   userBusinessUnitId: string;
   userRole: string;
+  isAcctg?: boolean;
+  isPurchaser?: boolean;
 }
 
-export function SecurityMonitor({ userBusinessUnitId, userRole }: SecurityMonitorProps) {
+export function SecurityMonitor({ userBusinessUnitId, userRole, isAcctg, isPurchaser }: SecurityMonitorProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -35,8 +37,14 @@ export function SecurityMonitor({ userBusinessUnitId, userRole }: SecurityMonito
         reason = "Invalid business unit format detected";
       }
       // Check if user is accessing unauthorized business unit
-      // Only ADMIN and HR can access different business units
-      else if (userRole !== "ADMIN" && userRole !== "HR" && currentBusinessUnitId !== userBusinessUnitId) {
+      // ADMIN, HR, Accounting, and Purchasing users can access different business units
+      else if (
+        userRole !== "ADMIN" && 
+        userRole !== "HR" && 
+        !isAcctg && 
+        !isPurchaser && 
+        currentBusinessUnitId !== userBusinessUnitId
+      ) {
         // Redirect to unauthorized page instead of logging out
         toast.error("You don't have access to this business unit");
         router.push(`/${userBusinessUnitId}/unauthorized`);

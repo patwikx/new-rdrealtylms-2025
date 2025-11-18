@@ -45,13 +45,14 @@ export async function getMRSNotificationCount(businessUnitId: string): Promise<n
       throw new Error(`Navigation error: Invalid business unit ID 'unauthorized'. User should be accessing /${session.user.businessUnit.id} instead.`);
     }
     
-    if (session.user.businessUnit.id !== businessUnitId) {
+    // Purchasers can access any business unit
+    if (!session.user.isPurchaser && session.user.businessUnit.id !== businessUnitId) {
       throw new Error("Access denied to this business unit");
     }
   }
 
-  // Only show to PURCHASER and PURCHASING_MANAGER roles
-  if (!["PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+  // Only show to users with purchasing access
+  if (!session.user.isPurchaser) {
     return 0;
   }
 
@@ -78,14 +79,15 @@ export async function getMRSNeedingPurchasing(businessUnitId: string): Promise<M
   }
 
   // Check user access to business unit
-  if (session.user.role !== "ADMIN" && session.user.role !== "ACCTG") {
+  // Admins, Accounting, and Purchasing users can access any business unit
+  if (session.user.role !== "ADMIN" && !session.user.isAcctg && !session.user.isPurchaser) {
     if (!session.user.businessUnit?.id || session.user.businessUnit.id !== businessUnitId) {
       throw new Error("Access denied to this business unit");
     }
   }
 
-  // Only show to PURCHASER and PURCHASING_MANAGER roles
-  if (!["PURCHASER", "PURCHASING_MANAGER"].includes(session.user.role)) {
+  // Only show to users with purchasing access
+  if (!session.user.isPurchaser) {
     return [];
   }
 
