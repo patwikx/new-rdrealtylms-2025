@@ -19,17 +19,19 @@ interface AuditLogsPageProps {
 
 export default async function AuditLogsPage({ params, searchParams }: AuditLogsPageProps) {
   const session = await auth();
-  
+
+  const { businessUnitId } = await params;
+
   if (!session?.user?.id) {
     redirect("/auth/sign-in");
   }
   
   // Check if user has audit log viewing permissions (Admin only)
   if (session.user.role !== "ADMIN") {
-    redirect("/unauthorized");
+    redirect(`/${businessUnitId}/unauthorized`);
   }
 
-  const { businessUnitId } = await params;
+
   const { tableName, action, userId, startDate, endDate, page = "1" } = await searchParams;
   
   try {

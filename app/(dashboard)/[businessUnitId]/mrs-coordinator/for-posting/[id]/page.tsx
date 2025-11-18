@@ -21,7 +21,7 @@ export default async function PostedRequestDetail({ params }: PostedRequestDetai
 
   // Check if user can view posted requests (ADMIN or users with isAcctg permission)
   if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
-    redirect("/unauthorized")
+    redirect(`/${businessUnitId}/unauthorized`)
   }
 
   const { businessUnitId, id } = await params

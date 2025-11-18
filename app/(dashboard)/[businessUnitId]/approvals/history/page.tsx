@@ -24,7 +24,7 @@ export default async function ApprovalHistoryPage({ params, searchParams }: Appr
   
   // Check if user has approval permissions
   if (session.user.role !== "ADMIN" && session.user.role !== "HR" && session.user.role !== "MANAGER") {
-    redirect("/unauthorized");
+    redirect(`/${businessUnitId}/unauthorized`);
   }
 
   const { businessUnitId } = await params;

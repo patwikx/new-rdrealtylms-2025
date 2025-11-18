@@ -37,8 +37,10 @@ export function SecurityMonitor({ userBusinessUnitId, userRole }: SecurityMonito
       // Check if user is accessing unauthorized business unit
       // Only ADMIN and HR can access different business units
       else if (userRole !== "ADMIN" && userRole !== "HR" && currentBusinessUnitId !== userBusinessUnitId) {
-        shouldLogout = true;
-        reason = "Unauthorized business unit access detected";
+        // Redirect to unauthorized page instead of logging out
+        toast.error("You don't have access to this business unit");
+        router.push(`/${userBusinessUnitId}/unauthorized`);
+        return;
       }
 
       if (shouldLogout) {
