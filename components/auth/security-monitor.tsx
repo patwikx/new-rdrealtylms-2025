@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
@@ -15,8 +15,15 @@ interface SecurityMonitorProps {
 export function SecurityMonitor({ userBusinessUnitId, userRole, isAcctg, isPurchaser }: SecurityMonitorProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLoggingOutRef = useRef(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
+    // Skip if already logging out
+    if (isLoggingOutRef.current) {
+      return;
+    }
+
     // Extract business unit ID from pathname
     const pathSegments = pathname.split('/');
     const currentBusinessUnitId = pathSegments[1];
@@ -53,7 +60,19 @@ export function SecurityMonitor({ userBusinessUnitId, userRole, isAcctg, isPurch
 
       if (shouldLogout) {
         try {
+          // Mark as logging out
+          isLoggingOutRef.current = true;
+
+          // Show transition overlay
+          setIsTransitioning(true);
+
+          // Show toast
           toast.error(reason + ". Logging out for security.");
+
+          // Show loading animation for 5 seconds
+          await new Promise(resolve => setTimeout(resolve, 3000));
+
+          // Perform logout
           await signOut({ 
             callbackUrl: "/auth/sign-in?error=SecurityViolation&logout=true",
             redirect: true 
@@ -66,8 +85,22 @@ export function SecurityMonitor({ userBusinessUnitId, userRole, isAcctg, isPurch
     };
 
     performSecurityCheck();
-  }, [pathname, userBusinessUnitId, userRole, router]);
+  }, [pathname, userBusinessUnitId, userRole, isAcctg, isPurchaser, router]);
 
-  // Don't render anything
+  // Render a subtle overlay during transition to prevent flickering
+  if (isTransitioning) {
+    return (
+      <div 
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300"
+        style={{ opacity: 1 }}
+      >
+        <div className="text-center space-y-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-destructive mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Security violation detected. Logging out...</p>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
