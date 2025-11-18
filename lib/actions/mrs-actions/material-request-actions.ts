@@ -1185,8 +1185,8 @@ export async function markAsPosted(requestId: string) {
       return { success: false, message: "Unauthorized" }
     }
 
-    // Check if user has permission
-    if (!["ADMIN", "MANAGER", "PURCHASER", "STOCKROOM"].includes(session.user.role)) {
+    // Check if user has permission (ADMIN or users with isAcctg permission)
+    if (session.user.role !== "ADMIN" && !session.user.isAcctg) {
       return { success: false, message: "You don't have permission to mark requests as posted" }
     }
 
