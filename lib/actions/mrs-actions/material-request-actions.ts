@@ -38,6 +38,7 @@ const CreateMaterialRequestSchema = z.object({
   recApproverId: z.string().optional(),
   finalApproverId: z.string().optional(),
   chargeTo: z.string().optional(),
+  bldgCode: z.string().optional(),
   purpose: z.string().optional(),
   remarks: z.string().optional(),
   deliverTo: z.string().optional(),
@@ -56,6 +57,7 @@ const UpdateMaterialRequestSchema = z.object({
   recApproverId: z.string().optional(),
   finalApproverId: z.string().optional(),
   chargeTo: z.string().optional(),
+  bldgCode: z.string().optional(),
   purpose: z.string().optional(),
   remarks: z.string().optional(),
   deliverTo: z.string().optional(),
@@ -149,6 +151,7 @@ export async function createMaterialRequest(input: CreateMaterialRequestInput): 
         recApproverId: validatedData.recApproverId || null,
         finalApproverId: validatedData.finalApproverId || null,
         chargeTo: validatedData.chargeTo || null,
+        bldgCode: validatedData.bldgCode || null,
         purpose: validatedData.purpose || null,
         remarks: validatedData.remarks || null,
         deliverTo: validatedData.deliverTo || null,
@@ -274,6 +277,7 @@ export async function updateMaterialRequest(input: UpdateMaterialRequestInput): 
           businessUnitId: validatedData.businessUnitId,
           departmentId: validatedData.departmentId || null,
           chargeTo: validatedData.chargeTo || null,
+          bldgCode: validatedData.bldgCode || null,
           purpose: validatedData.purpose || null,
           remarks: validatedData.remarks || null,
           deliverTo: validatedData.deliverTo || null,
@@ -1231,3 +1235,200 @@ export async function markAsPosted(requestId: string) {
   }
 }
 
+
+// Mark request for edit by purchaser
+export async function markRequestForEdit(params: {
+  requestId: string
+  reason?: string
+}): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    // Check if user is purchaser
+    if (!session.user.isPurchaser) {
+      return { success: false, message: "Only purchasers can mark requests for edit" }
+    }
+
+    const request = await prisma.materialRequest.findUnique({
+      where: { id: params.requestId }
+    })
+
+    if (!request) {
+      return { success: false, message: "Request not found" }
+    }
+
+    // Update the request
+    await prisma.materialRequest.update({
+      where: { id: params.requestId },
+      data: {
+        isMarkedForEdit: true,
+        markedForEditAt: new Date(),
+        markedForEditBy: session.user.id,
+        markedForEditReason: params.reason || null,
+        editCompletedAt: null,
+        editAcknowledgedAt: null,
+      }
+    })
+
+    revalidatePath("/")
+    return { success: true, message: "Request marked for edit successfully" }
+  } catch (error) {
+    console.error("Error marking request for edit:", error)
+    return { success: false, message: "Failed to mark request for edit" }
+  }
+}
+
+// Update item descriptions when marked for edit
+const UpdateItemDescriptionsSchema = z.object({
+  requestId: z.string(),
+  items: z.array(z.object({
+    itemId: z.string(),
+    description: z.string().min(1, "Description is required"),
+  }))
+})
+
+export async function updateItemDescriptions(input: z.infer<typeof UpdateItemDescriptionsSchema>): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    const validatedData = UpdateItemDescriptionsSchema.parse(input)
+
+    const request = await prisma.materialRequest.findUnique({
+      where: { id: validatedData.requestId },
+      include: { items: true }
+    })
+
+    if (!request) {
+      return { success: false, message: "Request not found" }
+    }
+
+    // Check if user is the requestor
+    if (request.requestedById !== session.user.id) {
+      return { success: false, message: "Only the original requestor can edit descriptions" }
+    }
+
+    // Check if request is marked for edit
+    if (!request.isMarkedForEdit) {
+      return { success: false, message: "Request is not marked for edit" }
+    }
+
+    // Update item descriptions
+    await prisma.$transaction(
+      validatedData.items.map(item =>
+        prisma.materialRequestItem.update({
+          where: { id: item.itemId },
+          data: { description: item.description }
+        })
+      )
+    )
+
+    // Mark edit as completed
+    await prisma.materialRequest.update({
+      where: { id: validatedData.requestId },
+      data: {
+        editCompletedAt: new Date(),
+      }
+    })
+
+    revalidatePath("/")
+    return { success: true, message: "Item descriptions updated successfully" }
+  } catch (error) {
+    console.error("Error updating item descriptions:", error)
+    return { success: false, message: "Failed to update item descriptions" }
+  }
+}
+
+// Acknowledge that edit is completed (by purchaser)
+export async function acknowledgeEditCompletion(requestId: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    // Check if user is purchaser
+    if (!session.user.isPurchaser) {
+      return { success: false, message: "Only purchasers can acknowledge edit completion" }
+    }
+
+    const request = await prisma.materialRequest.findUnique({
+      where: { id: requestId }
+    })
+
+    if (!request) {
+      return { success: false, message: "Request not found" }
+    }
+
+    if (!request.isMarkedForEdit) {
+      return { success: false, message: "Request is not marked for edit" }
+    }
+
+    if (!request.editCompletedAt) {
+      return { success: false, message: "Edit has not been completed yet" }
+    }
+
+    // Acknowledge and clear the edit flag
+    await prisma.materialRequest.update({
+      where: { id: requestId },
+      data: {
+        editAcknowledgedAt: new Date(),
+        isMarkedForEdit: false,
+      }
+    })
+
+    revalidatePath("/")
+    return { success: true, message: "Edit completion acknowledged successfully" }
+  } catch (error) {
+    console.error("Error acknowledging edit completion:", error)
+    return { success: false, message: "Failed to acknowledge edit completion" }
+  }
+}
+
+// Get requests marked for edit for the current user
+export async function getMyRequestsMarkedForEdit() {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return []
+    }
+
+    const requests = await prisma.materialRequest.findMany({
+      where: {
+        requestedById: session.user.id,
+        isMarkedForEdit: true,
+        editCompletedAt: null,
+      },
+      include: {
+        businessUnit: true,
+        department: true,
+        items: true,
+      },
+      orderBy: {
+        markedForEditAt: 'desc'
+      }
+    })
+
+    return requests.map(request => ({
+      ...request,
+      freight: Number(request.freight),
+      discount: Number(request.discount),
+      total: Number(request.total),
+      items: request.items.map(item => ({
+        ...item,
+        quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
+        unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+        totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+      }))
+    }))
+  } catch (error) {
+    console.error("Error fetching requests marked for edit:", error)
+    return []
+  }
+}

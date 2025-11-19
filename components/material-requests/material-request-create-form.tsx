@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 
 import { useRouter, useParams } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
-import { CalendarIcon, Plus, Trash2, Send } from "lucide-react"
+import { CalendarIcon, Plus, Trash2, Send, Check, ChevronsUpDown } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { MultiSelectItemsDialog } from "./multi-select-items-dialog"
@@ -24,6 +24,15 @@ import { MRSRequestStatus } from "@prisma/client"
 import { createMaterialRequest, submitForApproval, getNextDocumentNumber } from "@/lib/actions/mrs-actions/material-request-actions"
 import { getBusinessUnits, getDepartments, getRecommendingApprovers, getFinalApprovers } from "@/lib/actions/mrs-actions/user-actions"
 import { REQUEST_STATUS_COLORS, REQUEST_STATUS_LABELS } from "@/types/material-request-types"
+
+interface BldgCodeItem {
+  itemId: string
+  itemCode: string
+  itemDesc: string
+  buyUnitMsr: string | null
+  purPackMsr: string | null
+  cost: number
+}
 
 interface MaterialRequestItem {
   itemCode?: string
@@ -47,6 +56,7 @@ interface MaterialRequestFormData {
   recApproverId?: string
   finalApproverId?: string
   chargeTo?: string
+  bldgCode?: string
   purpose?: string
   remarks?: string
   deliverTo?: string
@@ -68,6 +78,10 @@ export function MaterialRequestCreateForm() {
   const [isMultiSelectDialogOpen, setIsMultiSelectDialogOpen] = useState(false)
   const [, setNextDocNumber] = useState("")
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(true)
+  const [bldgCodeItems, setBldgCodeItems] = useState<BldgCodeItem[]>([])
+  const [isLoadingBldgCodes, setIsLoadingBldgCodes] = useState(false)
+  const [bldgCodeSearch, setBldgCodeSearch] = useState("")
+  const [bldgCodeOpen, setBldgCodeOpen] = useState(false)
 
   const form = useForm<MaterialRequestFormData>({
     defaultValues: {
@@ -82,6 +96,7 @@ export function MaterialRequestCreateForm() {
       recApproverId: "",
       finalApproverId: "",
       chargeTo: "",
+      bldgCode: "",
       purpose: "",
       remarks: "",
       deliverTo: "",
@@ -184,6 +199,30 @@ export function MaterialRequestCreateForm() {
     }
     loadApprovers()
   }, [watchedDepartmentId, form])
+
+  // Load bldg codes
+  useEffect(() => {
+    const loadBldgCodes = async () => {
+      setIsLoadingBldgCodes(true)
+      try {
+        const response = await fetch(`/api/bldg-code?search=${encodeURIComponent(bldgCodeSearch)}`)
+        const data = await response.json()
+        if (data.success) {
+          setBldgCodeItems(data.data)
+        }
+      } catch (error) {
+        console.error("Error loading bldg codes:", error)
+      } finally {
+        setIsLoadingBldgCodes(false)
+      }
+    }
+    
+    const debounceTimer = setTimeout(() => {
+      loadBldgCodes()
+    }, 300)
+    
+    return () => clearTimeout(debounceTimer)
+  }, [bldgCodeSearch])
 
   const onSubmit = async (data: MaterialRequestFormData) => {
 
@@ -416,7 +455,7 @@ export function MaterialRequestCreateForm() {
               <h3 className="text-base sm:text-lg font-semibold text-foreground">Basic Information</h3>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
 
 
                 <FormField
@@ -531,6 +570,47 @@ export function MaterialRequestCreateForm() {
                             onSelect={field.onChange}
                             disabled={(date) =>
                               date < new Date("1900-01-01")
+                            }
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dateRequired"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date Required <span className="text-red-500">*</span></FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date < new Date()
                             }
                           />
                         </PopoverContent>
@@ -662,47 +742,76 @@ export function MaterialRequestCreateForm() {
                 />
 
 
-
                 <FormField
                   control={form.control}
-                  name="dateRequired"
+                  name="bldgCode"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date Required <span className="text-red-500">*</span></FormLabel>
-                      <Popover>
+                      <FormLabel>Bldg Code (Optional)</FormLabel>
+                      <Popover open={bldgCodeOpen} onOpenChange={setBldgCodeOpen}>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant={"outline"}
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={bldgCodeOpen}
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
+                                "w-full justify-between",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              {field.value
+                                ? bldgCodeItems.find((item) => item.itemCode === field.value)?.itemCode || field.value
+                                : "Select bldg code"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date < new Date()
-                            }
-                          />
+                        <PopoverContent className="w-[400px] p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Search bldg code..." 
+                              value={bldgCodeSearch}
+                              onValueChange={setBldgCodeSearch}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {isLoadingBldgCodes ? "Loading..." : "No bldg code found."}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {bldgCodeItems.map((item) => (
+                                  <CommandItem
+                                    key={item.itemId}
+                                    value={item.itemCode}
+                                    onSelect={() => {
+                                      form.setValue("bldgCode", item.itemCode)
+                                      setBldgCodeOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === item.itemCode ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{item.itemCode}</span>
+                                      <span className="text-xs text-muted-foreground truncate">
+                                        {item.itemDesc}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
                         </PopoverContent>
                       </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

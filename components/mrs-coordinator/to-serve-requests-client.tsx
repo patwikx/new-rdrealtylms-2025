@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Search, Package, Eye, CheckCircle, MoreVertical, Printer } from "lucide-react"
+import { Search, Package, Eye, CheckCircle, MoreVertical, Printer, AlertCircle } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import { format } from "date-fns"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { MarkAsServedDialog } from "./mark-as-served-dialog"
+import { MarkForEditDialog } from "./mark-for-edit-dialog"
 import { MaterialRequest } from "@/types/material-request-types"
 
 interface ToServeRequestsClientProps {
@@ -42,6 +43,7 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null)
   const [isMarkAsServedDialogOpen, setIsMarkAsServedDialogOpen] = useState(false)
+  const [isMarkForEditDialogOpen, setIsMarkForEditDialogOpen] = useState(false)
   const router = useRouter()
 
   const filteredRequests = useMemo(() => {
@@ -66,6 +68,16 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
       setRequests(prev => prev.filter(req => req.id !== selectedRequest.id))
       router.refresh()
     }
+    setSelectedRequest(null)
+  }
+
+  const handleMarkForEdit = (request: MaterialRequest) => {
+    setSelectedRequest(request)
+    setIsMarkForEditDialogOpen(true)
+  }
+
+  const handleMarkForEditSuccess = () => {
+    router.refresh()
     setSelectedRequest(null)
   }
 
@@ -382,13 +394,27 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredRequests.length} of {requests.length} requests to serve
+      {/* Results count and Legend */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredRequests.length} of {requests.length} requests to serve
+        </div>
+        
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"></div>
+            <span className="text-muted-foreground">Waiting for Edit</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20"></div>
+            <span className="text-muted-foreground">Edit Completed</span>
+          </div>
+        </div>
       </div>
 
       {/* Desktop Table */}
-      <div className="rounded-md border hidden sm:block">
+      <div className="rounded-md border hidden sm:block overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -415,14 +441,30 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRequests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-mono font-medium">{request.docNo}</span>
-                    </div>
-                  </TableCell>
+              filteredRequests.map((request) => {
+                // Determine row styling based on edit status
+                const isMarkedForEdit = request.isMarkedForEdit && !request.editCompletedAt
+                const isEditCompleted = request.isMarkedForEdit && request.editCompletedAt
+                const rowClassName = isMarkedForEdit 
+                  ? "bg-yellow-50 dark:bg-yellow-950/20 hover:bg-yellow-100 dark:hover:bg-yellow-950/30"
+                  : isEditCompleted
+                  ? "bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/30"
+                  : ""
+                
+                const borderClassName = isMarkedForEdit
+                  ? "border-l-4 border-yellow-500"
+                  : isEditCompleted
+                  ? "border-l-4 border-green-500"
+                  : ""
+                
+                return (
+                  <TableRow key={request.id} className={rowClassName}>
+                    <TableCell className={borderClassName}>
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-mono font-medium">{request.docNo}</span>
+                      </div>
+                    </TableCell>
                   <TableCell>{getRequestTypeBadge(request.type)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -472,23 +514,29 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Mark as Served
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleMarkForEdit(request)}>
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Return for Edit
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
                           )}
-                          <DropdownMenuItem onClick={() => handlePrint(request)}>
-                            <Printer className="h-4 w-4 mr-2" />
-                            Print
-                          </DropdownMenuItem>
+
                           <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
+                          </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handlePrint(request)}>
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                )
+              })
             )}
           </TableBody>
         </Table>
@@ -506,9 +554,19 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
             </CardContent>
           </Card>
         ) : (
-          filteredRequests.map((request) => (
-            <Card key={request.id}>
-              <CardHeader className="pb-3">
+          filteredRequests.map((request) => {
+            // Determine card styling based on edit status
+            const isMarkedForEdit = request.isMarkedForEdit && !request.editCompletedAt
+            const isEditCompleted = request.isMarkedForEdit && request.editCompletedAt
+            const cardClassName = isMarkedForEdit 
+              ? "border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20"
+              : isEditCompleted
+              ? "border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20"
+              : ""
+            
+            return (
+              <Card key={request.id} className={cardClassName}>
+                <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-muted-foreground" />
@@ -577,6 +635,15 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {canMarkAsServed(userRole, isPurchaser) && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleMarkForEdit(request)}>
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            Return for Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
                       <DropdownMenuItem onClick={() => router.push(`/${businessUnitId}/material-requests/${request.id}`)}>
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
@@ -590,19 +657,28 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
                 </div>
               </CardContent>
             </Card>
-          ))
+            )
+          })
         )}
       </div>
 
       {/* Mark as Served Dialog */}
       {selectedRequest && (
-        <MarkAsServedDialog
-          request={selectedRequest}
-          open={isMarkAsServedDialogOpen}
-          onOpenChange={setIsMarkAsServedDialogOpen}
-          onSuccess={handleMarkAsServedSuccess}
-          businessUnitId={businessUnitId}
-        />
+        <>
+          <MarkAsServedDialog
+            request={selectedRequest}
+            open={isMarkAsServedDialogOpen}
+            onOpenChange={setIsMarkAsServedDialogOpen}
+            onSuccess={handleMarkAsServedSuccess}
+            businessUnitId={businessUnitId}
+          />
+          <MarkForEditDialog
+            request={selectedRequest}
+            open={isMarkForEditDialogOpen}
+            onOpenChange={setIsMarkForEditDialogOpen}
+            onSuccess={handleMarkForEditSuccess}
+          />
+        </>
       )}
     </div>
   )

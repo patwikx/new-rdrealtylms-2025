@@ -3,30 +3,61 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Edit, X } from "lucide-react"
+import { Edit, X, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MaterialRequest } from "@/types/material-request-types"
 import { REQUEST_STATUS_COLORS, REQUEST_STATUS_LABELS } from "@/types/material-request-types"
-import { MRSRequestStatus } from "@prisma/client"
+import { MRSRequestStatus, ApprovalStatus } from "@prisma/client"
 import { MaterialRequestEditForm } from "./material-request-edit-form"
 import { MaterialRequestViewContent } from "./material-request-view-content"
+import { MaterialRequestEditDescriptions } from "./material-request-edit-descriptions"
 
 interface MaterialRequestDetailPageProps {
   materialRequest: MaterialRequest
   businessUnitId: string
+  currentUserId: string
+  isPurchaser: boolean
 }
 
 export function MaterialRequestDetailPage({
   materialRequest,
+  currentUserId,
+  isPurchaser,
 }: MaterialRequestDetailPageProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
+  const [isEditingDescriptions, setIsEditingDescriptions] = useState(false)
 
-  const canEdit = materialRequest.status === MRSRequestStatus.DRAFT || materialRequest.status === MRSRequestStatus.FOR_EDIT
+  // Check if any approval has been made
+  const hasAnyApproval = 
+    materialRequest.recApprovalStatus === ApprovalStatus.APPROVED || 
+    materialRequest.finalApprovalStatus === ApprovalStatus.APPROVED
+
+  // Requestor can edit if:
+  // 1. Status is DRAFT or FOR_EDIT
+  // 2. AND no approvals have been made yet
+  // 3. AND they are the original requestor
+  const isRequestor = materialRequest.requestedById === currentUserId
+  const canEditAsRequestor = isRequestor && !hasAnyApproval && 
+    (materialRequest.status === MRSRequestStatus.DRAFT || 
+     materialRequest.status === MRSRequestStatus.FOR_EDIT)
+
+  // Purchaser can always prompt for edit (via mark for edit feature)
+  // But for full edit, only if marked for edit by themselves
+  const canEdit = canEditAsRequestor
+
+  // Can edit descriptions if marked for edit by purchaser
+  const canEditDescriptions = materialRequest.isMarkedForEdit && !materialRequest.editCompletedAt && isRequestor
 
   const handleEditSuccess = () => {
     setIsEditing(false)
+    router.refresh()
+  }
+
+  const handleDescriptionEditSuccess = () => {
+    setIsEditingDescriptions(false)
     router.refresh()
   }
 
@@ -48,6 +79,12 @@ export function MaterialRequestDetailPage({
           >
             {REQUEST_STATUS_LABELS[materialRequest.status]}
           </Badge>
+          {materialRequest.isMarkedForEdit && !materialRequest.editCompletedAt && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Needs Edit
+            </Badge>
+          )}
         </div>
         
         <div className="flex gap-2">
@@ -60,19 +97,68 @@ export function MaterialRequestDetailPage({
               <X className="h-4 w-4" />
               Cancel Edit
             </Button>
+          ) : isEditingDescriptions ? (
+            <Button
+              variant="outline"
+              onClick={() => setIsEditingDescriptions(false)}
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
           ) : (
-            canEdit && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Edit Request
-              </Button>
-            )
+            <>
+              {canEditDescriptions && (
+                <Button
+                  onClick={() => setIsEditingDescriptions(true)}
+                  variant="destructive"
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Descriptions
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Request
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {/* Alert for marked for edit */}
+      {materialRequest.isMarkedForEdit && !materialRequest.editCompletedAt && !isEditingDescriptions && (
+        <div className="mb-6 p-4 border-l-4 border-destructive bg-destructive/10 rounded">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div className="flex-1 space-y-1">
+              <p className="font-semibold text-destructive">This request has been marked for edit by the purchaser</p>
+              {materialRequest.markedForEditReason && (() => {
+                const parts = materialRequest.markedForEditReason.split('\n\nItems to edit:\n')
+                const reason = parts[0]
+                const items = parts[1]
+                
+                return (
+                  <div className="text-sm space-y-1">
+                    {reason && reason !== 'Items to edit:' && (
+                      <p><span className="font-medium">Reason:</span> {reason}</p>
+                    )}
+                    {items && (
+                      <p><span className="font-medium">Items to edit:</span> {items}</p>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       {isEditing ? (
@@ -80,6 +166,12 @@ export function MaterialRequestDetailPage({
           materialRequest={materialRequest}
           onSuccess={handleEditSuccess}
           onCancel={() => setIsEditing(false)}
+        />
+      ) : isEditingDescriptions ? (
+        <MaterialRequestEditDescriptions
+          materialRequest={materialRequest}
+          onSuccess={handleDescriptionEditSuccess}
+          onCancel={() => setIsEditingDescriptions(false)}
         />
       ) : (
         <MaterialRequestViewContent materialRequest={materialRequest} />

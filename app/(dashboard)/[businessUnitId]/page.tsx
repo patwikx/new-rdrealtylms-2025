@@ -15,6 +15,7 @@ import { LeaveBalanceCard } from "@/components/dashboard/leave-balance";
 import { PendingForApproval } from "@/components/dashboard/pending-for-approval";
 import { DepreciationNotificationDialog } from "@/components/dashboard/depreciation-notification-dialog";
 import { MRSNotificationDialog } from "@/components/dashboard/mrs-notification-dialog";
+import { MRSEditNotificationDialog } from "@/components/dashboard/mrs-edit-notification-dialog";
 
 interface DashboardPageProps {
   params: Promise<{
@@ -131,6 +132,9 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
           userRole={session.user.role}
         />
       )}
+
+      {/* MRS Edit Notification Dialog */}
+      <MRSEditNotificationDialog businessUnitId={businessUnitId} />
     </div>
   );
 }

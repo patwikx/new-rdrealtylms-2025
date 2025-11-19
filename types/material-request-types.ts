@@ -30,6 +30,7 @@ export interface MaterialRequest {
   businessUnitId: string
   departmentId: string | null
   chargeTo: string | null
+  bldgCode: string | null
   purpose: string | null
   remarks: string | null
   deliverTo: string | null
@@ -52,6 +53,12 @@ export interface MaterialRequest {
   acknowledgedAt: Date | null
   acknowledgedById: string | null
   signatureData: string | null
+  isMarkedForEdit: boolean
+  markedForEditAt: Date | null
+  markedForEditBy: string | null
+  markedForEditReason: string | null
+  editCompletedAt: Date | null
+  editAcknowledgedAt: Date | null
   createdAt: Date
   updatedAt: Date
   

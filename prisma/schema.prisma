@@ -107,6 +107,7 @@ model User {
   receivedAcknowledgments MRSAcknowledgment[]     @relation("MRSReceiver")
   createdSchedules        DepreciationSchedule[]  @relation("ScheduleCreator")
   executedDepreciations   DepreciationExecution[] @relation("ExecutionExecutor")
+  markedForEditRequests   MaterialRequest[]       @relation("MRSMarkedForEditBy")
 }
 
 model Department {
@@ -925,6 +926,7 @@ model MaterialRequest {
   department     Department?  @relation(fields: [departmentId], references: [id])
 
   chargeTo String?
+  bldgCode String?
 
   purpose   String?
   remarks   String?
@@ -964,6 +966,15 @@ model MaterialRequest {
   servedAt    DateTime?
   servedBy    String?
   servedNotes String?   @db.Text
+
+  // For Return/Edit tracking
+  isMarkedForEdit     Boolean   @default(false)
+  markedForEditAt     DateTime?
+  markedForEditBy     String?
+  markedForEditByUser User?     @relation("MRSMarkedForEditBy", fields: [markedForEditBy], references: [id])
+  markedForEditReason String?   @db.Text
+  editCompletedAt     DateTime?
+  editAcknowledgedAt  DateTime?
 
   items              MaterialRequestItem[]
   createdAssets      Asset[]               @relation("CreatedFromMRS")

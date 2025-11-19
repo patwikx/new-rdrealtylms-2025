@@ -22,134 +22,89 @@ interface MaterialRequestViewContentProps {
 
 export function MaterialRequestViewContent({ materialRequest }: MaterialRequestViewContentProps) {
   return (
-    <div className="space-y-8 px-2 sm:px-0">
-      {/* Header Section with Key Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Document Info */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-            <FileText className="h-5 w-5 text-blue-500" />
-            Document Details
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Document No.</label>
-              <p className="mt-1 text-lg font-bold text-foreground">{materialRequest.docNo}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Series</label>
-                <p className="mt-1 font-semibold">{materialRequest.series}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Type</label>
-                <Badge variant="outline" className="mt-1">
-                  {materialRequest.type === "ITEM" ? "Item" : "Service"}
-                </Badge>
-              </div>
-            </div>
+    <div className="space-y-6 px-2 sm:px-0">
+      {/* Compact Header - All in one row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg border">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-1">
+            <FileText className="h-3 w-3" />
+            Document No.
+          </label>
+          <p className="mt-1 text-lg font-bold">{materialRequest.docNo}</p>
+          <div className="flex gap-2 mt-1">
+            <Badge variant="outline" className="text-xs">{materialRequest.series}</Badge>
+            <Badge variant="outline" className="text-xs">{materialRequest.type}</Badge>
           </div>
         </div>
-
-        {/* Organization Info */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-            <Building2 className="h-5 w-5 text-green-500" />
+        
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-1">
+            <Building2 className="h-3 w-3" />
             Organization
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Business Unit</label>
-              <p className="mt-1 font-semibold">{materialRequest.businessUnit.name}</p>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Department</label>
-              <p className="mt-1 font-semibold">
-                {materialRequest.department?.name || (
-                  <span className="text-muted-foreground italic">No Department</span>
-                )}
-              </p>
-            </div>
-            {materialRequest.chargeTo && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Charge To</label>
-                <p className="mt-1 font-semibold">{materialRequest.chargeTo}</p>
-              </div>
-            )}
-          </div>
+          </label>
+          <p className="mt-1 font-semibold">{materialRequest.businessUnit.name}</p>
+          <p className="text-sm text-muted-foreground">{materialRequest.department?.name || "No Department"}</p>
         </div>
-
-        {/* Request Info */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-            <User className="h-5 w-5 text-purple-500" />
-            Request Details
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Requested By</label>
-              <p className="mt-1 font-semibold">{materialRequest.requestedBy.name}</p>
-              <p className="text-sm text-muted-foreground">{materialRequest.requestedBy.employeeId}</p>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date Prepared</label>
-                <p className="mt-1 font-semibold flex items-center gap-1">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  {format(new Date(materialRequest.datePrepared), "MMM dd, yyyy")}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date Required</label>
-                <p className="mt-1 font-semibold flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  {format(new Date(materialRequest.dateRequired), "MMM dd, yyyy")}
-                </p>
-              </div>
-            </div>
-          </div>
+        
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-1">
+            <User className="h-3 w-3" />
+            Requested By
+          </label>
+          <p className="mt-1 font-semibold">{materialRequest.requestedBy.name}</p>
+          <p className="text-sm text-muted-foreground">{materialRequest.requestedBy.employeeId}</p>
+        </div>
+        
+        <div>
+          <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Dates
+          </label>
+          <p className="mt-1 text-sm"><span className="font-medium">Prepared:</span> {format(new Date(materialRequest.datePrepared), "MMM dd, yyyy")}</p>
+          <p className="text-sm"><span className="font-medium">Required:</span> {format(new Date(materialRequest.dateRequired), "MMM dd, yyyy")}</p>
         </div>
       </div>
 
-      {/* Additional Information */}
-      {(materialRequest.purpose || materialRequest.deliverTo || materialRequest.remarks) && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold border-b pb-2">Additional Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {materialRequest.purpose && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Purpose</label>
-                <div className="p-3 bg-muted/30 rounded-md border">
-                  <p className="text-sm">{materialRequest.purpose}</p>
-                </div>
-              </div>
-            )}
-            {materialRequest.deliverTo && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Deliver To</label>
-                <div className="p-3 bg-muted/30 rounded-md border">
-                  <p className="text-sm">{materialRequest.deliverTo}</p>
-                </div>
-              </div>
-            )}
-            {materialRequest.remarks && (
-              <div className="sm:col-span-2 space-y-2">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Remarks</label>
-                <div className="p-3 bg-muted/30 rounded-md border">
-                  <p className="text-sm">{materialRequest.remarks}</p>
-                </div>
-              </div>
-            )}
+      {/* Secondary Info Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {materialRequest.chargeTo && (
+          <div className="p-3 bg-muted/20 rounded border">
+            <label className="text-xs font-medium text-muted-foreground uppercase">Charge To</label>
+            <p className="mt-1 font-semibold">{materialRequest.chargeTo}</p>
           </div>
-        </div>
-      )}
+        )}
+        {materialRequest.bldgCode && (
+          <div className="p-3 bg-muted/20 rounded border">
+            <label className="text-xs font-medium text-muted-foreground uppercase">Bldg Code</label>
+            <p className="mt-1 font-semibold">{materialRequest.bldgCode}</p>
+          </div>
+        )}
+        {materialRequest.purpose && (
+          <div className="p-3 bg-muted/20 rounded border md:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase">Purpose</label>
+            <p className="mt-1 text-sm">{materialRequest.purpose}</p>
+          </div>
+        )}
+        {materialRequest.deliverTo && (
+          <div className="p-3 bg-muted/20 rounded border">
+            <label className="text-xs font-medium text-muted-foreground uppercase">Deliver To</label>
+            <p className="mt-1 text-sm">{materialRequest.deliverTo}</p>
+          </div>
+        )}
+        {materialRequest.remarks && (
+          <div className="p-3 bg-muted/20 rounded border">
+            <label className="text-xs font-medium text-muted-foreground uppercase">Remarks</label>
+            <p className="mt-1 text-sm">{materialRequest.remarks}</p>
+          </div>
+        )}
+      </div>
 
       {/* Items Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-          <Package className="h-5 w-5 text-orange-500" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm font-semibold border-b pb-1">
+          <Package className="h-4 w-4 text-orange-500" />
           Items
-          <Badge variant="secondary" className="ml-2">
+          <Badge variant="secondary" className="ml-2 text-xs">
             {materialRequest.items.length} {materialRequest.items.length === 1 ? 'item' : 'items'}
           </Badge>
         </div>
@@ -314,73 +269,68 @@ export function MaterialRequestViewContent({ materialRequest }: MaterialRequestV
         </div>
       </div>
 
-      {/* Financial Summary */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-          <DollarSign className="h-5 w-5 text-emerald-500" />
-          Financial Summary
+      {/* Financial Summary & Approvals in one row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Financial Summary */}
+        <div className="p-4 bg-muted/30 rounded-lg border">
+          <div className="flex items-center gap-2 font-semibold mb-3">
+            <DollarSign className="h-4 w-4 text-emerald-500" />
+            Financial Summary
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Freight</label>
+              <p className="mt-1 text-lg font-bold text-blue-700 dark:text-blue-300">₱{materialRequest.freight.toLocaleString()}</p>
+            </div>
+            <div className="text-center p-3 bg-red-50 dark:bg-red-950/30 rounded">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Discount</label>
+              <p className="mt-1 text-lg font-bold text-red-700 dark:text-red-300">₱{materialRequest.discount.toLocaleString()}</p>
+            </div>
+            <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded border-2 border-emerald-200 dark:border-emerald-800">
+              <label className="text-xs font-medium text-muted-foreground uppercase">Total</label>
+              <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">₱{materialRequest.total.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Freight</label>
-            <p className="mt-2 text-xl font-bold text-blue-700 dark:text-blue-300">₱{materialRequest.freight.toLocaleString()}</p>
-          </div>
-          <div className="text-center p-4 bg-red-50 dark:bg-red-950/30 rounded-lg">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Discount</label>
-            <p className="mt-2 text-xl font-bold text-red-700 dark:text-red-300">₱{materialRequest.discount.toLocaleString()}</p>
-          </div>
-          <div className="text-center p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border-2 border-emerald-200 dark:border-emerald-800">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Amount</label>
-            <p className="mt-2 text-2xl font-bold text-emerald-700 dark:text-emerald-300">₱{materialRequest.total.toLocaleString()}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Approval Information */}
-      {(materialRequest.recApprover || materialRequest.finalApprover) && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-lg font-semibold border-b pb-2">
-            <CheckCircle2 className="h-5 w-5 text-indigo-500" />
-            Approval Information
+        {/* Approval Information */}
+        {(materialRequest.recApprover || materialRequest.finalApprover) && (
+          <div className="p-4 bg-muted/30 rounded-lg border">
+            <div className="flex items-center gap-2 font-semibold mb-3">
+              <CheckCircle2 className="h-4 w-4 text-indigo-500" />
+              Approval Information
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {materialRequest.recApprover && (
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded border">
+                  <label className="text-xs font-medium text-muted-foreground uppercase">Recommending</label>
+                  <p className="mt-1 font-bold text-indigo-700 dark:text-indigo-300">{materialRequest.recApprover.name}</p>
+                  <p className="text-xs text-muted-foreground">{materialRequest.recApprover.employeeId}</p>
+                  {materialRequest.recApprovalDate && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(materialRequest.recApprovalDate), "MMM dd, yyyy")}
+                    </p>
+                  )}
+                </div>
+              )}
+              {materialRequest.finalApprover && (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded border">
+                  <label className="text-xs font-medium text-muted-foreground uppercase">Final</label>
+                  <p className="mt-1 font-bold text-emerald-700 dark:text-emerald-300">{materialRequest.finalApprover.name}</p>
+                  <p className="text-xs text-muted-foreground">{materialRequest.finalApprover.employeeId}</p>
+                  {materialRequest.finalApprovalDate && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(materialRequest.finalApprovalDate), "MMM dd, yyyy")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {materialRequest.recApprover && (
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recommending Approver</label>
-                <p className="mt-2 font-bold text-indigo-700 dark:text-indigo-300">
-                  {materialRequest.recApprover.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {materialRequest.recApprover.employeeId}
-                </p>
-                {materialRequest.recApprovalDate && (
-                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(materialRequest.recApprovalDate), "MMM dd, yyyy")}
-                  </p>
-                )}
-              </div>
-            )}
-            {materialRequest.finalApprover && (
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Final Approver</label>
-                <p className="mt-2 font-bold text-emerald-700 dark:text-emerald-300">
-                  {materialRequest.finalApprover.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {materialRequest.finalApprover.employeeId}
-                </p>
-                {materialRequest.finalApprovalDate && (
-                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {format(new Date(materialRequest.finalApprovalDate), "MMM dd, yyyy")}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

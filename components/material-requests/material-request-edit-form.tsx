@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useForm, useFieldArray } from "react-hook-form"
-import { CalendarIcon, Plus, Trash2, Save, X, Send } from "lucide-react"
+import { CalendarIcon, Plus, Trash2, Save, X, Send, Check, ChevronsUpDown } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
@@ -21,6 +22,15 @@ import { toast } from "sonner"
 import { updateMaterialRequest, submitForApproval } from "@/lib/actions/mrs-actions/material-request-actions"
 import { getBusinessUnits, getDepartments } from "@/lib/actions/mrs-actions/user-actions"
 import { MaterialRequest } from "@/types/material-request-types"
+
+interface BldgCodeItem {
+  itemId: string
+  itemCode: string
+  itemDesc: string
+  buyUnitMsr: string | null
+  purPackMsr: string | null
+  cost: number
+}
 
 interface MaterialRequestItem {
   itemCode?: string
@@ -39,6 +49,7 @@ interface MaterialRequestFormData {
   businessUnitId: string
   departmentId?: string
   chargeTo?: string
+  bldgCode?: string
   purpose?: string
   remarks?: string
   deliverTo?: string
@@ -63,6 +74,10 @@ export function MaterialRequestEditForm({
   const [businessUnits, setBusinessUnits] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [departments, setDepartments] = useState<Array<{ id: string; name: string; code: string | null; businessUnitId: string | null }>>([])
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false)
+  const [bldgCodeItems, setBldgCodeItems] = useState<BldgCodeItem[]>([])
+  const [isLoadingBldgCodes, setIsLoadingBldgCodes] = useState(false)
+  const [bldgCodeSearch, setBldgCodeSearch] = useState("")
+  const [bldgCodeOpen, setBldgCodeOpen] = useState(false)
 
   const form = useForm<MaterialRequestFormData>({
     defaultValues: {
@@ -72,6 +87,7 @@ export function MaterialRequestEditForm({
       businessUnitId: materialRequest.businessUnitId,
       departmentId: materialRequest.departmentId || "",
       chargeTo: materialRequest.chargeTo || "",
+      bldgCode: materialRequest.bldgCode || "",
       purpose: materialRequest.purpose || "",
       remarks: materialRequest.remarks || "",
       deliverTo: materialRequest.deliverTo || "",
@@ -116,6 +132,30 @@ export function MaterialRequestEditForm({
     }
     loadData()
   }, [])
+
+  // Load bldg codes
+  useEffect(() => {
+    const loadBldgCodes = async () => {
+      setIsLoadingBldgCodes(true)
+      try {
+        const response = await fetch(`/api/bldg-code?search=${encodeURIComponent(bldgCodeSearch)}`)
+        const data = await response.json()
+        if (data.success) {
+          setBldgCodeItems(data.data)
+        }
+      } catch (error) {
+        console.error("Error loading bldg codes:", error)
+      } finally {
+        setIsLoadingBldgCodes(false)
+      }
+    }
+    
+    const debounceTimer = setTimeout(() => {
+      loadBldgCodes()
+    }, 300)
+    
+    return () => clearTimeout(debounceTimer)
+  }, [bldgCodeSearch])
 
   const filteredDepartments = departments.filter(
     dept => dept.businessUnitId === watchedBusinessUnitId
@@ -269,21 +309,21 @@ export function MaterialRequestEditForm({
 
           {/* Basic Information */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Basic Information</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-semibold">Basic Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CardContent className="space-y-3 pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <FormField
                   control={form.control}
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Request Type</FormLabel>
+                      <FormLabel className="text-xs">Type</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select request type" />
+                          <SelectTrigger className="w-full h-9 text-sm">
+                            <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -301,11 +341,11 @@ export function MaterialRequestEditForm({
                   name="businessUnitId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Business Unit</FormLabel>
+                      <FormLabel className="text-xs">Business Unit</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select business unit" />
+                          <SelectTrigger className="w-full h-9 text-sm">
+                            <SelectValue placeholder="Select BU" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -326,11 +366,11 @@ export function MaterialRequestEditForm({
                   name="departmentId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Department (Optional)</FormLabel>
+                      <FormLabel className="text-xs">Department</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select department" />
+                          <SelectTrigger className="w-full h-9 text-sm">
+                            <SelectValue placeholder="Select dept" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -348,16 +388,86 @@ export function MaterialRequestEditForm({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <FormField
                   control={form.control}
                   name="chargeTo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Charge To (Optional)</FormLabel>
+                      <FormLabel className="text-xs">Charge To</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter charge to" {...field} />
+                        <Input placeholder="Enter charge to" className="h-9 text-sm" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="bldgCode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="text-xs">Bldg Code</FormLabel>
+                      <Popover open={bldgCodeOpen} onOpenChange={setBldgCodeOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={bldgCodeOpen}
+                              className={cn(
+                                "w-full justify-between h-9 text-sm",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? bldgCodeItems.find((item) => item.itemCode === field.value)?.itemCode || field.value
+                                : "Select bldg code"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[400px] p-0" align="start">
+                          <Command>
+                            <CommandInput 
+                              placeholder="Search bldg code..." 
+                              value={bldgCodeSearch}
+                              onValueChange={setBldgCodeSearch}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {isLoadingBldgCodes ? "Loading..." : "No bldg code found."}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {bldgCodeItems.map((item) => (
+                                  <CommandItem
+                                    key={item.itemId}
+                                    value={item.itemCode}
+                                    onSelect={() => {
+                                      form.setValue("bldgCode", item.itemCode)
+                                      setBldgCodeOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === item.itemCode ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{item.itemCode}</span>
+                                      <span className="text-xs text-muted-foreground truncate">
+                                        {item.itemDesc}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -368,21 +478,21 @@ export function MaterialRequestEditForm({
                   name="datePrepared"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date Prepared</FormLabel>
+                      <FormLabel className="text-xs">Date Prepared</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
+                                "w-full pl-3 text-left font-normal h-9 text-sm",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP")
+                                format(field.value, "MMM dd, yyyy")
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Pick date</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -409,21 +519,21 @@ export function MaterialRequestEditForm({
                   name="dateRequired"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date Required</FormLabel>
+                      <FormLabel className="text-xs">Date Required</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
+                                "w-full pl-3 text-left font-normal h-9 text-sm",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP")
+                                format(field.value, "MMM dd, yyyy")
                               ) : (
-                                <span>Pick a date</span>
+                                <span>Pick date</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -446,17 +556,17 @@ export function MaterialRequestEditForm({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <FormField
                   control={form.control}
                   name="purpose"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Purpose (Optional)</FormLabel>
+                      <FormLabel className="text-xs">Purpose</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Enter purpose"
-                          className="resize-none"
+                          className="resize-none h-20 text-sm"
                           {...field}
                         />
                       </FormControl>
@@ -470,11 +580,29 @@ export function MaterialRequestEditForm({
                   name="deliverTo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Deliver To (Optional)</FormLabel>
+                      <FormLabel className="text-xs">Deliver To</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Enter delivery address"
-                          className="resize-none"
+                          className="resize-none h-20 text-sm"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="remarks"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Remarks</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Enter remarks"
+                          className="resize-none h-20 text-sm"
                           {...field}
                         />
                       </FormControl>
@@ -483,32 +611,14 @@ export function MaterialRequestEditForm({
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="remarks"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Remarks (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter remarks"
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 
           {/* Items */}
           <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <CardTitle className="text-base sm:text-lg">Items</CardTitle>
+            <CardHeader className="py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <CardTitle className="text-sm font-semibold">Items</CardTitle>
                 <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
                   <DialogTrigger asChild>
                     <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto">
@@ -903,11 +1013,11 @@ export function MaterialRequestEditForm({
 
           {/* Totals */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Totals</CardTitle>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-semibold">Totals</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <CardContent className="space-y-3 pt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <FormField
                   control={form.control}
                   name="freight"
