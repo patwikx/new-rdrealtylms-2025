@@ -409,65 +409,71 @@ export function MaterialRequestEditForm({
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel className="text-xs">Bldg Code</FormLabel>
-                      <Popover open={bldgCodeOpen} onOpenChange={setBldgCodeOpen}>
-                        <PopoverTrigger asChild>
-                          <FormControl>
+                      <div className="flex gap-2">
+                        <Popover open={bldgCodeOpen} onOpenChange={setBldgCodeOpen}>
+                          <PopoverTrigger asChild>
                             <Button
                               variant="outline"
                               role="combobox"
                               aria-expanded={bldgCodeOpen}
+                              type="button"
                               className={cn(
-                                "w-full justify-between h-9 text-sm",
+                                "w-[140px] justify-between h-9 text-sm",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
-                              {field.value
-                                ? bldgCodeItems.find((item) => item.itemCode === field.value)?.itemCode || field.value
-                                : "Select bldg code"}
+                              Select
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0" align="start">
-                          <Command>
-                            <CommandInput 
-                              placeholder="Search bldg code..." 
-                              value={bldgCodeSearch}
-                              onValueChange={setBldgCodeSearch}
-                            />
-                            <CommandList>
-                              <CommandEmpty>
-                                {isLoadingBldgCodes ? "Loading..." : "No bldg code found."}
-                              </CommandEmpty>
-                              <CommandGroup>
-                                {bldgCodeItems.map((item) => (
-                                  <CommandItem
-                                    key={item.itemId}
-                                    value={item.itemCode}
-                                    onSelect={() => {
-                                      form.setValue("bldgCode", item.itemCode)
-                                      setBldgCodeOpen(false)
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        field.value === item.itemCode ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{item.itemCode}</span>
-                                      <span className="text-xs text-muted-foreground truncate">
-                                        {item.itemDesc}
-                                      </span>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0" align="start">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Search bldg code..." 
+                                value={bldgCodeSearch}
+                                onValueChange={setBldgCodeSearch}
+                              />
+                              <CommandList>
+                                <CommandEmpty>
+                                  {isLoadingBldgCodes ? "Loading..." : "No bldg code found."}
+                                </CommandEmpty>
+                                <CommandGroup>
+                                  {bldgCodeItems.map((item) => (
+                                    <CommandItem
+                                      key={item.itemId}
+                                      value={item.itemCode}
+                                      onSelect={() => {
+                                        form.setValue("bldgCode", item.itemCode)
+                                        setBldgCodeOpen(false)
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          field.value === item.itemCode ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{item.itemCode}</span>
+                                        <span className="text-xs text-muted-foreground truncate">
+                                          {item.itemDesc}
+                                        </span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormControl>
+                          <Input
+                            placeholder="Or enter manually"
+                            className="h-9 text-sm flex-1"
+                            {...field}
+                          />
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
