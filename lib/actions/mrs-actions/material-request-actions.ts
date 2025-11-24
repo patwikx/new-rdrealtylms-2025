@@ -1390,20 +1390,32 @@ export async function acknowledgeEditCompletion(requestId: string): Promise<Acti
   }
 }
 
-// Get requests marked for edit for the current user
-export async function getMyRequestsMarkedForEdit() {
+// Get requests marked for edit for the current user in a specific business unit
+export async function getMyRequestsMarkedForEdit(businessUnitId?: string) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return []
     }
 
+    const whereClause: {
+      requestedById: string
+      isMarkedForEdit: boolean
+      editCompletedAt: null
+      businessUnitId?: string
+    } = {
+      requestedById: session.user.id,
+      isMarkedForEdit: true,
+      editCompletedAt: null,
+    }
+
+    // Filter by business unit if provided
+    if (businessUnitId) {
+      whereClause.businessUnitId = businessUnitId
+    }
+
     const requests = await prisma.materialRequest.findMany({
-      where: {
-        requestedById: session.user.id,
-        isMarkedForEdit: true,
-        editCompletedAt: null,
-      },
+      where: whereClause,
       include: {
         businessUnit: true,
         department: true,

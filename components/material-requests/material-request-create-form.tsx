@@ -473,6 +473,7 @@ export function MaterialRequestCreateForm() {
                         <SelectContent>
                           <SelectItem value="PO">PO</SelectItem>
                           <SelectItem value="JO">JO</SelectItem>
+                            <SelectItem value="Others">Others</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

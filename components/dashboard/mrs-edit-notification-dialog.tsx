@@ -25,8 +25,8 @@ export function MRSEditNotificationDialog({
   const loadMRSRequests = async () => {
     setIsLoading(true)
     try {
-      const mrsData = await getMyRequestsMarkedForEdit()
-      console.log("MRS Edit Notification - Loaded requests:", mrsData.length)
+      const mrsData = await getMyRequestsMarkedForEdit(businessUnitId)
+      console.log("MRS Edit Notification - Loaded requests for BU:", businessUnitId, "Count:", mrsData.length)
       setMrsRequests(mrsData)
       
       if (mrsData.length > 0) {
