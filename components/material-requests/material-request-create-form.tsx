@@ -165,9 +165,10 @@ export function MaterialRequestCreateForm() {
     loadData()
   }, [form])
 
-  // Show all departments since businessUnitId is null in the data
-  // TODO: Fix department data to have proper businessUnitId associations
-  const filteredDepartments = departments
+  // Filter departments to show only those belonging to current business unit or with no business unit
+  const filteredDepartments = departments.filter(dept => 
+    dept.businessUnitId === businessUnitId || dept.businessUnitId === null
+  )
 
   // Auto-populate charge to when department changes
   useEffect(() => {

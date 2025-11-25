@@ -106,23 +106,28 @@ export async function getDepartmentById(departmentId: string) {
 // Create a new department
 export async function createDepartment(data: {
   name: string;
+  businessUnitId: string;
 }): Promise<{ success?: string; error?: string }> {
   try {
     await checkDepartmentManagementPermissions();
     
-    // Check if department with same name already exists
+    // Check if department with same name already exists in this business unit
     const existingDepartment = await prisma.department.findFirst({
-      where: { name: data.name },
+      where: { 
+        name: data.name,
+        businessUnitId: data.businessUnitId,
+      },
     });
     
     if (existingDepartment) {
-      return { error: "Department name already exists" };
+      return { error: "Department name already exists in this business unit" };
     }
     
     // Create the department
     await prisma.department.create({
       data: {
         name: data.name,
+        businessUnitId: data.businessUnitId,
       },
     });
     

@@ -17,7 +17,11 @@ import { toast } from "sonner";
 import { createDepartment } from "@/lib/actions/department-actions";
 import { useRouter } from "next/navigation";
 
-export function CreateDepartmentDialog() {
+interface CreateDepartmentDialogProps {
+  businessUnitId: string;
+}
+
+export function CreateDepartmentDialog({ businessUnitId }: CreateDepartmentDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -38,6 +42,7 @@ export function CreateDepartmentDialog() {
     try {
       const result = await createDepartment({
         name: formData.name.trim(),
+        businessUnitId,
       });
 
       if (result.error) {

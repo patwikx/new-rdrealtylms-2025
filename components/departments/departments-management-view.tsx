@@ -95,7 +95,7 @@ export function DepartmentsManagementView({
             Manage departments and assign managers
           </p>
         </div>
-        <CreateDepartmentDialog />
+        <CreateDepartmentDialog businessUnitId={businessUnitId} />
       </div>
 
       {/* Results count */}
@@ -116,7 +116,7 @@ export function DepartmentsManagementView({
                 <p className="text-muted-foreground mb-4">
                   Create your first department to start organizing employees.
                 </p>
-                <CreateDepartmentDialog />
+                <CreateDepartmentDialog businessUnitId={businessUnitId} />
               </div>
             </CardContent>
           </Card>
