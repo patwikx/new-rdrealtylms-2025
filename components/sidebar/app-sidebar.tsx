@@ -148,6 +148,11 @@ const getNavigationItems = (
           title: "Create Material Request",
           url: `/${businessUnitId}/material-requests/create`,
         },
+        // Add Approved Requests for RDH/MRS users, Managers, and Accounting users
+        ...(isRDHMRS || userRole === 'MANAGER' || isAcctg ? [{
+          title: "Approved Requests",
+          url: `/${businessUnitId}/material-requests/approved`,
+        }] : []),
       ],
     },
   ];

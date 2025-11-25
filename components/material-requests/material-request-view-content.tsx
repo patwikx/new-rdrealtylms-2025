@@ -269,6 +269,49 @@ export function MaterialRequestViewContent({ materialRequest }: MaterialRequestV
         </div>
       </div>
 
+      {/* Budget Approval Information - Only show if budget approval exists */}
+      {materialRequest.budgetApprover && (
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border-2 border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-2 font-semibold mb-3">
+            <DollarSign className="h-4 w-4 text-blue-500" />
+            Budget Approval
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase">Approved By</label>
+              <p className="mt-1 font-bold text-blue-700 dark:text-blue-300">{materialRequest.budgetApprover.name}</p>
+              <p className="text-xs text-muted-foreground">{materialRequest.budgetApprover.employeeId}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase">Budget Status</label>
+              <div className="mt-1">
+                <Badge 
+                  variant="outline" 
+                  className={materialRequest.isWithinBudget 
+                    ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300"
+                    : "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300"
+                  }
+                >
+                  {materialRequest.isWithinBudget ? "Within Budget" : "Not Within Budget"}
+                </Badge>
+              </div>
+              {materialRequest.budgetApprovalDate && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(materialRequest.budgetApprovalDate), "MMM dd, yyyy")}
+                </p>
+              )}
+            </div>
+            {materialRequest.budgetRemarks && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Remarks</label>
+                <p className="mt-1 text-sm">{materialRequest.budgetRemarks}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Financial Summary & Approvals in one row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Financial Summary */}

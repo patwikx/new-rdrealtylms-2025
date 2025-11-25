@@ -105,6 +105,7 @@ export function EditUserForm({
     terminateDate: user.terminateDate || null,
     isAcctg: user.isAcctg ?? false,
     isPurchaser: user.isPurchaser ?? false,
+    isRDHMRS: user.isRDHMRS ?? false,
   });
 
   // Load existing profile picture on mount
@@ -176,6 +177,7 @@ export function EditUserForm({
         terminateDate: formData.terminateDate,
         isAcctg: formData.isAcctg,
         isPurchaser: formData.isPurchaser,
+        isRDHMRS: formData.isRDHMRS,
       });
 
       if (result.error) {
@@ -254,7 +256,7 @@ export function EditUserForm({
   const handleInputChange = (field: string, value: string | boolean | Date | null) => {
     setFormData(prev => ({
       ...prev,
-      [field]: ["isActive", "isAcctg", "isPurchaser"].includes(field) 
+      [field]: ["isActive", "isAcctg", "isPurchaser", "isRDHMRS"].includes(field) 
         ? value === "true" || value === true 
         : value
     }));
@@ -448,7 +450,7 @@ export function EditUserForm({
               </div>
 
               {/* Special Permissions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="isAcctg" className="text-sm font-medium">Accounting Access</Label>
                   <div className="flex items-center space-x-2 h-9">
@@ -473,6 +475,19 @@ export function EditUserForm({
                     />
                     <span className="text-sm text-muted-foreground">
                       {formData.isPurchaser ? "Has Purchaser Access" : "No Purchaser Access"}
+                    </span>
+                  </div>
+                </div>
+                                <div className="space-y-2">
+                  <Label htmlFor="isRDHMRS" className="text-sm font-medium">RDH/MRS Access</Label>
+                  <div className="flex items-center space-x-2 h-9">
+                    <Switch
+                      id="isRDHMRS"
+                      checked={formData.isRDHMRS}
+                      onCheckedChange={(checked) => handleInputChange("isRDHMRS", checked)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {formData.isRDHMRS ? "Requires Budget Approval" : "No Budget Approval Required"}
                     </span>
                   </div>
                 </div>
@@ -630,6 +645,15 @@ export function EditUserForm({
                   user.isPurchaser ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
                 )}>
                   {user.isPurchaser ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">RDH/MRS Access:</span>
+                <span className={cn(
+                  "font-medium",
+                  user.isRDHMRS ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+                )}>
+                  {user.isRDHMRS ? "Yes" : "No"}
                 </span>
               </div>
             </div>

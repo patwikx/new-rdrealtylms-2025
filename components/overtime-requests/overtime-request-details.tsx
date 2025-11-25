@@ -7,6 +7,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -67,6 +77,7 @@ export function OvertimeRequestDetails({ requestId, open, onOpenChange }: Overti
   const [request, setRequest] = useState<OvertimeRequestWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (open && requestId) {
@@ -77,7 +88,13 @@ export function OvertimeRequestDetails({ requestId, open, onOpenChange }: Overti
   const loadRequestDetails = async () => {
     setLoading(true);
     try {
-      const data = await getOvertimeRequestById(requestId, ''); // userId will be handled server-side
+      // Get userId from session - for now we'll pass empty string and handle server-side
+      const data = await getOvertimeRequestById(requestId, requestId); // Pass requestId as fallback
+      if (!data) {
+        toast.error("Request not found");
+        onOpenChange(false);
+        return;
+      }
       setRequest(data);
     } catch (error) {
       console.error("Error loading request details:", error);
@@ -87,17 +104,24 @@ export function OvertimeRequestDetails({ requestId, open, onOpenChange }: Overti
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancelClick = () => {
     if (!request || !request.status.includes('PENDING')) return;
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!request) return;
 
     setIsCancelling(true);
+    setShowCancelDialog(false);
+    
     try {
-      const result = await cancelOvertimeRequest(request.id, '');
+      const result = await cancelOvertimeRequest(request.id, request.userId);
       
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(result.success);
+        toast.success(result.success || "Overtime request cancelled successfully");
         onOpenChange(false);
         router.refresh();
       }
@@ -142,7 +166,7 @@ export function OvertimeRequestDetails({ requestId, open, onOpenChange }: Overti
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleCancel}
+                  onClick={handleCancelClick}
                   disabled={isCancelling}
                 >
                   <X className="h-4 w-4 mr-2" />
@@ -240,6 +264,24 @@ export function OvertimeRequestDetails({ requestId, open, onOpenChange }: Overti
           </div>
         )}
       </DialogContent>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Overtime Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this overtime request? This action cannot be undone and will reset all approval statuses.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

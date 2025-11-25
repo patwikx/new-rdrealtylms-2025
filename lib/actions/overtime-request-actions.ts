@@ -6,6 +6,7 @@ type RequestStatus = 'PENDING_MANAGER' | 'PENDING_HR' | 'APPROVED' | 'REJECTED' 
 
 export interface OvertimeRequestWithDetails {
   id: string;
+  userId: string;
   startTime: Date;
   endTime: Date;
   reason: string;
@@ -82,6 +83,7 @@ export async function getOvertimeRequests({
 
       return {
         id: request.id,
+        userId: request.userId,
         startTime: request.startTime,
         endTime: request.endTime,
         reason: request.reason,
@@ -111,13 +113,13 @@ export async function getOvertimeRequests({
 
 export async function getOvertimeRequestById(
   requestId: string,
-  userId: string
+  userId?: string
 ): Promise<OvertimeRequestWithDetails | null> {
   try {
     const request = await prisma.overtimeRequest.findFirst({
       where: {
         id: requestId,
-        userId
+        ...(userId && { userId })
       }
     });
 
@@ -131,6 +133,7 @@ export async function getOvertimeRequestById(
 
     return {
       id: request.id,
+      userId: request.userId,
       startTime: request.startTime,
       endTime: request.endTime,
       reason: request.reason,
@@ -168,13 +171,19 @@ export async function cancelOvertimeRequest(
       return { error: "Only pending requests can be cancelled" };
     }
 
-    // Update request status to cancelled
+    // Update request status to cancelled and clear approval fields
     await prisma.overtimeRequest.update({
       where: {
         id: requestId
       },
       data: {
-        status: 'CANCELLED'
+        status: 'CANCELLED',
+        managerActionBy: null,
+        managerActionAt: null,
+        managerComments: null,
+        hrActionBy: null,
+        hrActionAt: null,
+        hrComments: null
       }
     });
 

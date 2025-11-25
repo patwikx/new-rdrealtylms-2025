@@ -44,6 +44,7 @@ const CreateMaterialRequestSchema = z.object({
   deliverTo: z.string().optional(),
   freight: z.number().default(0),
   discount: z.number().default(0),
+  isStoreUse: z.boolean().default(false),
   items: z.array(MaterialRequestItemSchema).min(1, "At least one item is required"),
 })
 
@@ -158,6 +159,7 @@ export async function createMaterialRequest(input: CreateMaterialRequestInput): 
         freight: new Decimal(validatedData.freight),
         discount: new Decimal(validatedData.discount),
         total: new Decimal(total),
+        isStoreUse: validatedData.isStoreUse,
         requestedById: session.user.id,
         items: {
           create: validatedData.items.map(item => ({
@@ -586,6 +588,14 @@ export async function getMaterialRequestById(requestId: string) {
             employeeId: true,
           }
         },
+        budgetApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
         recApprover: {
           select: {
             id: true,
@@ -739,6 +749,14 @@ export async function getForPostingRequests(filters?: {
             employeeId: true,
           }
         },
+        budgetApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
       },
       orderBy: {
         datePosted: 'desc'
@@ -870,6 +888,14 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
             employeeId: true,
           }
         },
+        budgetApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
         acknowledgmentForm: true,
       },
       orderBy: {
@@ -978,6 +1004,14 @@ export async function getDoneRequests(filters?: {
             employeeId: true,
           }
         },
+        budgetApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
         acknowledgmentForm: true,
       },
       orderBy: {
@@ -1058,6 +1092,14 @@ export async function getRequestsToServe(filters?: {
           }
         },
         finalApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+        budgetApprover: {
           select: {
             id: true,
             name: true,
@@ -1497,17 +1539,22 @@ export async function approveBudget(input: z.infer<typeof BudgetApprovalSchema>)
         budgetApprovalStatus: validatedData.isWithinBudget ? ApprovalStatus.APPROVED : ApprovalStatus.DISAPPROVED,
         isWithinBudget: validatedData.isWithinBudget,
         budgetRemarks: validatedData.remarks || null,
-        // Move to next status if approved, otherwise keep in budget approval
-        status: validatedData.isWithinBudget ? MRSRequestStatus.FOR_REC_APPROVAL : MRSRequestStatus.PENDING_BUDGET_APPROVAL,
+        // Always move to FOR_REC_APPROVAL regardless of budget status
+        // The budget status is just an indicator, not a blocker
+        status: MRSRequestStatus.FOR_REC_APPROVAL,
       }
     })
 
+    // Get business unit for revalidation
+    const businessUnitId = request.businessUnitId
+    revalidatePath(`/${businessUnitId}/approvals/material-requests/budget`)
     revalidatePath("/")
+    
     return { 
       success: true, 
       message: validatedData.isWithinBudget 
-        ? "Budget approved successfully" 
-        : "Budget approval denied"
+        ? "Budget review completed (Within Budget) - Request moved to recommending approval" 
+        : "Budget review completed (Not Within Budget) - Request moved to recommending approval"
     }
   } catch (error) {
     console.error("Error approving budget:", error)
@@ -1582,6 +1629,65 @@ export async function getRequestsPendingBudgetApproval(filters?: {
     }))
   } catch (error) {
     console.error("Error fetching budget approval requests:", error)
+    return []
+  }
+}
+
+// Get REC_APPROVED requests for RDH/MRS users and Managers
+export async function getRDHApprovedRequests(businessUnitId: string) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return []
+    }
+
+    // Only users with isRDHMRS = true OR MANAGER role OR isAcctg = true can see this view
+    if (!session.user.isRDHMRS && session.user.role !== 'MANAGER' && !session.user.isAcctg) {
+      return []
+    }
+
+    const whereClause: {
+      businessUnitId: string
+      status: MRSRequestStatus
+      requestedById?: string
+    } = {
+      businessUnitId,
+      status: MRSRequestStatus.FOR_FINAL_APPROVAL, // After recommending approval, it goes to FOR_FINAL_APPROVAL
+    }
+
+    // If user is RDH/MRS but not a manager or accounting user, only show their own requests
+    // If user is a manager or accounting user, show all REC_APPROVED requests in the business unit
+    if (session.user.isRDHMRS && session.user.role !== 'MANAGER' && !session.user.isAcctg) {
+      whereClause.requestedById = session.user.id
+    }
+
+    const requests = await prisma.materialRequest.findMany({
+      where: whereClause,
+      include: {
+        requestedBy: true,
+        recApprover: true,
+        items: true,
+      },
+      orderBy: {
+        recApprovalDate: 'desc'
+      }
+    })
+
+    return requests.map(request => ({
+      ...request,
+      freight: Number(request.freight),
+      discount: Number(request.discount),
+      total: Number(request.total),
+      items: request.items.map(item => ({
+        ...item,
+        quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
+        unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+        totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+      }))
+    }))
+  } catch (error) {
+    console.error("Error fetching RDH approved requests:", error)
     return []
   }
 }

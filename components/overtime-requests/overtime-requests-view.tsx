@@ -6,6 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Search, 
   Clock, 
@@ -17,7 +33,8 @@ import {
   Clock3,
   Filter,
   User,
-  Heart
+  Heart,
+  MoreHorizontal
 } from "lucide-react";
 import {
   Select,
@@ -29,8 +46,9 @@ import {
 import { format } from "date-fns";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { OvertimeRequestsResponse, OvertimeRequestWithDetails } from "@/lib/actions/overtime-request-actions";
+import { OvertimeRequestsResponse, OvertimeRequestWithDetails, cancelOvertimeRequest } from "@/lib/actions/overtime-request-actions";
 import { OvertimeRequestDetails } from "@/components/overtime-requests/overtime-request-details";
+import { toast } from "sonner";
 
 interface OvertimeRequestsViewProps {
   overtimeRequestsData: OvertimeRequestsResponse;
@@ -118,26 +136,46 @@ export function OvertimeRequestsView({
   const [requests] = useState<OvertimeRequestWithDetails[]>(overtimeRequestsData.requests);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [requestToCancel, setRequestToCancel] = useState<{ id: string; userId: string } | null>(null);
 
-  // Helper function to extract time without timezone conversion
-  const extractTimeFromDateTime = (dateTime: Date | string): string => {
-    let isoString: string;
+  const handleCancelClick = (requestId: string, userId: string) => {
+    setRequestToCancel({ id: requestId, userId });
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!requestToCancel) return;
+
+    setIsLoading(true);
+    setShowCancelDialog(false);
     
-    // Handle both Date objects and ISO strings
-    if (typeof dateTime === 'string') {
-      isoString = dateTime;
-    } else {
-      // If it's a Date object, convert to ISO string but we'll extract the UTC time
-      isoString = dateTime.toISOString();
+    try {
+      const result = await cancelOvertimeRequest(requestToCancel.id, requestToCancel.userId);
+      
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(result.success || "Overtime request cancelled successfully");
+        router.refresh();
+      }
+    } catch (error) {
+      toast.error("Failed to cancel overtime request");
+    } finally {
+      setIsLoading(false);
+      setRequestToCancel(null);
     }
+  };
+
+  // Helper function to extract time from database without timezone conversion
+  const extractTimeFromDateTime = (dateTime: Date | string): string => {
+    // Create a date object
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
     
-    // Extract the time portion from ISO string (e.g., "2025-11-08T13:00:00.000Z" -> "13:00")
-    const timePart = isoString.split('T')[1]?.split('.')[0] || isoString.split('T')[1]?.split('Z')[0];
-    if (!timePart) return "";
-    
-    const [hours, minutes] = timePart.split(':');
-    const hour24 = parseInt(hours, 10);
-    const minute = minutes;
+    // Get UTC hours and minutes (which represent the actual stored time)
+    const hour24 = date.getUTCHours();
+    const minute = date.getUTCMinutes().toString().padStart(2, '0');
     
     // Convert to 12-hour format
     let hour12: number;
@@ -158,6 +196,15 @@ export function OvertimeRequestsView({
     }
     
     return `${hour12}:${minute} ${period}`;
+  };
+
+  // Helper function to format date from database without timezone conversion
+  const formatDateFromUTC = (dateTime: Date | string): string => {
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+    const year = date.getUTCFullYear();
+    const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    const day = date.getUTCDate();
+    return `${month} ${day.toString().padStart(2, '0')}, ${year}`;
   };
 
   const updateFilter = (key: string, value: string | undefined) => {
@@ -268,7 +315,7 @@ export function OvertimeRequestsView({
               <TableHead>Hours</TableHead>
               <TableHead>Submitted</TableHead>
               <TableHead>Reason</TableHead>
-              <TableHead>Manager</TableHead>
+              <TableHead>Approver</TableHead>
               <TableHead>HR</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -293,7 +340,7 @@ export function OvertimeRequestsView({
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">
-                          {format(request.startTime, 'MMM dd, yyyy')}
+                          {formatDateFromUTC(request.startTime)}
                         </span>
                       </div>
                     </TableCell>
@@ -305,13 +352,13 @@ export function OvertimeRequestsView({
                     <TableCell>
                       {isSameDay 
                         ? `${extractTimeFromDateTime(request.startTime)} - ${extractTimeFromDateTime(request.endTime)}`
-                        : `${format(request.startTime, 'MMM dd')} ${extractTimeFromDateTime(request.startTime)} - ${format(request.endTime, 'MMM dd')} ${extractTimeFromDateTime(request.endTime)}`
+                        : `${formatDateFromUTC(request.startTime).split(',')[0]} ${extractTimeFromDateTime(request.startTime)} - ${formatDateFromUTC(request.endTime).split(',')[0]} ${extractTimeFromDateTime(request.endTime)}`
                       }
                     </TableCell>
                     <TableCell className="font-medium">
                       {request.hours} {request.hours === 1 ? 'hour' : 'hours'}
                     </TableCell>
-                    <TableCell>{format(request.createdAt, "MMM dd, yyyy")}</TableCell>
+                    <TableCell>{formatDateFromUTC(request.createdAt)}</TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate" title={request.reason}>
                         {request.reason}
@@ -321,7 +368,9 @@ export function OvertimeRequestsView({
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-blue-600" />
                         {(() => {
-                          if (request.status === 'REJECTED') {
+                          if (request.status === 'CANCELLED') {
+                            return <span className="text-xs text-muted-foreground">N/A</span>;
+                          } else if (request.status === 'REJECTED') {
                             return getApprovalStatusBadge('REJECTED');
                           } else if (request.managerComments !== null) {
                             return getApprovalStatusBadge('APPROVED');
@@ -334,7 +383,9 @@ export function OvertimeRequestsView({
                       <div className="flex items-center gap-2">
                         <Heart className="h-4 w-4 text-purple-600" />
                         {(() => {
-                          if (request.status === 'REJECTED') {
+                          if (request.status === 'CANCELLED') {
+                            return <span className="text-xs text-muted-foreground">N/A</span>;
+                          } else if (request.status === 'REJECTED') {
                             return getApprovalStatusBadge('REJECTED');
                           } else if (request.hrComments !== null || request.status === 'APPROVED') {
                             return getApprovalStatusBadge('APPROVED');
@@ -344,23 +395,36 @@ export function OvertimeRequestsView({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedRequest(request.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {request.status.includes('PENDING') && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
+                            className="h-8 w-8 p-0"
+                            disabled={isLoading}
                           >
-                            <X className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedRequest(request.id)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          {request.status.includes('PENDING') && (
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleCancelClick(request.id, request.userId)}
+                              disabled={isLoading}
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Cancel
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -390,7 +454,7 @@ export function OvertimeRequestsView({
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <CardTitle className="text-base">
-                        {format(request.startTime, 'MMM dd, yyyy')}
+                        {formatDateFromUTC(request.startTime)}
                       </CardTitle>
                     </div>
                     <Badge variant={getStatusVariant(request.status)}>
@@ -405,7 +469,7 @@ export function OvertimeRequestsView({
                       <p className="font-medium">
                         {isSameDay 
                           ? `${extractTimeFromDateTime(request.startTime)} - ${extractTimeFromDateTime(request.endTime)}`
-                          : `${format(request.startTime, 'MMM dd')} ${extractTimeFromDateTime(request.startTime)} - ${format(request.endTime, 'MMM dd')} ${extractTimeFromDateTime(request.endTime)}`
+                          : `${formatDateFromUTC(request.startTime).split(',')[0]} ${extractTimeFromDateTime(request.startTime)} - ${formatDateFromUTC(request.endTime).split(',')[0]} ${extractTimeFromDateTime(request.endTime)}`
                         }
                       </p>
                     </div>
@@ -415,7 +479,7 @@ export function OvertimeRequestsView({
                     </div>
                     <div>
                       <span className="text-muted-foreground">Submitted:</span>
-                      <p className="font-medium">{format(request.createdAt, "MMM dd, yyyy")}</p>
+                      <p className="font-medium">{formatDateFromUTC(request.createdAt)}</p>
                     </div>
                   </div>
 
@@ -431,7 +495,9 @@ export function OvertimeRequestsView({
                         <User className="h-3 w-3 text-blue-600" />
                         <span className="text-xs font-medium">Manager:</span>
                         {(() => {
-                          if (request.status === 'REJECTED') {
+                          if (request.status === 'CANCELLED') {
+                            return <span className="text-xs text-muted-foreground">N/A</span>;
+                          } else if (request.status === 'REJECTED') {
                             return getApprovalStatusBadge('REJECTED');
                           } else if (request.managerComments !== null) {
                             return getApprovalStatusBadge('APPROVED');
@@ -443,7 +509,9 @@ export function OvertimeRequestsView({
                         <Heart className="h-3 w-3 text-purple-600" />
                         <span className="text-xs font-medium">HR:</span>
                         {(() => {
-                          if (request.status === 'REJECTED') {
+                          if (request.status === 'CANCELLED') {
+                            return <span className="text-xs text-muted-foreground">N/A</span>;
+                          } else if (request.status === 'REJECTED') {
                             return getApprovalStatusBadge('REJECTED');
                           } else if (request.hrComments !== null || request.status === 'APPROVED') {
                             return getApprovalStatusBadge('APPROVED');
@@ -481,9 +549,11 @@ export function OvertimeRequestsView({
                     </Button>
                     {request.status.includes('PENDING') && (
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         className="flex-1"
+                        onClick={() => handleCancelClick(request.id, request.userId)}
+                        disabled={isLoading}
                       >
                         <X className="h-4 w-4 mr-2" />
                         Cancel
@@ -505,6 +575,24 @@ export function OvertimeRequestsView({
           onOpenChange={(open: boolean) => !open && setSelectedRequest(null)}
         />
       )}
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Overtime Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this overtime request? This action cannot be undone and will reset all approval statuses.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

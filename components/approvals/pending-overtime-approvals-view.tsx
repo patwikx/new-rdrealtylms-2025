@@ -81,25 +81,14 @@ export function PendingOvertimeApprovalsView({
   const requests = approvalsData.overtimeRequests;
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Helper function to extract time without timezone conversion
+  // Helper function to extract time from database without timezone conversion
   const extractTimeFromDateTime = (dateTime: Date | string): string => {
-    let isoString: string;
+    // Create a date object
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
     
-    // Handle both Date objects and ISO strings
-    if (typeof dateTime === 'string') {
-      isoString = dateTime;
-    } else {
-      // If it's a Date object, convert to ISO string but we'll extract the UTC time
-      isoString = dateTime.toISOString();
-    }
-    
-    // Extract the time portion from ISO string (e.g., "2025-11-08T13:00:00.000Z" -> "13:00")
-    const timePart = isoString.split('T')[1]?.split('.')[0] || isoString.split('T')[1]?.split('Z')[0];
-    if (!timePart) return "";
-    
-    const [hours, minutes] = timePart.split(':');
-    const hour24 = parseInt(hours, 10);
-    const minute = minutes;
+    // Get UTC hours and minutes (which represent the actual stored time)
+    const hour24 = date.getUTCHours();
+    const minute = date.getUTCMinutes().toString().padStart(2, '0');
     
     // Convert to 12-hour format
     let hour12: number;
@@ -120,6 +109,15 @@ export function PendingOvertimeApprovalsView({
     }
     
     return `${hour12}:${minute} ${period}`;
+  };
+
+  // Helper function to format date from database without timezone conversion
+  const formatDateFromUTC = (dateTime: Date | string): string => {
+    const date = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+    const year = date.getUTCFullYear();
+    const month = date.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+    const day = date.getUTCDate();
+    return `${month} ${day.toString().padStart(2, '0')}, ${year}`;
   };
 
   const updateFilter = (key: string, value: string | undefined) => {
@@ -271,7 +269,7 @@ export function PendingOvertimeApprovalsView({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <div className="font-medium">{format(new Date(request.startTime), 'MMM dd, yyyy')}</div>
+                        <div className="font-medium">{formatDateFromUTC(request.startTime)}</div>
                         <div className="text-sm text-muted-foreground">
                           {extractTimeFromDateTime(request.startTime)} - {extractTimeFromDateTime(request.endTime)}
                         </div>
@@ -280,7 +278,7 @@ export function PendingOvertimeApprovalsView({
                     <TableCell className="font-medium">
                       {request.hours} hours
                     </TableCell>
-                    <TableCell>{format(new Date(request.createdAt), "MMM dd, yyyy")}</TableCell>
+                    <TableCell>{formatDateFromUTC(request.createdAt)}</TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate" title={request.reason}>
                         {request.reason}
@@ -338,7 +336,7 @@ export function PendingOvertimeApprovalsView({
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Date:</span>
-                      <p className="font-medium">{format(new Date(request.startTime), 'MMM dd, yyyy')}</p>
+                      <p className="font-medium">{formatDateFromUTC(request.startTime)}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Time:</span>
@@ -352,7 +350,7 @@ export function PendingOvertimeApprovalsView({
                     </div>
                     <div>
                       <span className="text-muted-foreground">Submitted:</span>
-                      <p className="font-medium">{format(new Date(request.createdAt), "MMM dd, yyyy")}</p>
+                      <p className="font-medium">{formatDateFromUTC(request.createdAt)}</p>
                     </div>
                   </div>
 

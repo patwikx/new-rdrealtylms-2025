@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-
+import { useSession } from "next-auth/react"
 import { useRouter, useParams } from "next/navigation"
 import { useForm, useFieldArray } from "react-hook-form"
 import { CalendarIcon, Plus, Trash2, Send, Check, ChevronsUpDown } from "lucide-react"
@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -62,10 +63,12 @@ interface MaterialRequestFormData {
   deliverTo?: string
   freight: number
   discount: number
+  isStoreUse: boolean
   items: MaterialRequestItem[]
 }
 
 export function MaterialRequestCreateForm() {
+  const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const businessUnitId = params.businessUnitId as string
@@ -102,6 +105,7 @@ export function MaterialRequestCreateForm() {
       deliverTo: "",
       freight: 0,
       discount: 0,
+      isStoreUse: false,
       items: [],
     },
   })
@@ -876,6 +880,30 @@ export function MaterialRequestCreateForm() {
                   </FormItem>
                 )}
               />
+
+              {/* Store Use Switch - Only visible for RDH/MRS users */}
+              {session?.user?.isRDHMRS && (
+                <FormField
+                  control={form.control}
+                  name="isStoreUse"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Store Use</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Mark this request as for store use
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
           </div>
 

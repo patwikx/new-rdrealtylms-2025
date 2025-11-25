@@ -79,6 +79,22 @@ export function MaterialRequestDetailPage({
           >
             {REQUEST_STATUS_LABELS[materialRequest.status]}
           </Badge>
+          {materialRequest.isStoreUse && (
+            <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+              Store Use
+            </Badge>
+          )}
+          {materialRequest.isWithinBudget !== null && (
+            <Badge 
+              variant="outline" 
+              className={materialRequest.isWithinBudget 
+                ? "gap-1 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                : "gap-1 bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
+              }
+            >
+              {materialRequest.isWithinBudget ? "Within Budget" : "Not Within Budget"}
+            </Badge>
+          )}
           {materialRequest.isMarkedForEdit && !materialRequest.editCompletedAt && (
             <Badge variant="destructive" className="gap-1">
               <AlertCircle className="h-3 w-3" />

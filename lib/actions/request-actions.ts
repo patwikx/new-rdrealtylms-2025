@@ -124,9 +124,19 @@ export async function submitOvertimeRequest(formData: FormData) {
 
     const { startTime, endTime, reason } = validatedFields.data;
 
-    // Validate times
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    // Parse date and time components to create UTC dates without timezone conversion
+    // Input format: "YYYY-MM-DDTHH:MM"
+    const parseAsUTC = (dateTimeStr: string): Date => {
+      const [datePart, timePart] = dateTimeStr.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      // Create date using UTC methods to avoid timezone conversion
+      return new Date(Date.UTC(year, month - 1, day, hours, minutes, 0, 0));
+    };
+
+    const start = parseAsUTC(startTime);
+    const end = parseAsUTC(endTime);
     
     if (start >= end) {
       return { error: "End time must be after start time" };

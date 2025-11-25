@@ -18,6 +18,7 @@ export interface UserWithDetails {
   createdAt: Date;
   isAcctg: boolean | null;
   isPurchaser: boolean | null;
+  isRDHMRS: boolean | null;
   businessUnit: {
     id: string;
     name: string;
@@ -253,6 +254,7 @@ export async function createUser(data: {
   isActive?: boolean;
   isAcctg?: boolean;
   isPurchaser?: boolean;
+  isRDHMRS?: boolean;
 }): Promise<{ success?: string; error?: string }> {
   try {
     await checkUserManagementPermissions(data.businessUnitId);
@@ -301,6 +303,7 @@ export async function createUser(data: {
         isActive: data.isActive ?? true,
         isAcctg: data.isAcctg ?? false,
         isPurchaser: data.isPurchaser ?? false,
+        isRDHMRS: data.isRDHMRS ?? false,
       },
     });
     
@@ -332,6 +335,7 @@ export async function updateUser(
     terminateDate?: Date | null;
     isAcctg?: boolean;
     isPurchaser?: boolean;
+    isRDHMRS?: boolean;
   }
 ): Promise<{ success?: string; error?: string }> {
   try {
@@ -392,6 +396,7 @@ export async function updateUser(
         ...(data.terminateDate !== undefined && { terminateDate: data.terminateDate }),
         ...(data.isAcctg !== undefined && { isAcctg: data.isAcctg }),
         ...(data.isPurchaser !== undefined && { isPurchaser: data.isPurchaser }),
+        ...(data.isRDHMRS !== undefined && { isRDHMRS: data.isRDHMRS }),
       },
     });
     

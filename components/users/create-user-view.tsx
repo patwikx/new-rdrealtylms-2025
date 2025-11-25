@@ -81,7 +81,8 @@ export function CreateUserView({
     businessUnitId: businessUnitId,
     isActive: true,
     isAcctg: false,
-    isPurchaser: false
+    isPurchaser: false,
+    isRDHMRS: false
   })
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -144,7 +145,8 @@ export function CreateUserView({
         businessUnitId: formData.businessUnitId,
         isActive: formData.isActive,
         isAcctg: formData.isAcctg,
-        isPurchaser: formData.isPurchaser
+        isPurchaser: formData.isPurchaser,
+        isRDHMRS: formData.isRDHMRS
       })
 
       if (!result.success) {
@@ -249,7 +251,7 @@ export function CreateUserView({
           </div>
           
           {/* Special Permissions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label htmlFor="isAcctg" className="text-sm">Accounting Access</Label>
               <div className="flex items-center justify-between h-8 px-3 border rounded-md">
@@ -269,6 +271,17 @@ export function CreateUserView({
                   id="isPurchaser"
                   checked={formData.isPurchaser}
                   onCheckedChange={(checked) => handleInputChange('isPurchaser', checked)}
+                />
+              </div>
+            </div>
+                        <div className="space-y-1">
+              <Label htmlFor="isRDHMRS" className="text-sm">RDH/MRS Access</Label>
+              <div className="flex items-center justify-between h-8 px-3 border rounded-md">
+                <span className="text-sm">{formData.isRDHMRS ? "Requires Budget Approval" : "No Budget Approval"}</span>
+                <Switch
+                  id="isRDHMRS"
+                  checked={formData.isRDHMRS}
+                  onCheckedChange={(checked) => handleInputChange('isRDHMRS', checked)}
                 />
               </div>
             </div>
@@ -449,6 +462,10 @@ export function CreateUserView({
                 <div>
                   <span className="text-muted-foreground">Purchaser:</span>
                   <p className="font-medium">{formData.isPurchaser ? "Yes" : "No"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">RDH/MRS:</span>
+                  <p className="font-medium">{formData.isRDHMRS ? "Yes" : "No"}</p>
                 </div>
               </div>
             </div>

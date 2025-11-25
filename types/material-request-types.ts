@@ -37,6 +37,7 @@ export interface MaterialRequest {
   freight: number
   discount: number
   total: number
+  isStoreUse: boolean
   confirmationNo: string | null
   supplierBPCode: string | null
   supplierName: string | null
@@ -44,6 +45,11 @@ export interface MaterialRequest {
   processedBy: string | null
   processedAt: Date | null
   requestedById: string
+  budgetApproverId: string | null
+  budgetApprovalDate: Date | null
+  budgetApprovalStatus: ApprovalStatus | null
+  isWithinBudget: boolean | null
+  budgetRemarks: string | null
   recApproverId: string | null
   recApprovalDate: Date | null
   recApprovalStatus: ApprovalStatus | null
@@ -86,6 +92,12 @@ export interface MaterialRequest {
     employeeId: string
     profilePicture?: string | null
   }
+  budgetApprover: {
+    id: string
+    name: string
+    email: string | null
+    employeeId: string
+  } | null
   recApprover: {
     id: string
     name: string

@@ -938,6 +938,8 @@ model MaterialRequest {
   discount  Decimal @default(0) @db.Decimal(10, 2)
   total     Decimal @default(0) @db.Decimal(10, 2)
 
+  isStoreUse Boolean @default(false)
+
   confirmationNo String?
 
   supplierBPCode      String?
