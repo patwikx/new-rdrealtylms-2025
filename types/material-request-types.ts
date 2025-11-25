@@ -53,9 +53,11 @@ export interface MaterialRequest {
   recApproverId: string | null
   recApprovalDate: Date | null
   recApprovalStatus: ApprovalStatus | null
+  recApprovalRemarks: string | null
   finalApproverId: string | null
   finalApprovalDate: Date | null
   finalApprovalStatus: ApprovalStatus | null
+  finalApprovalRemarks: string | null
   acknowledgedAt: Date | null
   acknowledgedById: string | null
   signatureData: string | null

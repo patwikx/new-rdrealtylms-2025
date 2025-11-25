@@ -958,15 +958,17 @@ model MaterialRequest {
   isWithinBudget       Boolean?
   budgetRemarks        String?         @db.Text
 
-  recApproverId     String?
-  recApprover       User?           @relation("MRSRecApprover", fields: [recApproverId], references: [id])
-  recApprovalDate   DateTime?
-  recApprovalStatus ApprovalStatus?
+  recApproverId      String?
+  recApprover        User?           @relation("MRSRecApprover", fields: [recApproverId], references: [id])
+  recApprovalDate    DateTime?
+  recApprovalStatus  ApprovalStatus?
+  recApprovalRemarks String?         @db.Text
 
-  finalApproverId     String?
-  finalApprover       User?           @relation("MRSFinalApprover", fields: [finalApproverId], references: [id])
-  finalApprovalDate   DateTime?
-  finalApprovalStatus ApprovalStatus?
+  finalApproverId      String?
+  finalApprover        User?           @relation("MRSFinalApprover", fields: [finalApproverId], references: [id])
+  finalApprovalDate    DateTime?
+  finalApprovalStatus  ApprovalStatus?
+  finalApprovalRemarks String?         @db.Text
 
   processor User? @relation("MRSProcessor", fields: [processedBy], references: [id])
 

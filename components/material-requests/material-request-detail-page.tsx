@@ -30,19 +30,21 @@ export function MaterialRequestDetailPage({
   const [isEditing, setIsEditing] = useState(false)
   const [isEditingDescriptions, setIsEditingDescriptions] = useState(false)
 
-  // Check if any approval has been made
+  // Check if any approval has been made (including budget approval)
   const hasAnyApproval = 
+    materialRequest.budgetApprovalStatus === ApprovalStatus.APPROVED ||
     materialRequest.recApprovalStatus === ApprovalStatus.APPROVED || 
     materialRequest.finalApprovalStatus === ApprovalStatus.APPROVED
 
   // Requestor can edit if:
-  // 1. Status is DRAFT or FOR_EDIT
-  // 2. AND no approvals have been made yet
-  // 3. AND they are the original requestor
+  // 1. They are the original requestor
+  // 2. AND no approvals have been made yet (budget, rec, or final)
+  // 3. AND status is not DISAPPROVED, POSTED, or DEPLOYED
   const isRequestor = materialRequest.requestedById === currentUserId
   const canEditAsRequestor = isRequestor && !hasAnyApproval && 
-    (materialRequest.status === MRSRequestStatus.DRAFT || 
-     materialRequest.status === MRSRequestStatus.FOR_EDIT)
+    materialRequest.status !== MRSRequestStatus.DISAPPROVED &&
+    materialRequest.status !== MRSRequestStatus.POSTED &&
+    materialRequest.status !== MRSRequestStatus.DEPLOYED
 
   // Purchaser can always prompt for edit (via mark for edit feature)
   // But for full edit, only if marked for edit by themselves

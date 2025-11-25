@@ -345,28 +345,74 @@ export function MaterialRequestViewContent({ materialRequest }: MaterialRequestV
             </div>
             <div className="grid grid-cols-2 gap-3">
               {materialRequest.recApprover && (
-                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded border">
-                  <label className="text-xs font-medium text-muted-foreground uppercase">Recommending</label>
-                  <p className="mt-1 font-bold text-indigo-700 dark:text-indigo-300">{materialRequest.recApprover.name}</p>
-                  <p className="text-xs text-muted-foreground">{materialRequest.recApprover.employeeId}</p>
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded border space-y-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground uppercase">Recommending</label>
+                    <p className="mt-1 font-bold text-indigo-700 dark:text-indigo-300">{materialRequest.recApprover.name}</p>
+                    <p className="text-xs text-muted-foreground">{materialRequest.recApprover.employeeId}</p>
+                  </div>
+                  {materialRequest.recApprovalStatus && (
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className={materialRequest.recApprovalStatus === 'APPROVED' 
+                          ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300"
+                          : materialRequest.recApprovalStatus === 'DISAPPROVED'
+                          ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300"
+                          : "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300"
+                        }
+                      >
+                        {materialRequest.recApprovalStatus}
+                      </Badge>
+                    </div>
+                  )}
                   {materialRequest.recApprovalDate && (
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(materialRequest.recApprovalDate), "MMM dd, yyyy")}
                     </p>
                   )}
+                  {materialRequest.recApprovalRemarks && (
+                    <div className="pt-2 border-t border-indigo-200 dark:border-indigo-800">
+                      <label className="text-xs font-medium text-muted-foreground uppercase">Remarks</label>
+                      <p className="mt-1 text-xs text-indigo-900 dark:text-indigo-100">{materialRequest.recApprovalRemarks}</p>
+                    </div>
+                  )}
                 </div>
               )}
               {materialRequest.finalApprover && (
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded border">
-                  <label className="text-xs font-medium text-muted-foreground uppercase">Final</label>
-                  <p className="mt-1 font-bold text-emerald-700 dark:text-emerald-300">{materialRequest.finalApprover.name}</p>
-                  <p className="text-xs text-muted-foreground">{materialRequest.finalApprover.employeeId}</p>
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded border space-y-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground uppercase">Final</label>
+                    <p className="mt-1 font-bold text-emerald-700 dark:text-emerald-300">{materialRequest.finalApprover.name}</p>
+                    <p className="text-xs text-muted-foreground">{materialRequest.finalApprover.employeeId}</p>
+                  </div>
+                  {materialRequest.finalApprovalStatus && (
+                    <div>
+                      <Badge 
+                        variant="outline" 
+                        className={materialRequest.finalApprovalStatus === 'APPROVED' 
+                          ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300"
+                          : materialRequest.finalApprovalStatus === 'DISAPPROVED'
+                          ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300"
+                          : "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300"
+                        }
+                      >
+                        {materialRequest.finalApprovalStatus}
+                      </Badge>
+                    </div>
+                  )}
                   {materialRequest.finalApprovalDate && (
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(materialRequest.finalApprovalDate), "MMM dd, yyyy")}
                     </p>
+                  )}
+                  {materialRequest.finalApprovalRemarks && (
+                    <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800">
+                      <label className="text-xs font-medium text-muted-foreground uppercase">Remarks</label>
+                      <p className="mt-1 text-xs text-emerald-900 dark:text-emerald-100">{materialRequest.finalApprovalRemarks}</p>
+                    </div>
                   )}
                 </div>
               )}

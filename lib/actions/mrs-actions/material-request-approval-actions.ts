@@ -241,6 +241,7 @@ export async function approveMaterialRequest(
       updateData = {
         recApprovalStatus: ApprovalStatus.APPROVED,
         recApprovalDate: new Date(),
+        recApprovalRemarks: comments || null,
         status: MRSRequestStatus.REC_APPROVED
       }
       
@@ -258,6 +259,7 @@ export async function approveMaterialRequest(
       updateData = {
         finalApprovalStatus: ApprovalStatus.APPROVED,
         finalApprovalDate: new Date(),
+        finalApprovalRemarks: comments || null,
         status: MRSRequestStatus.FOR_SERVING, // Changed from POSTED to FOR_SERVING
         dateApproved: new Date()
       }
@@ -330,11 +332,13 @@ export async function rejectMaterialRequest(
       // Recommending rejection
       updateData.recApprovalStatus = ApprovalStatus.DISAPPROVED
       updateData.recApprovalDate = new Date()
+      updateData.recApprovalRemarks = comments
     } else if (materialRequest.status === MRSRequestStatus.FOR_FINAL_APPROVAL && 
                materialRequest.finalApproverId === userId) {
       // Final rejection
       updateData.finalApprovalStatus = ApprovalStatus.DISAPPROVED
       updateData.finalApprovalDate = new Date()
+      updateData.finalApprovalRemarks = comments
     } else {
       return { error: "You are not authorized to reject this request" }
     }
