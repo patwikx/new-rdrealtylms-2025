@@ -331,13 +331,19 @@ export default async function DashboardLayout({
         }
       }
 
-      const [leaveCount, overtimeCount, materialRequestCount, mrsForServingCount, mrsForPostingCount, mrsDoneUnacknowledgedCount] = await Promise.all([
+      const [leaveCount, overtimeCount, materialRequestCount, mrsForServingCount, mrsForPostingCount, mrsDoneUnacknowledgedCount, budgetApprovalCount] = await Promise.all([
         prisma.leaveRequest.count({ where: leaveWhereClause }),
         prisma.overtimeRequest.count({ where: overtimeWhereClause }),
         prisma.materialRequest.count({ where: materialRequestWhereClause }),
         (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsForServingWhereClause }) : Promise.resolve(0),
         (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsForPostingWhereClause }) : Promise.resolve(0),
         (isPurchaser || userRole === "ADMIN") ? prisma.materialRequest.count({ where: mrsDoneUnacknowledgedWhereClause }) : Promise.resolve(0),
+        session.user.isAcctg ? prisma.materialRequest.count({ 
+          where: { 
+            businessUnitId,
+            status: "PENDING_BUDGET_APPROVAL" 
+          } 
+        }) : Promise.resolve(0),
       ]);
 
       pendingCounts = {
@@ -348,6 +354,7 @@ export default async function DashboardLayout({
         mrsForPosting: mrsForPostingCount,
         mrsDoneUnacknowledged: mrsDoneUnacknowledgedCount,
         assetsNeedingDepreciation: assetsNeedingDepreciationCount,
+        budgetApprovals: budgetApprovalCount,
       };
     } catch (error) {
       console.error("Failed to fetch pending counts:", error);

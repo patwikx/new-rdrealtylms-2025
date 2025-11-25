@@ -39,6 +39,7 @@ export const authConfig = {
               department: user.department || null,
               isAcctg: user.isAcctg || null,
               isPurchaser: user.isPurchaser || null,
+              isRDHMRS: user.isRDHMRS || null,
             };
           }
         }

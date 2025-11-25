@@ -32,6 +32,7 @@ declare module "next-auth" {
       department: UserDepartment | null;
       isAcctg: boolean | null;
       isPurchaser: boolean | null;
+      isRDHMRS: boolean | null;
     } & Omit<DefaultSession["user"], "email" | "name">;
   }
 
@@ -46,6 +47,7 @@ declare module "next-auth" {
     department: UserDepartment | null;
     isAcctg: boolean | null;
     isPurchaser: boolean | null;
+    isRDHMRS: boolean | null;
   }
 }
 
@@ -61,6 +63,7 @@ declare module "next-auth/jwt" {
     department: UserDepartment | null;
     isAcctg: boolean | null;
     isPurchaser: boolean | null;
+    isRDHMRS: boolean | null;
     sessionToken?: string; // For hybrid session tracking
   }
 }

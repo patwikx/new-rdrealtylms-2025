@@ -54,6 +54,7 @@ model User {
   deptId         String?
   isAcctg        Boolean                 @default(false)
   isPurchaser    Boolean                 @default(false)
+  isRDHMRS       Boolean                 @default(false)
   approverId     String?
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
@@ -108,6 +109,8 @@ model User {
   createdSchedules        DepreciationSchedule[]  @relation("ScheduleCreator")
   executedDepreciations   DepreciationExecution[] @relation("ExecutionExecutor")
   markedForEditRequests   MaterialRequest[]       @relation("MRSMarkedForEditBy")
+  budgetApprovedRequests  MaterialRequest[]       @relation("MRSBudgetApprover")
+  materialRequests        MaterialRequest[]
 }
 
 model Department {
@@ -946,6 +949,13 @@ model MaterialRequest {
   requestedById String
   requestedBy   User   @relation("MRSRequestCreator", fields: [requestedById], references: [id])
 
+  budgetApproverId     String?
+  budgetApprover       User?           @relation("MRSBudgetApprover", fields: [budgetApproverId], references: [id])
+  budgetApprovalDate   DateTime?
+  budgetApprovalStatus ApprovalStatus?
+  isWithinBudget       Boolean?
+  budgetRemarks        String?         @db.Text
+
   recApproverId     String?
   recApprover       User?           @relation("MRSRecApprover", fields: [recApproverId], references: [id])
   recApprovalDate   DateTime?
@@ -982,6 +992,8 @@ model MaterialRequest {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 
   @@index([businessUnitId])
   @@index([departmentId])
@@ -1153,6 +1165,7 @@ enum RequestType {
 
 enum MRSRequestStatus {
   DRAFT
+  PENDING_BUDGET_APPROVAL
   FOR_REC_APPROVAL
   REC_APPROVED
   FOR_FINAL_APPROVAL

@@ -128,6 +128,7 @@ export interface MaterialRequestFormData {
 
 export const REQUEST_STATUS_LABELS: Record<MRSRequestStatus, string> = {
   DRAFT: "Draft",
+  PENDING_BUDGET_APPROVAL: "Pending Budget Approval",
   FOR_REC_APPROVAL: "For Recommending Approval",
   REC_APPROVED: "Recommending Approved",
   FOR_FINAL_APPROVAL: "For Final Approval",
@@ -158,6 +159,7 @@ export const APPROVAL_STATUS_LABELS: Record<ApprovalStatus, string> = {
 
 export const REQUEST_STATUS_COLORS: Record<MRSRequestStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
+  PENDING_BUDGET_APPROVAL: "bg-pink-100 text-pink-800",
   FOR_REC_APPROVAL: "bg-yellow-100 text-yellow-800",
   REC_APPROVED: "bg-blue-100 text-blue-800",
   FOR_FINAL_APPROVAL: "bg-orange-100 text-orange-800",

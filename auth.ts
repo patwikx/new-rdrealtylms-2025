@@ -57,6 +57,7 @@ export const {
         token.department = user.department;
         token.isAcctg = user.isAcctg;
         token.isPurchaser = user.isPurchaser;
+        token.isRDHMRS = user.isRDHMRS
         
         // Create session record in database for tracking
         const sessionToken = randomUUID();
@@ -89,6 +90,7 @@ export const {
             department: token.department,
             isAcctg: token.isAcctg,
             isPurchaser: token.isPurchaser,
+            isRDHMRS: token.isRDHMRS
           },
         };
       }

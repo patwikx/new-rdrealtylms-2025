@@ -405,6 +405,7 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
     const existingRequest = await prisma.materialRequest.findUnique({
       where: { id: requestId },
       include: {
+        requestedBy: true,
         department: {
           include: {
             approvers: {
@@ -436,11 +437,18 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
       return { success: false, message: "No approvers assigned to this request" }
     }
 
+    // Determine next status based on requestor's isRDHMRS flag
+    // If requestor has isRDHMRS = true, go to budget approval first
+    // Otherwise, follow normal flow (FOR_REC_APPROVAL)
+    const nextStatus = existingRequest.requestedBy.isRDHMRS 
+      ? MRSRequestStatus.PENDING_BUDGET_APPROVAL 
+      : MRSRequestStatus.FOR_REC_APPROVAL
+
     await prisma.materialRequest.update({
       where: { id: requestId },
       data: {
-        status: MRSRequestStatus.FOR_REC_APPROVAL,
-        recApprovalStatus: ApprovalStatus.PENDING,
+        status: nextStatus,
+        recApprovalStatus: nextStatus === MRSRequestStatus.FOR_REC_APPROVAL ? ApprovalStatus.PENDING : null,
       }
     })
 
@@ -448,7 +456,9 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
     
     return {
       success: true,
-      message: "Material request submitted for approval successfully"
+      message: existingRequest.requestedBy.isRDHMRS 
+        ? "Material request submitted for budget approval successfully"
+        : "Material request submitted for approval successfully"
     }
   } catch (error) {
     console.error("Error submitting for approval:", error)
@@ -1441,6 +1451,137 @@ export async function getMyRequestsMarkedForEdit(businessUnitId?: string) {
     }))
   } catch (error) {
     console.error("Error fetching requests marked for edit:", error)
+    return []
+  }
+}
+
+// Budget approval action for isAcctg users
+const BudgetApprovalSchema = z.object({
+  requestId: z.string(),
+  isWithinBudget: z.boolean(),
+  remarks: z.string().optional(),
+})
+
+export async function approveBudget(input: z.infer<typeof BudgetApprovalSchema>): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    // Check if user has accounting permissions
+    if (!session.user.isAcctg) {
+      return { success: false, message: "Only accounting users can approve budgets" }
+    }
+
+    const validatedData = BudgetApprovalSchema.parse(input)
+
+    const request = await prisma.materialRequest.findUnique({
+      where: { id: validatedData.requestId }
+    })
+
+    if (!request) {
+      return { success: false, message: "Request not found" }
+    }
+
+    if (request.status !== MRSRequestStatus.PENDING_BUDGET_APPROVAL) {
+      return { success: false, message: "Request is not pending budget approval" }
+    }
+
+    // Update the request with budget approval
+    await prisma.materialRequest.update({
+      where: { id: validatedData.requestId },
+      data: {
+        budgetApproverId: session.user.id,
+        budgetApprovalDate: new Date(),
+        budgetApprovalStatus: validatedData.isWithinBudget ? ApprovalStatus.APPROVED : ApprovalStatus.DISAPPROVED,
+        isWithinBudget: validatedData.isWithinBudget,
+        budgetRemarks: validatedData.remarks || null,
+        // Move to next status if approved, otherwise keep in budget approval
+        status: validatedData.isWithinBudget ? MRSRequestStatus.FOR_REC_APPROVAL : MRSRequestStatus.PENDING_BUDGET_APPROVAL,
+      }
+    })
+
+    revalidatePath("/")
+    return { 
+      success: true, 
+      message: validatedData.isWithinBudget 
+        ? "Budget approved successfully" 
+        : "Budget approval denied"
+    }
+  } catch (error) {
+    console.error("Error approving budget:", error)
+    return { success: false, message: "Failed to process budget approval" }
+  }
+}
+
+// Get requests pending budget approval
+export async function getRequestsPendingBudgetApproval(filters?: {
+  businessUnitId?: string
+  search?: string
+}) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return []
+    }
+
+    // Only accounting users can see budget approval requests
+    if (!session.user.isAcctg) {
+      return []
+    }
+
+    const whereClause: {
+      status: MRSRequestStatus
+      businessUnitId?: string
+      OR?: Array<{
+        docNo?: { contains: string; mode: 'insensitive' }
+        requestedBy?: { name?: { contains: string; mode: 'insensitive' } }
+      }>
+    } = {
+      status: MRSRequestStatus.PENDING_BUDGET_APPROVAL,
+    }
+
+    if (filters?.businessUnitId) {
+      whereClause.businessUnitId = filters.businessUnitId
+    }
+
+    if (filters?.search) {
+      whereClause.OR = [
+        { docNo: { contains: filters.search, mode: 'insensitive' } },
+        { requestedBy: { name: { contains: filters.search, mode: 'insensitive' } } },
+      ]
+    }
+
+    const requests = await prisma.materialRequest.findMany({
+      where: whereClause,
+      include: {
+        requestedBy: true,
+        businessUnit: true,
+        department: true,
+        items: true,
+        budgetApprover: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return requests.map(request => ({
+      ...request,
+      freight: Number(request.freight),
+      discount: Number(request.discount),
+      total: Number(request.total),
+      items: request.items.map(item => ({
+        ...item,
+        quantity: Number(item.quantity),
+        quantityServed: Number(item.quantityServed),
+        unitPrice: item.unitPrice ? Number(item.unitPrice) : null,
+        totalPrice: item.totalPrice ? Number(item.totalPrice) : null,
+      }))
+    }))
+  } catch (error) {
+    console.error("Error fetching budget approval requests:", error)
     return []
   }
 }
