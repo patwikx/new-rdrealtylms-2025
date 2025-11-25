@@ -229,7 +229,7 @@ const getNavigationItems = (
 
   
 
-  // Add management items for ADMIN and users with accounting access
+  // Add Asset Management for ADMIN and users with accounting access
   if (userRole === "ADMIN" || isAcctg) {
     const assetManagementItems: NavSubItem[] = [
       {
@@ -271,61 +271,63 @@ const getNavigationItems = (
       },
     ];
     
-    baseItems.push(
-      {
-        title: "Asset Management",
-        url: `/${businessUnitId}/asset-management`,
-        icon: Package,
-        badge: pendingCounts?.assetsNeedingDepreciation,
-        items: assetManagementItems,
-      },
-      {
-        title: "Reports",
-        url: `/${businessUnitId}/reports`,
-        icon: FileText,
-        items: [
-          // Only show Leave Reports if user is ADMIN or HR
-          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
-            title: "Leave Reports",
-            url: `/${businessUnitId}/reports/leave`,
-          }] : []),
-          // Only show Overtime Reports if user is ADMIN or HR
-          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
-            title: "Overtime Reports",
-            url: `/${businessUnitId}/reports/overtime`,
-          }] : []),
-          // Only show Asset Reports if user has accounting access
-          ...(isAcctg ? [{
-            title: "Asset Reports",
-            url: `/${businessUnitId}/reports/assets`,
-          }] : []),
-          // Only show Depreciation Reports if user has accounting access
-          ...(isAcctg ? [{
-            title: "Depreciation Reports",
-            url: `/${businessUnitId}/reports/depreciation`,
-          }] : []),
-          // Only show Deployment Reports if user has accounting access
-          ...(isAcctg ? [{
-            title: "Deployment Reports",
-            url: `/${businessUnitId}/reports/deployments`,
-          }] : []),
-          // Only show MRS Reports if user has accounting or purchaser access
-          ...(isAcctg || isPurchaser ? [{
-            title: "MRS Reports",
-            url: `/${businessUnitId}/reports/material-requests`,
-          }] : []),
-          // Only show Employee Reports if user is ADMIN or HR
-          ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
-            title: "Employee Reports",
-            url: `/${businessUnitId}/reports/employees`,
-          }] : []),
-          {
-            title: "Audit Logs",
-            url: `/${businessUnitId}/admin/audit-logs`,
-          },
-        ],
-      }
-    );
+    baseItems.push({
+      title: "Asset Management",
+      url: `/${businessUnitId}/asset-management`,
+      icon: Package,
+      badge: pendingCounts?.assetsNeedingDepreciation,
+      items: assetManagementItems,
+    });
+  }
+
+  // Add Reports for ADMIN, HR, and users with accounting or purchaser access
+  if (userRole === "ADMIN" || userRole === "HR" || isAcctg || isPurchaser) {
+    baseItems.push({
+      title: "Reports",
+      url: `/${businessUnitId}/reports`,
+      icon: FileText,
+      items: [
+        // Only show Leave Reports if user is ADMIN or HR
+        ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
+          title: "Leave Reports",
+          url: `/${businessUnitId}/reports/leave`,
+        }] : []),
+        // Only show Overtime Reports if user is ADMIN or HR
+        ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
+          title: "Overtime Reports",
+          url: `/${businessUnitId}/reports/overtime`,
+        }] : []),
+        // Only show Asset Reports if user has accounting access
+        ...(isAcctg ? [{
+          title: "Asset Reports",
+          url: `/${businessUnitId}/reports/assets`,
+        }] : []),
+        // Only show Depreciation Reports if user has accounting access
+        ...(isAcctg ? [{
+          title: "Depreciation Reports",
+          url: `/${businessUnitId}/reports/depreciation`,
+        }] : []),
+        // Only show Deployment Reports if user has accounting access
+        ...(isAcctg ? [{
+          title: "Deployment Reports",
+          url: `/${businessUnitId}/reports/deployments`,
+        }] : []),
+        // Only show MRS Reports if user has accounting or purchaser access
+        ...(isAcctg || isPurchaser ? [{
+          title: "MRS Reports",
+          url: `/${businessUnitId}/reports/material-requests`,
+        }] : []),
+        // Only show Employee Reports if user is ADMIN or HR
+        ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
+          title: "Employee Reports",
+          url: `/${businessUnitId}/reports/employees`,
+        }] : []),
+        {
+          title: "Audit Logs",
+          url: `/${businessUnitId}/admin/audit-logs`,
+        },
+      ],
+    });
   }
 
   // Add admin-only items
