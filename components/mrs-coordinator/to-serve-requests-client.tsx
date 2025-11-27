@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { MarkAsServedDialog } from "./mark-as-served-dialog"
 import { MarkForEditDialog } from "./mark-for-edit-dialog"
 import { MaterialRequest } from "@/types/material-request-types"
@@ -227,6 +226,12 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
                 <span class="info-label">Requested By:</span>
                 <span class="info-value">${request.requestedBy.name} (${request.requestedBy.employeeId})</span>
               </div>
+              ${request.bldgCode ? `
+              <div class="info-row">
+                <span class="info-label">Building Code:</span>
+                <span class="info-value">${request.bldgCode}</span>
+              </div>
+              ` : ''}
             </div>
             <div>
               <div class="info-row">
@@ -246,23 +251,40 @@ export function ToServeRequestsClient({ initialRequests, userRole, isPurchaser, 
           <table>
             <thead>
               <tr>
-                <th style="width: 15%">Item Code</th>
-                <th style="width: 35%">Description</th>
-                <th style="width: 10%" class="center">UOM</th>
-                <th style="width: 10%" class="center">Qty</th>
-                <th style="width: 30%">Remarks</th>
+                <th style="width: 12%">Item Code</th>
+                <th style="width: 28%">Description</th>
+                <th style="width: 8%" class="center">UOM</th>
+                <th style="width: 8%" class="center">Qty</th>
+                <th style="width: 12%" class="right">Unit Price</th>
+                <th style="width: 12%" class="right">Total</th>
+                <th style="width: 20%">Remarks</th>
               </tr>
             </thead>
             <tbody>
-              ${request.items.map(item => `
+              ${request.items.map(item => {
+                const unitPrice = item.unitPrice || 0
+                const total = unitPrice * item.quantity
+                return `
                 <tr>
                   <td>${item.itemCode || "-"}</td>
                   <td>${item.description}</td>
                   <td class="center">${item.uom}</td>
                   <td class="right">${item.quantity}</td>
+                  <td class="right">${unitPrice > 0 ? '₱' + unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                  <td class="right">${total > 0 ? '₱' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
                   <td>${item.remarks || "-"}</td>
                 </tr>
-              `).join('')}
+              `}).join('')}
+              ${(() => {
+                const grandTotal = request.items.reduce((sum, item) => sum + ((item.unitPrice || 0) * item.quantity), 0)
+                return grandTotal > 0 ? `
+                <tr>
+                  <td colspan="5" class="right" style="font-weight: bold;">Grand Total:</td>
+                  <td class="right" style="font-weight: bold;">₱${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td></td>
+                </tr>
+                ` : ''
+              })()}
             </tbody>
           </table>
           
