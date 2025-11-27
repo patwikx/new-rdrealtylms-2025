@@ -12,9 +12,7 @@ import {
   Calendar, 
   Package, 
   DollarSign,
-  CheckCircle2,
-  Clock
-} from "lucide-react"
+  CheckCircle2} from "lucide-react"
 
 interface MaterialRequestViewContentProps {
   materialRequest: MaterialRequest

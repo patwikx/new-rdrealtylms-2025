@@ -81,7 +81,7 @@ const getNavigationItems = (
   // Users with purchaser access or specific roles can access MRS Coordinator functions
   const canAccessMRS = isPurchaser || ['ADMIN', 'MRS_COORDINATOR'].includes(userRole)
   
-  // Base items for all users (Dashboard, Leave Requests, Overtime Requests, Assets, MRS)
+  // Base items for all users
   const baseItems: NavItem[] = [
     {
       title: "Dashboard",
@@ -109,7 +109,7 @@ const getNavigationItems = (
           title: "My Requests",
           url: `/${businessUnitId}/leave-requests`,
         },
-                {
+        {
           title: "Leave Balance",
           url: `/${businessUnitId}/leave-balances`,
         },
@@ -117,7 +117,6 @@ const getNavigationItems = (
           title: "Submit Leave Request",
           url: `/${businessUnitId}/leave-requests/create`,
         },
-
       ],
     },
     {
@@ -155,9 +154,28 @@ const getNavigationItems = (
         }] : []),
       ],
     },
-  ];
+    {
+      title: "Damaged Inventory",
+      url: `/${businessUnitId}/inventory`,
+      icon: Package,
+      items: [
+        {
+          title: "All Items",
+          url: `/${businessUnitId}/inventory`,
+        },
+        {
+          title: "Add Item",
+          url: `/${businessUnitId}/inventory/add`,
+        },
+        {
+          title: "Bulk Add Items",
+          url: `/${businessUnitId}/inventory/bulk-add`,
+        },
+      ],
+    },
+  ]
 
-  // Add approver-specific items (Leave, Overtime, Asset, MRS approvals)
+  // Add approver-specific items
   if (isApprover(userRole, isAcctg, isPurchaser)) {
     const approvalItems: NavSubItem[] = [
       {
@@ -199,7 +217,7 @@ const getNavigationItems = (
     });
   }
 
-  // Add MRS Coordinator section for users with purchaser access or specific roles
+  // Add MRS Coordinator section
   if (canAccessMRS) {
     const mrsItems: NavSubItem[] = [
       {
@@ -220,7 +238,7 @@ const getNavigationItems = (
       }
     ];
     
-    // Calculate total MRS pending count (excluding done requests as they're informational, not urgent)
+    // Calculate total MRS pending count
     const totalMRS = (pendingCounts?.mrsForServing || 0) + (pendingCounts?.mrsForPosting || 0);
     
     baseItems.push({
@@ -232,9 +250,7 @@ const getNavigationItems = (
     });
   }
 
-  
-
-  // Add Asset Management for ADMIN and users with accounting access
+  // Add Asset Management
   if (userRole === "ADMIN" || isAcctg) {
     const assetManagementItems: NavSubItem[] = [
       {
@@ -285,7 +301,7 @@ const getNavigationItems = (
     });
   }
 
-  // Add Reports for ADMIN, HR, and users with accounting or purchaser access
+  // Add Reports
   if (userRole === "ADMIN" || userRole === "HR" || isAcctg || isPurchaser) {
     baseItems.push({
       title: "Reports",
@@ -321,6 +337,11 @@ const getNavigationItems = (
         ...(isAcctg || isPurchaser ? [{
           title: "MRS Reports",
           url: `/${businessUnitId}/reports/material-requests`,
+        }] : []),
+        // Only show Damaged Inventory Report if user has accounting access
+        ...(isAcctg ? [{
+          title: "Damaged Inventory Report",
+          url: `/${businessUnitId}/reports/damaged-inventory`,
         }] : []),
         // Only show Employee Reports if user is ADMIN or HR
         ...(userRole === 'ADMIN' || userRole === 'HR' ? [{
@@ -364,13 +385,13 @@ const getNavigationItems = (
           url: `/${businessUnitId}/admin/users`,
         },
         {
-            title: "Departments",
-            url: `/${businessUnitId}/departments`,
-          },
-          {
-            title: "System Permissions",
-            url: `/${businessUnitId}/admin/system-permissions`,
-          },
+          title: "Departments",
+          url: `/${businessUnitId}/departments`,
+        },
+        {
+          title: "System Permissions",
+          url: `/${businessUnitId}/admin/system-permissions`,
+        },
         {
           title: "Audit Logs",
           url: `/${businessUnitId}/admin/audit-logs`,
