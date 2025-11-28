@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useParams } from "next/navigation"
-import { Plus, Search, MoreHorizontal, Eye, Edit, Trash2, Send, ChevronLeft, ChevronRight, Building, Users } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Eye, Edit, Trash2, Send, ChevronLeft, ChevronRight, Building, Users, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
 import { MRSRequestStatus, RequestType } from "@prisma/client"
-import { deleteMaterialRequest, submitForApproval } from "@/lib/actions/mrs-actions/material-request-actions"
+import { deleteMaterialRequest, submitForApproval, cancelMaterialRequest } from "@/lib/actions/mrs-actions/material-request-actions"
 
 // Status and type labels (matching LMS patterns)
 const REQUEST_STATUS_LABELS: Record<MRSRequestStatus, string> = {
@@ -81,6 +81,9 @@ interface MaterialRequest {
   discount: number
   total: number
   requestedById: string
+  budgetApprovalStatus: string | null
+  recApprovalStatus: string | null
+  finalApprovalStatus: string | null
   createdAt: Date
   updatedAt: Date
   businessUnit: {
@@ -124,6 +127,7 @@ export function MaterialRequestsClient({ initialRequests }: MaterialRequestsClie
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequest | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -234,6 +238,33 @@ export function MaterialRequestsClient({ initialRequests }: MaterialRequestsClie
     }
   }
 
+  const handleCancel = async () => {
+    if (!selectedRequest) return
+
+    setIsLoading(true)
+    try {
+      const result = await cancelMaterialRequest(selectedRequest.id)
+      if (result.success) {
+        setRequests(prev => 
+          prev.map(r => 
+            r.id === selectedRequest.id 
+              ? { ...r, status: MRSRequestStatus.CANCELLED }
+              : r
+          )
+        )
+        toast.success(result.message)
+      } else {
+        toast.error(result.message)
+      }
+    } catch (error) {
+      toast.error("Failed to cancel request")
+    } finally {
+      setIsLoading(false)
+      setIsCancelDialogOpen(false)
+      setSelectedRequest(null)
+    }
+  }
+
   const canEdit = (request: MaterialRequest) => {
     return (
       request.requestedById === session?.user?.id &&
@@ -245,6 +276,29 @@ export function MaterialRequestsClient({ initialRequests }: MaterialRequestsClie
     return (
       request.requestedById === session?.user?.id &&
       request.status === MRSRequestStatus.DRAFT
+    ) || ["ADMIN", "MANAGER"].includes(session?.user?.role || "")
+  }
+
+  const canCancel = (request: MaterialRequest) => {
+    // Check if any approval has been made
+    const hasAnyApproval = 
+      request.budgetApprovalStatus === "APPROVED" ||
+      request.recApprovalStatus === "APPROVED" || 
+      request.finalApprovalStatus === "APPROVED"
+    
+    // Define final states
+    const finalStates: MRSRequestStatus[] = [
+      MRSRequestStatus.CANCELLED, 
+      MRSRequestStatus.DISAPPROVED, 
+      MRSRequestStatus.POSTED, 
+      MRSRequestStatus.DEPLOYED
+    ]
+    
+    // Can cancel if user is the requestor, no approvals made, and not in final state
+    return (
+      request.requestedById === session?.user?.id &&
+      !hasAnyApproval &&
+      !finalStates.includes(request.status)
     ) || ["ADMIN", "MANAGER"].includes(session?.user?.role || "")
   }
 
@@ -450,6 +504,19 @@ export function MaterialRequestsClient({ initialRequests }: MaterialRequestsClie
                           >
                             <Send className="mr-2 h-4 w-4" />
                             Submit for Approval
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {canCancel(request) && request.status !== MRSRequestStatus.DRAFT && (
+                          <DropdownMenuItem
+                            className="text-orange-600"
+                            onClick={() => {
+                              setSelectedRequest(request)
+                              setIsCancelDialogOpen(true)
+                            }}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Cancel Request
                           </DropdownMenuItem>
                         )}
                         
@@ -689,6 +756,29 @@ export function MaterialRequestsClient({ initialRequests }: MaterialRequestsClie
               disabled={isLoading}
             >
               {isLoading ? "Submitting..." : "Submit"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Material Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel &quot;{selectedRequest?.docNo}&quot;?
+              This will mark the request as cancelled and it cannot be processed further.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go Back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {isLoading ? "Cancelling..." : "Cancel Request"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

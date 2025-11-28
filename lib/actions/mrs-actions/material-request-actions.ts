@@ -252,8 +252,25 @@ export async function updateMaterialRequest(input: UpdateMaterialRequestInput): 
       return { success: false, message: "You can only edit your own requests" }
     }
 
-    if (existingRequest.status !== MRSRequestStatus.DRAFT && existingRequest.status !== MRSRequestStatus.FOR_EDIT) {
-      return { success: false, message: "Cannot edit request in current status" }
+    // Check if any approval has been made
+    const hasAnyApproval = 
+      existingRequest.budgetApprovalStatus === ApprovalStatus.APPROVED ||
+      existingRequest.recApprovalStatus === ApprovalStatus.APPROVED || 
+      existingRequest.finalApprovalStatus === ApprovalStatus.APPROVED
+
+    // Allow editing if:
+    // 1. Status is DRAFT or FOR_EDIT, OR
+    // 2. No approvals have been made yet AND status is not DISAPPROVED, POSTED, or DEPLOYED
+    const canEdit = 
+      existingRequest.status === MRSRequestStatus.DRAFT || 
+      existingRequest.status === MRSRequestStatus.FOR_EDIT ||
+      (!hasAnyApproval && 
+        existingRequest.status !== MRSRequestStatus.DISAPPROVED &&
+        existingRequest.status !== MRSRequestStatus.POSTED &&
+        existingRequest.status !== MRSRequestStatus.DEPLOYED)
+
+    if (!canEdit) {
+      return { success: false, message: "Cannot edit request in current status. Request has already been approved or is in a final state." }
     }
 
     // Calculate total
@@ -393,6 +410,64 @@ export async function deleteMaterialRequest(requestId: string): Promise<ActionRe
     return {
       success: false,
       message: "Failed to delete material request"
+    }
+  }
+}
+
+export async function cancelMaterialRequest(requestId: string): Promise<ActionResult> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return { success: false, message: "Unauthorized" }
+    }
+
+    const existingRequest = await prisma.materialRequest.findUnique({
+      where: { id: requestId }
+    })
+
+    if (!existingRequest) {
+      return { success: false, message: "Material request not found" }
+    }
+
+    if (existingRequest.requestedById !== session.user.id && !["ADMIN", "MANAGER"].includes(session.user.role)) {
+      return { success: false, message: "You can only cancel your own requests" }
+    }
+
+    // Check if any approval has been made
+    const hasAnyApproval = 
+      existingRequest.budgetApprovalStatus === ApprovalStatus.APPROVED ||
+      existingRequest.recApprovalStatus === ApprovalStatus.APPROVED || 
+      existingRequest.finalApprovalStatus === ApprovalStatus.APPROVED
+
+    if (hasAnyApproval) {
+      return { success: false, message: "Cannot cancel request that has already been approved" }
+    }
+
+    // Check if request is already in a final state
+    const finalStates: MRSRequestStatus[] = [MRSRequestStatus.CANCELLED, MRSRequestStatus.DISAPPROVED, MRSRequestStatus.POSTED, MRSRequestStatus.DEPLOYED]
+    if (finalStates.includes(existingRequest.status)) {
+      return { success: false, message: "Cannot cancel request in current status" }
+    }
+
+    await prisma.materialRequest.update({
+      where: { id: requestId },
+      data: {
+        status: MRSRequestStatus.CANCELLED
+      }
+    })
+
+    revalidatePath("/material-requests")
+    
+    return {
+      success: true,
+      message: "Material request cancelled successfully"
+    }
+  } catch (error) {
+    console.error("Error cancelling material request:", error)
+    
+    return {
+      success: false,
+      message: "Failed to cancel material request"
     }
   }
 }
