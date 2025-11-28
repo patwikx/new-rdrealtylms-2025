@@ -76,13 +76,16 @@ export async function getPendingMaterialRequests({
   }
 
   const userId = session.user.id
+  const userEmployeeId = session.user.employeeId
 
   try {
-
+    // Special case: If user is C-002, show all requests across all business units
+    const isSpecialApprover = userEmployeeId === 'C-002'
     
     // Build where clause for pending requests assigned to the current user
     const whereClause: any = {
-      businessUnitId,
+      // Only filter by businessUnitId if NOT the special approver
+      ...(isSpecialApprover ? {} : { businessUnitId }),
       OR: [
         // For recommending approval - user is the recommending approver and status is FOR_REC_APPROVAL
         {

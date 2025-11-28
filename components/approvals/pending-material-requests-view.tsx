@@ -44,6 +44,7 @@ interface PendingMaterialRequestsViewProps {
     page: number;
   };
   currentUserRole: string;
+  isSpecialApprover?: boolean;
 }
 
 function getRequestTypeIcon(type: string) {
@@ -95,7 +96,8 @@ export function PendingMaterialRequestsView({
   requestsData, 
   businessUnitId,
   currentFilters,
-  currentUserRole
+  currentUserRole,
+  isSpecialApprover = false
 }: PendingMaterialRequestsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -247,6 +249,7 @@ export function PendingMaterialRequestsView({
           <TableHeader>
             <TableRow>
               <TableHead>Document</TableHead>
+              {isSpecialApprover && <TableHead>Business Unit</TableHead>}
               <TableHead>Requested By</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
@@ -260,7 +263,7 @@ export function PendingMaterialRequestsView({
           <TableBody>
             {filteredRequests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+                <TableCell colSpan={isSpecialApprover ? 10 : 9} className="text-center py-8">
                   <div className="flex flex-col items-center gap-2">
                     <Package className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">No pending material requests found</p>
@@ -279,6 +282,14 @@ export function PendingMaterialRequestsView({
                         <div className="text-sm text-muted-foreground">{request.series}</div>
                       </div>
                     </TableCell>
+                    {isSpecialApprover && (
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{request.businessUnit.name}</span>
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 rounded-md">
