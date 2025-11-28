@@ -18,16 +18,18 @@ interface InventoryVerificationPageProps {
 export default async function InventoryVerificationPage({ params, searchParams }: InventoryVerificationPageProps) {
   const session = await auth()
   
+  const { businessUnitId } = await params
   if (!session?.user?.id) {
     redirect("/auth/sign-in")
   }
   
-  // Check if user has asset management permissions
-  if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
-    redirect("/unauthorized")
+// Check if user has asset management permissions (ADMIN, MANAGER, HR, or users with accounting access)
+  const hasAccess = ["ADMIN", "MANAGER", "HR"].includes(session.user.role) || session.user.isAcctg
+  
+  if (!hasAccess) {
+    redirect(`/${businessUnitId}/unauthorized`)
   }
 
-  const { businessUnitId } = await params
   const { status, search, page = "1", view = "overview" } = await searchParams
   
   try {

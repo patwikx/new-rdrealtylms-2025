@@ -17,8 +17,10 @@ export default async function BulkAssetCreationPage({ params }: BulkAssetCreatio
   
   const { businessUnitId } = await params
   
-  // Check if user has asset management permissions
-  if (!["ADMIN", "MANAGER", "HR"].includes(session.user.role)) {
+  // Check if user has asset management permissions (ADMIN, MANAGER, HR, or users with accounting access)
+  const hasAccess = ["ADMIN", "MANAGER", "HR"].includes(session.user.role) || session.user.isAcctg
+  
+  if (!hasAccess) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
   

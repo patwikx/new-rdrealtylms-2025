@@ -19,8 +19,10 @@ export default async function AssetDetailsPage({ params }: AssetDetailsPageProps
   
   const { businessUnitId, id } = await params
   
-  // Check if user has asset management permissions
-  if (!["ADMIN", "ACCTG_MANAGER", "ACCTG"].includes(session.user.role)) {
+  // Check if user has asset management permissions (ADMIN, MANAGER, HR, or users with accounting access)
+  const hasAccess = ["ADMIN", "MANAGER", "HR"].includes(session.user.role) || session.user.isAcctg
+  
+  if (!hasAccess) {
     redirect(`/${businessUnitId}/unauthorized`)
   }
   
