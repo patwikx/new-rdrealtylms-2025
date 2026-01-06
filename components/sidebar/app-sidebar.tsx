@@ -29,6 +29,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
     mrsDoneUnacknowledged?: number
     assetsNeedingDepreciation?: number
     budgetApprovals?: number
+    pendingReview?: number
   }
 }
 
@@ -67,6 +68,7 @@ const getNavigationItems = (
   isAcctg: boolean = false, 
   isPurchaser: boolean = false,
   isRDHMRS: boolean = false,
+  employeeId: string = '',
   pendingCounts?: {
     leave?: number;
     overtime?: number;
@@ -76,6 +78,7 @@ const getNavigationItems = (
     mrsDoneUnacknowledged?: number;
     assetsNeedingDepreciation?: number;
     budgetApprovals?: number;
+    pendingReview?: number;
   }
 ): NavItem[] => {
   // Users with purchaser access or specific roles can access MRS Coordinator functions
@@ -198,6 +201,12 @@ const getNavigationItems = (
         title: "Budget Approvals",
         url: `/${businessUnitId}/approvals/material-requests/budget`,
         badge: pendingCounts?.budgetApprovals,
+      }] : []),
+      // Add Pending Review only for R-033 (Store Use Reviewer)
+      ...(employeeId === 'R-033' ? [{
+        title: "Pending Review",
+        url: `/${businessUnitId}/approvals/review`,
+        badge: pendingCounts?.pendingReview,
       }] : []),
       {
         title: "Approval History",
@@ -432,9 +441,10 @@ export function AppSidebar({
       session.user.isAcctg || false,
       session.user.isPurchaser || false,
       session.user.isRDHMRS || false,
+      session.user.employeeId || '',
       pendingCounts
     ),
-    [currentBusinessUnitId, session.user.role, session.user.isAcctg, session.user.isPurchaser, session.user.isRDHMRS, pendingCounts]
+    [currentBusinessUnitId, session.user.role, session.user.isAcctg, session.user.isPurchaser, session.user.isRDHMRS, session.user.employeeId, pendingCounts]
   )
 
 

@@ -12,7 +12,8 @@ import {
   Calendar, 
   Package, 
   DollarSign,
-  CheckCircle2} from "lucide-react"
+  CheckCircle2,
+  ClipboardCheck} from "lucide-react"
 
 interface MaterialRequestViewContentProps {
   materialRequest: MaterialRequest
@@ -266,6 +267,49 @@ export function MaterialRequestViewContent({ materialRequest }: MaterialRequestV
             </div>
         </div>
       </div>
+
+      {/* Store Use Review Information - Only show for store use requests that have been reviewed */}
+      {materialRequest.isStoreUse && materialRequest.reviewer && (
+        <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 rounded-lg border-2 border-sky-200 dark:border-sky-800">
+          <div className="flex items-center gap-2 font-semibold mb-3">
+            <ClipboardCheck className="h-4 w-4 text-sky-500" />
+            Store Use Review
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase">Reviewed By</label>
+              <p className="mt-1 font-bold text-sky-700 dark:text-sky-300">{materialRequest.reviewer.name}</p>
+              <p className="text-xs text-muted-foreground">{materialRequest.reviewer.employeeId}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase">Review Status</label>
+              <div className="mt-1">
+                <Badge 
+                  variant="outline" 
+                  className={materialRequest.reviewStatus === 'APPROVED'
+                    ? "bg-green-100 text-green-700 border-green-300 dark:bg-green-950 dark:text-green-300"
+                    : "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300"
+                  }
+                >
+                  {materialRequest.reviewStatus === 'APPROVED' ? 'Reviewed' : materialRequest.reviewStatus}
+                </Badge>
+              </div>
+              {materialRequest.reviewedAt && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(materialRequest.reviewedAt), "MMM dd, yyyy")}
+                </p>
+              )}
+            </div>
+            {materialRequest.reviewRemarks && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase">Remarks</label>
+                <p className="mt-1 text-sm">{materialRequest.reviewRemarks}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Budget Approval Information - Only show if budget approval exists */}
       {materialRequest.budgetApprover && (

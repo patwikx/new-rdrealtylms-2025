@@ -111,6 +111,7 @@ model User {
   executedDepreciations   DepreciationExecution[] @relation("ExecutionExecutor")
   markedForEditRequests   MaterialRequest[]       @relation("MRSMarkedForEditBy")
   budgetApprovedRequests  MaterialRequest[]       @relation("MRSBudgetApprover")
+  reviewedMRSRequests     MaterialRequest[]       @relation("MRSReviewer")
   materialRequests        MaterialRequest[]
   reportedDamages         DamagedInventory[]      @relation("DamageReportedBy")
   reviewedDamages         DamagedInventory[]      @relation("DamageReviewedBy")
@@ -997,6 +998,13 @@ model MaterialRequest {
   editCompletedAt     DateTime?
   editAcknowledgedAt  DateTime?
 
+  // Store Use Review Fields
+  reviewerId    String?
+  reviewer      User?           @relation("MRSReviewer", fields: [reviewerId], references: [id])
+  reviewedAt    DateTime?
+  reviewStatus  ApprovalStatus?
+  reviewRemarks String?         @db.Text
+
   items              MaterialRequestItem[]
   createdAssets      Asset[]               @relation("CreatedFromMRS")
   acknowledgmentForm MRSAcknowledgment?
@@ -1176,6 +1184,7 @@ enum RequestType {
 
 enum MRSRequestStatus {
   DRAFT
+  FOR_REVIEW
   PENDING_BUDGET_APPROVAL
   FOR_REC_APPROVAL
   REC_APPROVED

@@ -514,12 +514,22 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
       return { success: false, message: "No approvers assigned to this request" }
     }
 
-    // Determine next status based on requestor's isRDHMRS flag
-    // If requestor has isRDHMRS = true, go to budget approval first
+    // Determine next status based on isStoreUse flag and requestor's isRDHMRS flag
+    // If isStoreUse = true, go to review first (FOR_REVIEW)
+    // If requestor has isRDHMRS = true, go to budget approval (PENDING_BUDGET_APPROVAL)
     // Otherwise, follow normal flow (FOR_REC_APPROVAL)
-    const nextStatus = existingRequest.requestedBy.isRDHMRS 
-      ? MRSRequestStatus.PENDING_BUDGET_APPROVAL 
-      : MRSRequestStatus.FOR_REC_APPROVAL
+    let nextStatus: MRSRequestStatus
+    
+    if (existingRequest.isStoreUse) {
+      // Store use requests go to review first
+      nextStatus = MRSRequestStatus.FOR_REVIEW
+    } else if (existingRequest.requestedBy.isRDHMRS) {
+      // RDH requests go to budget approval
+      nextStatus = MRSRequestStatus.PENDING_BUDGET_APPROVAL
+    } else {
+      // Normal flow
+      nextStatus = MRSRequestStatus.FOR_REC_APPROVAL
+    }
 
     await prisma.materialRequest.update({
       where: { id: requestId },
@@ -531,11 +541,18 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
 
     revalidatePath("/material-requests")
     
+    let successMessage: string
+    if (existingRequest.isStoreUse) {
+      successMessage = "Material request submitted for review successfully"
+    } else if (existingRequest.requestedBy.isRDHMRS) {
+      successMessage = "Material request submitted for budget approval successfully"
+    } else {
+      successMessage = "Material request submitted for approval successfully"
+    }
+    
     return {
       success: true,
-      message: existingRequest.requestedBy.isRDHMRS 
-        ? "Material request submitted for budget approval successfully"
-        : "Material request submitted for approval successfully"
+      message: successMessage
     }
   } catch (error) {
     console.error("Error submitting for approval:", error)
@@ -619,6 +636,14 @@ export async function getMaterialRequests(filters?: {
             employeeId: true,
           }
         },
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
       },
       orderBy: {
         createdAt: 'desc'
@@ -680,6 +705,14 @@ export async function getMaterialRequestById(requestId: string) {
           }
         },
         finalApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+        reviewer: {
           select: {
             id: true,
             name: true,
@@ -832,6 +865,14 @@ export async function getForPostingRequests(filters?: {
             employeeId: true,
           }
         },
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
       },
       orderBy: {
         datePosted: 'desc'
@@ -971,6 +1012,14 @@ export async function getApprovedRequestsForAcknowledgement(filters?: {
             employeeId: true,
           }
         },
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
         acknowledgmentForm: true,
       },
       orderBy: {
@@ -1087,6 +1136,14 @@ export async function getDoneRequests(filters?: {
             employeeId: true,
           }
         },
+        reviewer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
         acknowledgmentForm: true,
       },
       orderBy: {
@@ -1175,6 +1232,14 @@ export async function getRequestsToServe(filters?: {
           }
         },
         budgetApprover: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            employeeId: true,
+          }
+        },
+        reviewer: {
           select: {
             id: true,
             name: true,

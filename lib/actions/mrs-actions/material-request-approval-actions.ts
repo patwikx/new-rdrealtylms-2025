@@ -5,6 +5,176 @@ import { prisma } from "@/lib/prisma"
 import { MRSRequestStatus, ApprovalStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 
+// Store Use Reviewer Employee ID
+const STORE_USE_REVIEWER_EMPLOYEE_ID = 'R-033'
+
+export interface PendingReviewRequest {
+  id: string
+  docNo: string
+  series: string
+  type: "ITEM" | "SERVICE"
+  status: MRSRequestStatus
+  datePrepared: Date
+  dateRequired: Date
+  total: number
+  purpose: string | null
+  isStoreUse: boolean
+  requestedBy: {
+    id: string
+    name: string
+    employeeId: string
+  }
+  businessUnit: {
+    id: string
+    name: string
+  }
+  department: {
+    id: string
+    name: string
+  } | null
+  items: {
+    id: string
+    description: string
+    quantity: number
+    uom: string
+    unitPrice: number | null
+  }[]
+}
+
+export interface PendingReviewRequestsResponse {
+  materialRequests: PendingReviewRequest[]
+  pagination: {
+    currentPage: number
+    totalPages: number
+    totalCount: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
+}
+
+interface GetPendingReviewRequestsParams {
+  businessUnitId: string
+  page?: number
+  limit?: number
+}
+
+/**
+ * Get pending review requests for store use material requests.
+ * Only the designated reviewer (R-033) can access this.
+ * 
+ * Requirements: 2.1, 2.2, 2.3
+ */
+export async function getPendingReviewRequests({
+  businessUnitId,
+  page = 1,
+  limit = 10
+}: GetPendingReviewRequestsParams): Promise<PendingReviewRequestsResponse> {
+  const session = await auth()
+  
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized")
+  }
+
+  const userEmployeeId = session.user.employeeId
+  
+  // Only R-033 can view pending review requests (Requirement 2.3)
+  if (userEmployeeId !== STORE_USE_REVIEWER_EMPLOYEE_ID) {
+    throw new Error("Unauthorized - Only designated reviewer can access this")
+  }
+
+  try {
+    // Build where clause for pending review requests (Requirement 2.1)
+    const whereClause = {
+      status: MRSRequestStatus.FOR_REVIEW,
+      isStoreUse: true
+    }
+
+    // Get total count
+    const totalCount = await prisma.materialRequest.count({
+      where: whereClause
+    })
+
+    // Calculate pagination
+    const totalPages = Math.ceil(totalCount / limit)
+    const skip = (page - 1) * limit
+
+    // Get paginated results with required includes (Requirement 2.2)
+    const materialRequests = await prisma.materialRequest.findMany({
+      where: whereClause,
+      include: {
+        requestedBy: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true
+          }
+        },
+        businessUnit: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        department: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        items: {
+          select: {
+            id: true,
+            description: true,
+            quantity: true,
+            uom: true,
+            unitPrice: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip,
+      take: limit
+    })
+
+    return {
+      materialRequests: materialRequests.map(request => ({
+        id: request.id,
+        docNo: request.docNo,
+        series: request.series,
+        type: request.type as "ITEM" | "SERVICE",
+        status: request.status,
+        datePrepared: request.datePrepared,
+        dateRequired: request.dateRequired,
+        total: Number(request.total),
+        purpose: request.purpose,
+        isStoreUse: request.isStoreUse,
+        requestedBy: request.requestedBy,
+        businessUnit: request.businessUnit,
+        department: request.department,
+        items: request.items.map(item => ({
+          id: item.id,
+          description: item.description,
+          quantity: Number(item.quantity),
+          uom: item.uom,
+          unitPrice: item.unitPrice ? Number(item.unitPrice) : null
+        }))
+      })),
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching pending review requests:", error)
+    throw new Error("Failed to fetch pending review requests")
+  }
+}
+
 export interface PendingMaterialRequest {
   id: string
   docNo: string
@@ -304,6 +474,91 @@ export async function approveMaterialRequest(
   } catch (error) {
     console.error("Error approving material request:", error)
     return { error: "Failed to approve material request" }
+  }
+}
+
+export interface ActionResult {
+  success?: string
+  error?: string
+}
+
+/**
+ * Mark a store use material request as reviewed.
+ * Only the designated reviewer (R-033) can perform this action.
+ * 
+ * Requirements: 3.1, 3.2, 3.3, 3.4
+ */
+export async function markAsReviewed(
+  requestId: string,
+  businessUnitId: string,
+  remarks?: string
+): Promise<ActionResult> {
+  const session = await auth()
+  
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  const userEmployeeId = session.user.employeeId
+  
+  // Only R-033 can mark as reviewed (Requirement 3.1)
+  if (userEmployeeId !== STORE_USE_REVIEWER_EMPLOYEE_ID) {
+    return { error: "Unauthorized - Only designated reviewer can review requests" }
+  }
+
+  try {
+    // Fetch the request with requestedBy to check isRDHMRS flag
+    const materialRequest = await prisma.materialRequest.findUnique({
+      where: { id: requestId },
+      include: { requestedBy: true }
+    })
+
+    if (!materialRequest) {
+      return { error: "Material request not found" }
+    }
+
+    // Verify request is in FOR_REVIEW status
+    if (materialRequest.status !== MRSRequestStatus.FOR_REVIEW) {
+      return { error: "Request is not pending review" }
+    }
+
+    // Determine next status based on requestor's isRDHMRS flag (Requirement 3.3)
+    const nextStatus = materialRequest.requestedBy.isRDHMRS 
+      ? MRSRequestStatus.PENDING_BUDGET_APPROVAL 
+      : MRSRequestStatus.FOR_REC_APPROVAL
+
+    // Update the request with review information (Requirements 3.1, 3.2, 3.4)
+    await prisma.materialRequest.update({
+      where: { id: requestId },
+      data: {
+        status: nextStatus,
+        reviewerId: session.user.id,
+        reviewedAt: new Date(),
+        reviewStatus: ApprovalStatus.APPROVED,
+        reviewRemarks: remarks || null,
+        // Set recApprovalStatus to PENDING if going to FOR_REC_APPROVAL
+        recApprovalStatus: nextStatus === MRSRequestStatus.FOR_REC_APPROVAL 
+          ? ApprovalStatus.PENDING 
+          : null
+      }
+    })
+
+    // Revalidate relevant paths
+    revalidatePath(`/${businessUnitId}/approvals/review`)
+    revalidatePath(`/${businessUnitId}/approvals/material-requests/pending`)
+    revalidatePath(`/${businessUnitId}/material-requests`)
+    
+    // Also revalidate paths for the request's actual business unit if different
+    if (materialRequest.businessUnitId !== businessUnitId) {
+      revalidatePath(`/${materialRequest.businessUnitId}/approvals/review`)
+      revalidatePath(`/${materialRequest.businessUnitId}/approvals/material-requests/pending`)
+      revalidatePath(`/${materialRequest.businessUnitId}/material-requests`)
+    }
+    
+    return { success: "Request marked as reviewed successfully" }
+  } catch (error) {
+    console.error("Error marking request as reviewed:", error)
+    return { error: "Failed to mark request as reviewed" }
   }
 }
 

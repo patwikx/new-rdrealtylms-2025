@@ -19,6 +19,7 @@ import { deleteMaterialRequest, submitForApproval, cancelMaterialRequest } from 
 // Status and type labels (matching LMS patterns)
 const REQUEST_STATUS_LABELS: Record<MRSRequestStatus, string> = {
   DRAFT: "Draft",
+  FOR_REVIEW: "Pending Review",
   PENDING_BUDGET_APPROVAL: "Pending Budget Approval",
   FOR_REC_APPROVAL: "Pending Approval",
   REC_APPROVED: "Approved",
@@ -39,6 +40,7 @@ const REQUEST_STATUS_LABELS: Record<MRSRequestStatus, string> = {
 
 const REQUEST_STATUS_COLORS: Record<MRSRequestStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+  FOR_REVIEW: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
   PENDING_BUDGET_APPROVAL: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300",
   FOR_REC_APPROVAL: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
   REC_APPROVED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
