@@ -217,6 +217,10 @@ export async function approveMaterialRequest(
   }
 
   const userId = session.user.id
+  const userEmployeeId = session.user.employeeId
+  
+  // Special approver can approve across all business units
+  const isSpecialApprover = userEmployeeId === 'C-002'
 
   try {
     // Get the material request
@@ -231,7 +235,8 @@ export async function approveMaterialRequest(
       return { error: "Material request not found" }
     }
 
-    if (materialRequest.businessUnitId !== businessUnitId) {
+    // Only enforce business unit check for non-special approvers
+    if (!isSpecialApprover && materialRequest.businessUnitId !== businessUnitId) {
       return { error: "Unauthorized" }
     }
 
@@ -281,8 +286,15 @@ export async function approveMaterialRequest(
                            materialRequest.finalApproverId === userId &&
                            materialRequest.recApprovalStatus === ApprovalStatus.APPROVED
 
+    // Revalidate paths for current business unit
     revalidatePath(`/${businessUnitId}/approvals/material-requests/pending`)
     revalidatePath(`/${businessUnitId}/mrs-coordinator/to-serve`)
+    
+    // Also revalidate paths for the request's actual business unit if different (cross-BU approval)
+    if (materialRequest.businessUnitId !== businessUnitId) {
+      revalidatePath(`/${materialRequest.businessUnitId}/approvals/material-requests/pending`)
+      revalidatePath(`/${materialRequest.businessUnitId}/mrs-coordinator/to-serve`)
+    }
     
     if (isFinalApproval) {
       return { success: "Material request approved and ready for serving!", isPosting: false }
@@ -307,6 +319,10 @@ export async function rejectMaterialRequest(
   }
 
   const userId = session.user.id
+  const userEmployeeId = session.user.employeeId
+  
+  // Special approver can reject across all business units
+  const isSpecialApprover = userEmployeeId === 'C-002'
 
   try {
     // Get the material request
@@ -321,7 +337,8 @@ export async function rejectMaterialRequest(
       return { error: "Material request not found" }
     }
 
-    if (materialRequest.businessUnitId !== businessUnitId) {
+    // Only enforce business unit check for non-special approvers
+    if (!isSpecialApprover && materialRequest.businessUnitId !== businessUnitId) {
       return { error: "Unauthorized" }
     }
 
@@ -352,7 +369,13 @@ export async function rejectMaterialRequest(
       data: updateData
     })
 
+    // Revalidate paths for current business unit
     revalidatePath(`/${businessUnitId}/approvals/material-requests/pending`)
+    
+    // Also revalidate paths for the request's actual business unit if different (cross-BU rejection)
+    if (materialRequest.businessUnitId !== businessUnitId) {
+      revalidatePath(`/${materialRequest.businessUnitId}/approvals/material-requests/pending`)
+    }
     
     return { success: "Material request rejected successfully" }
   } catch (error) {
