@@ -368,10 +368,11 @@ const getNavigationItems = (
   // Add admin-only items
   const adminRoles = ['ADMIN', 'HR']
   if (adminRoles.includes(userRole)) {
+    // HR Management section - for leave types and balances management
     baseItems.push({
-      title: "Administration",
+      title: "HR Management",
       url: `/${businessUnitId}/admin`,
-      icon: Shield,
+      icon: Calendar,
       items: [
         {
           title: "Leave Types",
@@ -381,6 +382,15 @@ const getNavigationItems = (
           title: "Leave Balances",
           url: `/${businessUnitId}/admin/leave-balances`,
         },
+      ],
+    });
+
+    // Administration section - for system settings
+    baseItems.push({
+      title: "Administration",
+      url: `/${businessUnitId}/admin`,
+      icon: Shield,
+      items: [
         {
           title: "Business Units",
           url: `/${businessUnitId}/admin/business-units`,
