@@ -514,17 +514,34 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
       return { success: false, message: "No approvers assigned to this request" }
     }
 
-    // Determine next status based on isStoreUse flag and requestor's isRDHMRS flag
-    // If isStoreUse = true, go to review first (FOR_REVIEW)
-    // If requestor has isRDHMRS = true, go to budget approval (PENDING_BUDGET_APPROVAL)
-    // Otherwise, follow normal flow (FOR_REC_APPROVAL)
+    // Special business unit and department check
+    const SPECIAL_BUSINESS_UNIT_ID = "cmhek3mk20000of0k546dlzcw"
+    const SPECIAL_DEPARTMENTS = ["Operations", "RDH Santiago", "RDH Warehouse"]
+    
+    // Check if this request requires FOR_REVIEW first
+    const requiresReview = 
+      existingRequest.businessUnitId === SPECIAL_BUSINESS_UNIT_ID &&
+      existingRequest.department &&
+      SPECIAL_DEPARTMENTS.includes(existingRequest.department.name)
+
+    // Determine next status based on isStoreUse flag, special department rules, and requestor's isRDHMRS flag
+    // Priority order:
+    // 1. If isStoreUse = true, go to review first (FOR_REVIEW)
+    // 2. If special business unit + special department, go to review first (FOR_REVIEW)
+    //    - After review, the isRDHMRS flag will determine if it goes to PENDING_BUDGET_APPROVAL or FOR_REC_APPROVAL
+    // 3. If requestor has isRDHMRS = true, go directly to budget approval (PENDING_BUDGET_APPROVAL)
+    // 4. Otherwise, follow normal flow (FOR_REC_APPROVAL)
     let nextStatus: MRSRequestStatus
     
     if (existingRequest.isStoreUse) {
       // Store use requests go to review first
       nextStatus = MRSRequestStatus.FOR_REVIEW
+    } else if (requiresReview) {
+      // Special business unit + department combination requires review first
+      // After review, isRDHMRS flag will determine the next status
+      nextStatus = MRSRequestStatus.FOR_REVIEW
     } else if (existingRequest.requestedBy.isRDHMRS) {
-      // RDH requests go to budget approval
+      // RDH requests go directly to budget approval (bypassing review)
       nextStatus = MRSRequestStatus.PENDING_BUDGET_APPROVAL
     } else {
       // Normal flow
@@ -543,6 +560,8 @@ export async function submitForApproval(requestId: string): Promise<ActionResult
     
     let successMessage: string
     if (existingRequest.isStoreUse) {
+      successMessage = "Material request submitted for review successfully"
+    } else if (requiresReview) {
       successMessage = "Material request submitted for review successfully"
     } else if (existingRequest.requestedBy.isRDHMRS) {
       successMessage = "Material request submitted for budget approval successfully"

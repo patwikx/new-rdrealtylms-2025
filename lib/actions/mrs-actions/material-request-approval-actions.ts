@@ -523,6 +523,7 @@ export async function markAsReviewed(
     }
 
     // Determine next status based on requestor's isRDHMRS flag (Requirement 3.3)
+    // After review, always check isRDHMRS flag to determine next status
     const nextStatus = materialRequest.requestedBy.isRDHMRS 
       ? MRSRequestStatus.PENDING_BUDGET_APPROVAL 
       : MRSRequestStatus.FOR_REC_APPROVAL
