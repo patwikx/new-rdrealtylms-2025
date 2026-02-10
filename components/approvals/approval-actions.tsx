@@ -119,17 +119,29 @@ export function ApprovalActions({ request, businessUnitId, currentUserRole, isMo
                 Are you sure you want to approve {request.user.name}'s leave request?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-2">
-              <Label htmlFor="approve-comments-mobile">
-                {currentUserRole === "HR" ? "HR Remarks/Comments (Optional)" : "Comments (Optional)"}
-              </Label>
-              <Textarea
-                id="approve-comments-mobile"
-                value={approveComments}
-                onChange={(e) => setApproveComments(e.target.value)}
-                placeholder={currentUserRole === "HR" ? "Add any HR remarks about this approval..." : "Add any comments about this approval..."}
-                rows={3}
-              />
+            <div className="space-y-4">
+              <div className="space-y-2 rounded-md border p-3 bg-muted/50">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Leave Type</Label>
+                  <p className="text-sm font-medium">{request.leaveType.name}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Reason</Label>
+                  <p className="text-sm">{request.reason}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="approve-comments-mobile">
+                  {currentUserRole === "HR" ? "HR Remarks/Comments (Optional)" : "Comments (Optional)"}
+                </Label>
+                <Textarea
+                  id="approve-comments-mobile"
+                  value={approveComments}
+                  onChange={(e) => setApproveComments(e.target.value)}
+                  placeholder={currentUserRole === "HR" ? "Add any HR remarks about this approval..." : "Add any comments about this approval..."}
+                  rows={3}
+                />
+              </div>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setApproveComments("")}>Cancel</AlertDialogCancel>
@@ -159,6 +171,16 @@ export function ApprovalActions({ request, businessUnitId, currentUserRole, isMo
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div className="space-y-2 rounded-md border p-3 bg-muted/50">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Leave Type</Label>
+                  <p className="text-sm font-medium">{request.leaveType.name}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Reason</Label>
+                  <p className="text-sm">{request.reason}</p>
+                </div>
+              </div>
               <div>
                 <Label htmlFor="reject-comments" className="mb-1">Comments (Required)</Label>
                 <Textarea
@@ -212,15 +234,27 @@ export function ApprovalActions({ request, businessUnitId, currentUserRole, isMo
               Are you sure you want to approve {request.user.name}'s leave request?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="approve-comments-desktop">Comments (Optional)</Label>
-            <Textarea
-              id="approve-comments-desktop"
-              value={approveComments}
-              onChange={(e) => setApproveComments(e.target.value)}
-              placeholder="Add any comments about this approval..."
-              rows={3}
-            />
+          <div className="space-y-4">
+            <div className="space-y-2 rounded-md border p-3 bg-muted/50">
+              <div>
+                <Label className="text-xs text-muted-foreground">Leave Type</Label>
+                <p className="text-sm font-medium">{request.leaveType.name}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <p className="text-sm">{request.reason}</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="approve-comments-desktop">Comments (Optional)</Label>
+              <Textarea
+                id="approve-comments-desktop"
+                value={approveComments}
+                onChange={(e) => setApproveComments(e.target.value)}
+                placeholder="Add any comments about this approval..."
+                rows={3}
+              />
+            </div>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setApproveComments("")}>Cancel</AlertDialogCancel>
@@ -248,6 +282,16 @@ export function ApprovalActions({ request, businessUnitId, currentUserRole, isMo
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-2 rounded-md border p-3 bg-muted/50">
+              <div>
+                <Label className="text-xs text-muted-foreground">Leave Type</Label>
+                <p className="text-sm font-medium">{request.leaveType.name}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <p className="text-sm">{request.reason}</p>
+              </div>
+            </div>
             <div>
               <Label htmlFor="reject-comments">Comments (Required)</Label>
               <Textarea
