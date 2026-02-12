@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         password: true,
+        profilePicture: true,
         role: true,
         classification: true,
         isActive: true,
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
       name: row.name,
       email: row.email,
       passwordHash: row.password,
+      profilePicture: row.profilePicture,
       role: row.role,
       classification: row.classification,
       isActive: row.isActive ?? true,
@@ -67,4 +69,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
