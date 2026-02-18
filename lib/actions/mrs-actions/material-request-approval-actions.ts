@@ -59,8 +59,9 @@ interface GetPendingReviewRequestsParams {
 }
 
 /**
- * Get pending review requests for store use material requests.
+ * Get pending review requests for material requests.
  * Only the designated reviewer (R-033) can access this.
+ * Shows all requests with FOR_REVIEW status in the reviewer's business unit.
  * 
  * Requirements: 2.1, 2.2, 2.3
  */
@@ -84,9 +85,9 @@ export async function getPendingReviewRequests({
 
   try {
     // Build where clause for pending review requests (Requirement 2.1)
+    // R-033 should see ALL requests with FOR_REVIEW status in their business unit
     const whereClause = {
       status: MRSRequestStatus.FOR_REVIEW,
-      isStoreUse: true,
       businessUnitId: businessUnitId
     }
 
