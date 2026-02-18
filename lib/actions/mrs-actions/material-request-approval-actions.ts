@@ -86,7 +86,8 @@ export async function getPendingReviewRequests({
     // Build where clause for pending review requests (Requirement 2.1)
     const whereClause = {
       status: MRSRequestStatus.FOR_REVIEW,
-      isStoreUse: true
+      isStoreUse: true,
+      businessUnitId: businessUnitId
     }
 
     // Get total count
