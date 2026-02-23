@@ -36,6 +36,16 @@ import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ApprovalHistoryResponse, ApprovalHistoryLeaveRequest, ApprovalHistoryOvertimeRequest, ApprovalHistoryMaterialRequest } from "@/lib/actions/approval-actions";
 
+// Create wrapper types with discriminator
+type LeaveRequestWithType = ApprovalHistoryLeaveRequest & { type: 'leave' };
+type OvertimeRequestWithType = ApprovalHistoryOvertimeRequest & { type: 'overtime' };
+type MaterialRequestWithType = Omit<ApprovalHistoryMaterialRequest, 'type'> & { 
+  type: 'material-request';
+  requestType: 'ITEM' | 'SERVICE';
+};
+
+type CombinedRequest = LeaveRequestWithType | OvertimeRequestWithType | MaterialRequestWithType;
+
 interface ApprovalHistoryViewProps {
   historyData: ApprovalHistoryResponse;
   businessUnitId: string;
@@ -98,6 +108,19 @@ function getUserInitials(name: string): string {
     .slice(0, 2);
 }
 
+// Type guard functions
+function isLeaveRequest(request: CombinedRequest): request is LeaveRequestWithType {
+  return request.type === 'leave';
+}
+
+function isOvertimeRequest(request: CombinedRequest): request is OvertimeRequestWithType {
+  return request.type === 'overtime';
+}
+
+function isMaterialRequest(request: CombinedRequest): request is MaterialRequestWithType {
+  return request.type === 'material-request';
+}
+
 const typeOptions = [
   { value: 'all', label: 'All Requests', icon: FileText },
   { value: 'leave', label: 'Leave Requests', icon: Calendar },
@@ -122,18 +145,22 @@ export function ApprovalHistoryView({
 
   // Combine and filter requests
   const allRequests = useMemo(() => {
-    const combined = [
+    const combined: CombinedRequest[] = [
       ...historyData.leaveRequests.map(req => ({ ...req, type: 'leave' as const })),
       ...historyData.overtimeRequests.map(req => ({ ...req, type: 'overtime' as const })),
-      ...historyData.materialRequests.map(req => ({ ...req, type: 'material-request' as const }))
+      ...historyData.materialRequests.map(req => ({ 
+        ...req, 
+        type: 'material-request' as const,
+        requestType: req.type
+      }))
     ];
 
     // Sort by action date (most recent first)
     return combined.sort((a, b) => {
-      const aDate = a.type === 'material-request' 
+      const aDate = isMaterialRequest(a)
         ? a.reviewedAt || a.createdAt
         : a.approvedAt || a.rejectedAt || a.createdAt;
-      const bDate = b.type === 'material-request'
+      const bDate = isMaterialRequest(b)
         ? b.reviewedAt || b.createdAt
         : b.approvedAt || b.rejectedAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
@@ -148,24 +175,36 @@ export function ApprovalHistoryView({
       filtered = filtered.filter(request => {
         const searchLower = searchTerm.toLowerCase();
         
-        if (request.type === 'material-request') {
-          const mrRequest = request as typeof request & { type: 'material-request' };
+        if (isMaterialRequest(request)) {
           return (
-            mrRequest.user.name.toLowerCase().includes(searchLower) ||
-            mrRequest.user.employeeId.toLowerCase().includes(searchLower) ||
-            mrRequest.docNo.toLowerCase().includes(searchLower) ||
-            (mrRequest.purpose && mrRequest.purpose.toLowerCase().includes(searchLower)) ||
-            (mrRequest.department && mrRequest.department.name.toLowerCase().includes(searchLower))
+            request.user.name.toLowerCase().includes(searchLower) ||
+            request.user.employeeId.toLowerCase().includes(searchLower) ||
+            request.docNo.toLowerCase().includes(searchLower) ||
+            (request.purpose && request.purpose.toLowerCase().includes(searchLower)) ||
+            (request.department && request.department.name.toLowerCase().includes(searchLower))
           );
         }
         
-        return (
-          request.user.name.toLowerCase().includes(searchLower) ||
-          request.user.employeeId.toLowerCase().includes(searchLower) ||
-          ('reason' in request && request.reason.toLowerCase().includes(searchLower)) ||
-          ('status' in request && formatRequestStatus(request.status).toLowerCase().includes(searchLower)) ||
-          (request.type === 'leave' && (request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name.toLowerCase().includes(searchLower))
-        );
+        if (isLeaveRequest(request)) {
+          return (
+            request.user.name.toLowerCase().includes(searchLower) ||
+            request.user.employeeId.toLowerCase().includes(searchLower) ||
+            request.reason.toLowerCase().includes(searchLower) ||
+            formatRequestStatus(request.status).toLowerCase().includes(searchLower) ||
+            request.leaveType.name.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        if (isOvertimeRequest(request)) {
+          return (
+            request.user.name.toLowerCase().includes(searchLower) ||
+            request.user.employeeId.toLowerCase().includes(searchLower) ||
+            request.reason.toLowerCase().includes(searchLower) ||
+            formatRequestStatus(request.status).toLowerCase().includes(searchLower)
+          );
+        }
+        
+        return false;
       });
     }
 
@@ -351,7 +390,9 @@ export function ApprovalHistoryView({
               </TableRow>
             ) : (
               filteredRequests.map((request) => {
-                const actionDate = request.approvedAt || request.rejectedAt;
+                const actionDate = isMaterialRequest(request)
+                  ? request.reviewedAt 
+                  : (request.approvedAt || request.rejectedAt);
                 
                 return (
                   <TableRow key={`${request.type}-${request.id}`}>
@@ -371,95 +412,118 @@ export function ApprovalHistoryView({
                       </div>
                     </TableCell>
                     <TableCell>
-                      {request.type === 'leave' ? (
+                      {isLeaveRequest(request) ? (
                         <div className="flex items-center gap-2">
                           {(() => {
-                            const Icon = getLeaveTypeIcon((request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name);
+                            const Icon = getLeaveTypeIcon(request.leaveType.name);
                             return <Icon className="h-4 w-4 text-muted-foreground" />;
                           })()}
-                          <span className="font-medium">{(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name} LEAVE</span>
+                          <span className="font-medium">{request.leaveType.name} LEAVE</span>
                         </div>
-                      ) : (
+                      ) : isOvertimeRequest(request) ? (
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">OVERTIME REQUEST</span>
                         </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">MATERIAL REQUEST</span>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusVariant(request.status)}>
-                        {formatRequestStatus(request.status)}
-                      </Badge>
+                      {isMaterialRequest(request) ? (
+                        <Badge variant="outline">
+                          {request.actionTaken}
+                        </Badge>
+                      ) : (
+                        <Badge variant={getStatusVariant(request.status)}>
+                          {formatRequestStatus(request.status)}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {request.type === 'leave' ? (
+                      {isLeaveRequest(request) ? (
                         <div className="space-y-1">
                           <div className="text-sm">
                             {(() => {
-                              const leaveReq = request as ApprovalHistoryLeaveRequest & { type: 'leave' };
-                              const isMultiDay = leaveReq.startDate.getTime() !== leaveReq.endDate.getTime();
+                              const isMultiDay = request.startDate.getTime() !== request.endDate.getTime();
                               return isMultiDay 
-                                ? `${format(leaveReq.startDate, 'MMM dd')} - ${format(leaveReq.endDate, 'MMM dd, yyyy')}`
-                                : format(leaveReq.startDate, 'MMM dd, yyyy');
+                                ? `${format(request.startDate, 'MMM dd')} - ${format(request.endDate, 'MMM dd, yyyy')}`
+                                : format(request.startDate, 'MMM dd, yyyy');
                             })()}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).days} {(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).days === 1 ? 'day' : 'days'} • {getSessionDisplay((request as ApprovalHistoryLeaveRequest & { type: 'leave' }).session)}
+                            {request.days} {request.days === 1 ? 'day' : 'days'} • {getSessionDisplay(request.session)}
                           </div>
                         </div>
-                      ) : (
+                      ) : isOvertimeRequest(request) ? (
                         <div className="space-y-1">
                           <div className="text-sm">
-                            {format(new Date((request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).startTime), 'MMM dd, HH:mm')} - {format(new Date((request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).endTime), 'HH:mm')}
+                            {format(new Date(request.startTime), 'MMM dd, HH:mm')} - {format(new Date(request.endTime), 'HH:mm')}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {(request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).hours} hours
+                            {request.hours} hours
+                          </div>
+                        </div>
+                      ) : isMaterialRequest(request) ? (
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">
+                            {request.docNo}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {request.requestType} • ₱{request.total.toLocaleString()}
+                          </div>
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs truncate" title={isMaterialRequest(request) ? (request.purpose || 'N/A') : request.reason}>
+                        {isMaterialRequest(request) ? (request.purpose || 'N/A') : request.reason}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {isMaterialRequest(request) ? (
+                        <span className="text-sm text-muted-foreground">N/A</span>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-medium">Approver:</span>
+                            {request.managerComments !== null ? (
+                              <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'default'} className="text-xs">
+                                {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-medium">HR:</span>
+                            {request.status === 'REJECTED' ? (
+                              <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                            ) : request.hrComments !== null ? (
+                              <Badge variant="outline" className="text-xs">Approved</Badge>
+                            ) : request.status === 'APPROVED' ? (
+                              <Badge className="text-xs">Approved</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            )}
                           </div>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="max-w-xs truncate" title={request.reason}>
-                        {request.reason}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <User className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-medium">Approver:</span>
-                          {request.managerComments !== null ? (
-                            <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'default'} className="text-xs">
-                              {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pending</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-medium">HR:</span>
-                          {request.status === 'REJECTED' ? (
-                            <Badge variant="destructive" className="text-xs">Rejected</Badge>
-                          ) : request.hrComments !== null ? (
-                            <Badge variant="outline" className="text-xs">Approved</Badge>
-                          ) : request.status === 'APPROVED' ? (
-                            <Badge className="text-xs">Approved</Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pending</span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex items-center gap-2">
-                        {request.actionTaken === 'APPROVED' ? (
+                        {request.actionTaken === 'APPROVED' || request.actionTaken === 'REVIEWED' ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
                           <XCircle className="h-4 w-4 text-red-600" />
                         )}
                         <span className="font-medium">
-                          {request.actionTaken === 'APPROVED' ? 'Approved' : 'Rejected'}
+                          {request.actionTaken === 'APPROVED' ? 'Approved' : request.actionTaken === 'REVIEWED' ? 'Reviewed' : 'Disapproved'}
                         </span>
                       </div>
                     </TableCell>
@@ -502,7 +566,9 @@ export function ApprovalHistoryView({
           </Card>
         ) : (
           filteredRequests.map((request) => {
-            const actionDate = request.approvedAt || request.rejectedAt;
+            const actionDate = isMaterialRequest(request)
+              ? request.reviewedAt 
+              : (request.approvedAt || request.rejectedAt);
             
             return (
               <Card key={`${request.type}-${request.id}`}>
@@ -522,14 +588,20 @@ export function ApprovalHistoryView({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {request.actionTaken === 'APPROVED' ? (
+                      {request.actionTaken === 'APPROVED' || request.actionTaken === 'REVIEWED' ? (
                         <CheckCircle className="h-4 w-4" />
                       ) : (
                         <XCircle className="h-4 w-4 text-red-600" />
                       )}
-                      <Badge variant={getStatusVariant(request.status)}>
-                        {formatRequestStatus(request.status)}
-                      </Badge>
+                      {isMaterialRequest(request) ? (
+                        <Badge variant="outline">
+                          {request.actionTaken}
+                        </Badge>
+                      ) : (
+                        <Badge variant={getStatusVariant(request.status)}>
+                          {formatRequestStatus(request.status)}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   
@@ -580,38 +652,42 @@ export function ApprovalHistoryView({
                   
                   <div className="space-y-2">
                     <div>
-                      <span className="text-sm font-medium">Reason:</span>
-                      <p className="text-sm text-muted-foreground mt-1">{request.reason}</p>
+                      <span className="text-sm font-medium">{isMaterialRequest(request) ? 'Purpose' : 'Reason'}:</span>
+                      <p className="text-sm text-muted-foreground mt-1">{isMaterialRequest(request) ? (request.purpose || 'N/A') : request.reason}</p>
                     </div>
                     
                     <div>
                       <span className="text-sm font-medium">Approval Flow:</span>
-                      <div className="mt-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <User className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">Manager:</span>
-                          {request.managerComments !== null ? (
-                            <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'outline'} className="text-xs">
-                              {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pending</span>
-                          )}
+                      {isMaterialRequest(request) ? (
+                        <p className="text-sm text-muted-foreground mt-1">N/A</p>
+                      ) : (
+                        <div className="mt-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs">Manager:</span>
+                            {request.managerComments !== null ? (
+                              <Badge variant={request.status === 'REJECTED' && request.managerComments ? 'destructive' : 'outline'} className="text-xs">
+                                {request.status === 'REJECTED' && request.managerComments ? 'Rejected' : 'Approved'}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Heart className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs">HR:</span>
+                            {request.status === 'REJECTED' ? (
+                              <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                            ) : request.hrComments !== null ? (
+                              <Badge variant="outline" className="text-xs">Approved</Badge>
+                            ) : request.status === 'APPROVED' ? (
+                              <Badge variant="outline" className="text-xs">Approved</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Heart className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">HR:</span>
-                          {request.status === 'REJECTED' ? (
-                            <Badge variant="destructive" className="text-xs">Rejected</Badge>
-                          ) : request.hrComments !== null ? (
-                            <Badge variant="outline" className="text-xs">Approved</Badge>
-                          ) : request.status === 'APPROVED' ? (
-                            <Badge variant="outline" className="text-xs">Approved</Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Pending</span>
-                          )}
-                        </div>
-                      </div>
+                      )}
                     </div>
                     
                     {request.actionComments && (
