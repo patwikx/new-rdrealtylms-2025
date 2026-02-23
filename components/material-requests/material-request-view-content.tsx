@@ -268,12 +268,12 @@ export function MaterialRequestViewContent({ materialRequest }: MaterialRequestV
         </div>
       </div>
 
-      {/* Store Use Review Information - Only show for store use requests that have been reviewed */}
-      {materialRequest.isStoreUse && materialRequest.reviewer && (
+      {/* Review Information - Show for store use requests OR any request that has been reviewed */}
+      {materialRequest.reviewer && (
         <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-950/30 dark:to-cyan-950/30 rounded-lg border-2 border-sky-200 dark:border-sky-800">
           <div className="flex items-center gap-2 font-semibold mb-3">
             <ClipboardCheck className="h-4 w-4 text-sky-500" />
-            Store Use Review
+            {materialRequest.isStoreUse ? 'Store Use Review' : 'Review Information'}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
