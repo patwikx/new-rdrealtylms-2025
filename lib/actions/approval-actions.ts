@@ -1050,9 +1050,33 @@ export interface ApprovalHistoryOvertimeRequest {
   actionComments?: string | null;
 }
 
+export interface ApprovalHistoryMaterialRequest {
+  id: string;
+  docNo: string;
+  type: 'ITEM' | 'SERVICE';
+  purpose: string | null;
+  total: number;
+  createdAt: Date;
+  reviewedAt: Date | null;
+  user: {
+    id: string;
+    name: string;
+    employeeId: string;
+    profilePicture?: string | null;
+  };
+  department: {
+    id: string;
+    name: string;
+  } | null;
+  reviewRemarks: string | null;
+  actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED';
+  actionComments: string | null;
+}
+
 export interface ApprovalHistoryResponse {
   leaveRequests: ApprovalHistoryLeaveRequest[];
   overtimeRequests: ApprovalHistoryOvertimeRequest[];
+  materialRequests: ApprovalHistoryMaterialRequest[];
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -1068,7 +1092,7 @@ export interface ApprovalHistoryResponse {
 
 export interface GetApprovalHistoryParams {
   businessUnitId: string;
-  type?: 'leave' | 'overtime' | 'all';
+  type?: 'leave' | 'overtime' | 'material-request' | 'all';
   status?: 'APPROVED' | 'REJECTED' | 'all';
   leaveTypeId?: string;
   page?: number;
@@ -1629,12 +1653,189 @@ export async function getApprovalHistory({
       }
     });
     
+    // Get material requests that this user has reviewed or approved
+    let materialRequests: ApprovalHistoryMaterialRequest[] = [];
+    
+    if (type === 'material-request' || type === 'all') {
+      const materialRequestWhereClause: Record<string, unknown> = {
+        OR: [
+          // Reviewed by this user (R-033)
+          {
+            reviewerId: user.id,
+            reviewStatus: 'APPROVED',
+          },
+          // Budget approved by this user
+          {
+            budgetApproverId: user.id,
+            budgetApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
+          },
+          // Recommending approved by this user
+          {
+            recApproverId: user.id,
+            recApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
+          },
+          // Final approved by this user
+          {
+            finalApproverId: user.id,
+            finalApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
+          },
+        ],
+      };
+      
+      const materialRequestCount = await prisma.materialRequest.count({
+        where: materialRequestWhereClause
+      });
+      
+      totalCount += materialRequestCount;
+      
+      if (type === 'material-request') {
+        const skip = (page - 1) * limit;
+        const materialRequestsData = await prisma.materialRequest.findMany({
+          where: materialRequestWhereClause,
+          include: {
+            requestedBy: {
+              select: {
+                id: true,
+                name: true,
+                employeeId: true,
+                profilePicture: true,
+              },
+            },
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: [
+            { reviewedAt: 'desc' },
+            { budgetApprovalDate: 'desc' },
+            { recApprovalDate: 'desc' },
+            { finalApprovalDate: 'desc' },
+            { updatedAt: 'desc' }
+          ],
+          skip,
+          take: limit,
+        });
+        
+        materialRequests = materialRequestsData.map(request => {
+          // Determine which action this user took
+          let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
+          let actionComments: string | null = null;
+          let actionDate: Date | null = null;
+          
+          if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
+            actionTaken = 'REVIEWED';
+            actionComments = request.reviewRemarks;
+            actionDate = request.reviewedAt;
+          } else if (request.budgetApproverId === user.id) {
+            actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.budgetRemarks;
+            actionDate = request.budgetApprovalDate;
+          } else if (request.recApproverId === user.id) {
+            actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.recApprovalRemarks;
+            actionDate = request.recApprovalDate;
+          } else if (request.finalApproverId === user.id) {
+            actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.finalApprovalRemarks;
+            actionDate = request.finalApprovalDate;
+          }
+          
+          return {
+            id: request.id,
+            docNo: request.docNo,
+            type: request.type as 'ITEM' | 'SERVICE',
+            purpose: request.purpose,
+            total: Number(request.total),
+            createdAt: request.createdAt,
+            reviewedAt: actionDate,
+            user: request.requestedBy,
+            department: request.department,
+            reviewRemarks: actionComments,
+            actionTaken,
+            actionComments,
+          };
+        });
+      } else if (type === 'all') {
+        // For 'all' type, fetch material requests without pagination
+        const materialRequestsData = await prisma.materialRequest.findMany({
+          where: materialRequestWhereClause,
+          include: {
+            requestedBy: {
+              select: {
+                id: true,
+                name: true,
+                employeeId: true,
+                profilePicture: true,
+              },
+            },
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: [
+            { reviewedAt: 'desc' },
+            { budgetApprovalDate: 'desc' },
+            { recApprovalDate: 'desc' },
+            { finalApprovalDate: 'desc' },
+            { updatedAt: 'desc' }
+          ],
+        });
+        
+        materialRequests = materialRequestsData.map(request => {
+          // Determine which action this user took
+          let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
+          let actionComments: string | null = null;
+          let actionDate: Date | null = null;
+          
+          if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
+            actionTaken = 'REVIEWED';
+            actionComments = request.reviewRemarks;
+            actionDate = request.reviewedAt;
+          } else if (request.budgetApproverId === user.id) {
+            actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.budgetRemarks;
+            actionDate = request.budgetApprovalDate;
+          } else if (request.recApproverId === user.id) {
+            actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.recApprovalRemarks;
+            actionDate = request.recApprovalDate;
+          } else if (request.finalApproverId === user.id) {
+            actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+            actionComments = request.finalApprovalRemarks;
+            actionDate = request.finalApprovalDate;
+          }
+          
+          return {
+            id: request.id,
+            docNo: request.docNo,
+            type: request.type as 'ITEM' | 'SERVICE',
+            purpose: request.purpose,
+            total: Number(request.total),
+            createdAt: request.createdAt,
+            reviewedAt: actionDate,
+            user: request.requestedBy,
+            department: request.department,
+            reviewRemarks: actionComments,
+            actionTaken,
+            actionComments,
+          };
+        });
+      }
+    }
+    
     // Calculate pagination
     const totalPages = Math.ceil(totalCount / limit);
     
     return {
       leaveRequests,
       overtimeRequests,
+      materialRequests,
       pagination: {
         currentPage: page,
         totalPages,

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ApprovalHistoryResponse, ApprovalHistoryLeaveRequest, ApprovalHistoryOvertimeRequest } from "@/lib/actions/approval-actions";
+import { ApprovalHistoryResponse, ApprovalHistoryLeaveRequest, ApprovalHistoryOvertimeRequest, ApprovalHistoryMaterialRequest } from "@/lib/actions/approval-actions";
 
 interface ApprovalHistoryViewProps {
   historyData: ApprovalHistoryResponse;
@@ -101,7 +101,8 @@ function getUserInitials(name: string): string {
 const typeOptions = [
   { value: 'all', label: 'All Requests', icon: FileText },
   { value: 'leave', label: 'Leave Requests', icon: Calendar },
-  { value: 'overtime', label: 'Overtime Requests', icon: Clock }
+  { value: 'overtime', label: 'Overtime Requests', icon: Clock },
+  { value: 'material-request', label: 'Material Request Approvals', icon: FileText }
 ];
 
 const statusOptions = [
@@ -123,16 +124,21 @@ export function ApprovalHistoryView({
   const allRequests = useMemo(() => {
     const combined = [
       ...historyData.leaveRequests.map(req => ({ ...req, type: 'leave' as const })),
-      ...historyData.overtimeRequests.map(req => ({ ...req, type: 'overtime' as const }))
+      ...historyData.overtimeRequests.map(req => ({ ...req, type: 'overtime' as const })),
+      ...historyData.materialRequests.map(req => ({ ...req, type: 'material-request' as const }))
     ];
 
     // Sort by action date (most recent first)
     return combined.sort((a, b) => {
-      const aDate = a.approvedAt || a.rejectedAt || a.createdAt;
-      const bDate = b.approvedAt || b.rejectedAt || b.createdAt;
+      const aDate = a.type === 'material-request' 
+        ? a.reviewedAt || a.createdAt
+        : a.approvedAt || a.rejectedAt || a.createdAt;
+      const bDate = b.type === 'material-request'
+        ? b.reviewedAt || b.createdAt
+        : b.approvedAt || b.rejectedAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
-  }, [historyData.leaveRequests, historyData.overtimeRequests]);
+  }, [historyData.leaveRequests, historyData.overtimeRequests, historyData.materialRequests]);
 
   const filteredRequests = useMemo(() => {
     let filtered = allRequests;
@@ -141,11 +147,23 @@ export function ApprovalHistoryView({
     if (searchTerm) {
       filtered = filtered.filter(request => {
         const searchLower = searchTerm.toLowerCase();
+        
+        if (request.type === 'material-request') {
+          const mrRequest = request as typeof request & { type: 'material-request' };
+          return (
+            mrRequest.user.name.toLowerCase().includes(searchLower) ||
+            mrRequest.user.employeeId.toLowerCase().includes(searchLower) ||
+            mrRequest.docNo.toLowerCase().includes(searchLower) ||
+            (mrRequest.purpose && mrRequest.purpose.toLowerCase().includes(searchLower)) ||
+            (mrRequest.department && mrRequest.department.name.toLowerCase().includes(searchLower))
+          );
+        }
+        
         return (
           request.user.name.toLowerCase().includes(searchLower) ||
           request.user.employeeId.toLowerCase().includes(searchLower) ||
-          request.reason.toLowerCase().includes(searchLower) ||
-          formatRequestStatus(request.status).toLowerCase().includes(searchLower) ||
+          ('reason' in request && request.reason.toLowerCase().includes(searchLower)) ||
+          ('status' in request && formatRequestStatus(request.status).toLowerCase().includes(searchLower)) ||
           (request.type === 'leave' && (request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name.toLowerCase().includes(searchLower))
         );
       });
