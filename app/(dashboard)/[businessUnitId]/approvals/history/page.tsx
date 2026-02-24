@@ -33,7 +33,7 @@ export default async function ApprovalHistoryPage({ params, searchParams }: Appr
   const { type, status, leaveTypeId, page = "1" } = await searchParams;
   
   // Sanitize filter values - convert any 'all-*' values to undefined
-  const sanitizedType = type && !type.startsWith('all') ? type as 'leave' | 'overtime' : undefined;
+  const sanitizedType = type && !type.startsWith('all') ? type as 'leave' | 'overtime' | 'material-request' : undefined;
   const sanitizedStatus = status && !status.startsWith('all') ? status as 'APPROVED' | 'REJECTED' : undefined;
   const sanitizedLeaveTypeId = leaveTypeId && !leaveTypeId.startsWith('all') ? leaveTypeId : undefined;
   

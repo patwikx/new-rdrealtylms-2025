@@ -148,7 +148,7 @@ export function ApprovalHistoryView({
     const combined: CombinedRequest[] = [
       ...historyData.leaveRequests.map(req => ({ ...req, type: 'leave' as const })),
       ...historyData.overtimeRequests.map(req => ({ ...req, type: 'overtime' as const })),
-      ...historyData.materialRequests.map(req => ({ 
+      ...(historyData.materialRequests || []).map(req => ({ 
         ...req, 
         type: 'material-request' as const,
         requestType: req.type
