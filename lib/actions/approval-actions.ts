@@ -1656,177 +1656,175 @@ export async function getApprovalHistory({
     // Get material requests that this user has reviewed or approved
     let materialRequests: ApprovalHistoryMaterialRequest[] = [];
     
-    if (type === 'material-request' || type === 'all') {
-      const materialRequestWhereClause: Record<string, unknown> = {
-        OR: [
-          // Reviewed by this user (R-033)
-          {
-            reviewerId: user.id,
-            reviewStatus: 'APPROVED',
-          },
-          // Budget approved by this user
-          {
-            budgetApproverId: user.id,
-            budgetApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
-          },
-          // Recommending approved by this user
-          {
-            recApproverId: user.id,
-            recApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
-          },
-          // Final approved by this user
-          {
-            finalApproverId: user.id,
-            finalApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
-          },
-        ],
-      };
-      
-      const materialRequestCount = await prisma.materialRequest.count({
-        where: materialRequestWhereClause
-      });
-      
-      totalCount += materialRequestCount;
-      
-      if (type === 'material-request') {
-        const skip = (page - 1) * limit;
-        const materialRequestsData = await prisma.materialRequest.findMany({
-          where: materialRequestWhereClause,
-          include: {
-            requestedBy: {
-              select: {
-                id: true,
-                name: true,
-                employeeId: true,
-                profilePicture: true,
-              },
+    try {
+      if (type === 'material-request' || type === 'all') {
+        const materialRequestWhereClause: Record<string, unknown> = {
+          OR: [
+            // Reviewed by this user (R-033)
+            {
+              reviewerId: user.id,
+              reviewStatus: 'APPROVED',
             },
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
+            // Budget approved by this user
+            {
+              budgetApproverId: user.id,
+              budgetApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
             },
-          },
-          orderBy: [
-            { reviewedAt: 'desc' },
-            { budgetApprovalDate: 'desc' },
-            { recApprovalDate: 'desc' },
-            { finalApprovalDate: 'desc' },
-            { updatedAt: 'desc' }
+            // Recommending approved by this user
+            {
+              recApproverId: user.id,
+              recApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
+            },
+            // Final approved by this user
+            {
+              finalApproverId: user.id,
+              finalApprovalStatus: { in: ['APPROVED', 'DISAPPROVED'] },
+            },
           ],
-          skip,
-          take: limit,
+        };
+        
+        const materialRequestCount = await prisma.materialRequest.count({
+          where: materialRequestWhereClause
         });
         
-        materialRequests = materialRequestsData.map(request => {
-          // Determine which action this user took
-          let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
-          let actionComments: string | null = null;
-          let actionDate: Date | null = null;
-          
-          if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
-            actionTaken = 'REVIEWED';
-            actionComments = request.reviewRemarks;
-            actionDate = request.reviewedAt;
-          } else if (request.budgetApproverId === user.id) {
-            actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.budgetRemarks;
-            actionDate = request.budgetApprovalDate;
-          } else if (request.recApproverId === user.id) {
-            actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.recApprovalRemarks;
-            actionDate = request.recApprovalDate;
-          } else if (request.finalApproverId === user.id) {
-            actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.finalApprovalRemarks;
-            actionDate = request.finalApprovalDate;
-          }
-          
-          return {
-            id: request.id,
-            docNo: request.docNo,
-            type: request.type as 'ITEM' | 'SERVICE',
-            purpose: request.purpose,
-            total: Number(request.total),
-            createdAt: request.createdAt,
-            reviewedAt: actionDate,
-            user: request.requestedBy,
-            department: request.department,
-            reviewRemarks: actionComments,
-            actionTaken,
-            actionComments,
-          };
-        });
-      } else if (type === 'all') {
-        // For 'all' type, fetch material requests without pagination
-        const materialRequestsData = await prisma.materialRequest.findMany({
-          where: materialRequestWhereClause,
-          include: {
-            requestedBy: {
-              select: {
-                id: true,
-                name: true,
-                employeeId: true,
-                profilePicture: true,
-              },
-            },
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: [
-            { reviewedAt: 'desc' },
-            { budgetApprovalDate: 'desc' },
-            { recApprovalDate: 'desc' },
-            { finalApprovalDate: 'desc' },
-            { updatedAt: 'desc' }
-          ],
-        });
+        totalCount += materialRequestCount;
         
-        materialRequests = materialRequestsData.map(request => {
-          // Determine which action this user took
-          let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
-          let actionComments: string | null = null;
-          let actionDate: Date | null = null;
+        if (type === 'material-request') {
+          const skip = (page - 1) * limit;
+          const materialRequestsData = await prisma.materialRequest.findMany({
+            where: materialRequestWhereClause,
+            include: {
+              requestedBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  employeeId: true,
+                  profilePicture: true,
+                },
+              },
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              updatedAt: 'desc'
+            },
+            skip,
+            take: limit,
+          });
           
-          if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
-            actionTaken = 'REVIEWED';
-            actionComments = request.reviewRemarks;
-            actionDate = request.reviewedAt;
-          } else if (request.budgetApproverId === user.id) {
-            actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.budgetRemarks;
-            actionDate = request.budgetApprovalDate;
-          } else if (request.recApproverId === user.id) {
-            actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.recApprovalRemarks;
-            actionDate = request.recApprovalDate;
-          } else if (request.finalApproverId === user.id) {
-            actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
-            actionComments = request.finalApprovalRemarks;
-            actionDate = request.finalApprovalDate;
-          }
+          materialRequests = materialRequestsData.map(request => {
+            // Determine which action this user took
+            let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
+            let actionComments: string | null = null;
+            let actionDate: Date | null = null;
+            
+            if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
+              actionTaken = 'REVIEWED';
+              actionComments = request.reviewRemarks;
+              actionDate = request.reviewedAt;
+            } else if (request.budgetApproverId === user.id) {
+              actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.budgetRemarks;
+              actionDate = request.budgetApprovalDate;
+            } else if (request.recApproverId === user.id) {
+              actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.recApprovalRemarks;
+              actionDate = request.recApprovalDate;
+            } else if (request.finalApproverId === user.id) {
+              actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.finalApprovalRemarks;
+              actionDate = request.finalApprovalDate;
+            }
+            
+            return {
+              id: request.id,
+              docNo: request.docNo,
+              type: request.type as 'ITEM' | 'SERVICE',
+              purpose: request.purpose,
+              total: Number(request.total),
+              createdAt: request.createdAt,
+              reviewedAt: actionDate,
+              user: request.requestedBy,
+              department: request.department,
+              reviewRemarks: actionComments,
+              actionTaken,
+              actionComments,
+            };
+          });
+        } else if (type === 'all') {
+          // For 'all' type, fetch material requests without pagination
+          const materialRequestsData = await prisma.materialRequest.findMany({
+            where: materialRequestWhereClause,
+            include: {
+              requestedBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  employeeId: true,
+                  profilePicture: true,
+                },
+              },
+              department: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              updatedAt: 'desc'
+            },
+          });
           
-          return {
-            id: request.id,
-            docNo: request.docNo,
-            type: request.type as 'ITEM' | 'SERVICE',
-            purpose: request.purpose,
-            total: Number(request.total),
-            createdAt: request.createdAt,
-            reviewedAt: actionDate,
-            user: request.requestedBy,
-            department: request.department,
-            reviewRemarks: actionComments,
-            actionTaken,
-            actionComments,
-          };
-        });
+          materialRequests = materialRequestsData.map(request => {
+            // Determine which action this user took
+            let actionTaken: 'REVIEWED' | 'APPROVED' | 'DISAPPROVED' = 'REVIEWED';
+            let actionComments: string | null = null;
+            let actionDate: Date | null = null;
+            
+            if (request.reviewerId === user.id && request.reviewStatus === 'APPROVED') {
+              actionTaken = 'REVIEWED';
+              actionComments = request.reviewRemarks;
+              actionDate = request.reviewedAt;
+            } else if (request.budgetApproverId === user.id) {
+              actionTaken = request.budgetApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.budgetRemarks;
+              actionDate = request.budgetApprovalDate;
+            } else if (request.recApproverId === user.id) {
+              actionTaken = request.recApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.recApprovalRemarks;
+              actionDate = request.recApprovalDate;
+            } else if (request.finalApproverId === user.id) {
+              actionTaken = request.finalApprovalStatus === 'APPROVED' ? 'APPROVED' : 'DISAPPROVED';
+              actionComments = request.finalApprovalRemarks;
+              actionDate = request.finalApprovalDate;
+            }
+            
+            return {
+              id: request.id,
+              docNo: request.docNo,
+              type: request.type as 'ITEM' | 'SERVICE',
+              purpose: request.purpose,
+              total: Number(request.total),
+              createdAt: request.createdAt,
+              reviewedAt: actionDate,
+              user: request.requestedBy,
+              department: request.department,
+              reviewRemarks: actionComments,
+              actionTaken,
+              actionComments,
+            };
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error fetching material request approval history:", error);
+      // Continue with empty array if there's an error
+      materialRequests = [];
     }
     
     // Calculate pagination
