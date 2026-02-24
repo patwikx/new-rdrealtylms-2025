@@ -145,10 +145,15 @@ export function ApprovalHistoryView({
 
   // Combine and filter requests
   const allRequests = useMemo(() => {
+    // Safety checks for undefined data
+    const leaveRequests = historyData?.leaveRequests || [];
+    const overtimeRequests = historyData?.overtimeRequests || [];
+    const materialRequests = historyData?.materialRequests || [];
+    
     const combined: CombinedRequest[] = [
-      ...historyData.leaveRequests.map(req => ({ ...req, type: 'leave' as const })),
-      ...historyData.overtimeRequests.map(req => ({ ...req, type: 'overtime' as const })),
-      ...(historyData.materialRequests || []).map(req => ({ 
+      ...leaveRequests.map(req => ({ ...req, type: 'leave' as const })),
+      ...overtimeRequests.map(req => ({ ...req, type: 'overtime' as const })),
+      ...materialRequests.map(req => ({ 
         ...req, 
         type: 'material-request' as const,
         requestType: req.type
@@ -165,7 +170,7 @@ export function ApprovalHistoryView({
         : b.approvedAt || b.rejectedAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
-  }, [historyData.leaveRequests, historyData.overtimeRequests, historyData.materialRequests]);
+  }, [historyData]);
 
   const filteredRequests = useMemo(() => {
     let filtered = allRequests;
@@ -339,7 +344,7 @@ export function ApprovalHistoryView({
                   <span>All leave types</span>
                 </div>
               </SelectItem>
-              {historyData.leaveTypes.map((type) => {
+              {(historyData?.leaveTypes || []).map((type) => {
                 const Icon = getLeaveTypeIcon(type.name);
                 return (
                   <SelectItem key={type.id} value={type.id}>
@@ -712,7 +717,7 @@ export function ApprovalHistoryView({
       </div>
 
       {/* Pagination */}
-      {historyData.pagination.totalPages > 1 && (
+      {historyData?.pagination && historyData.pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground hidden sm:block">
             Showing {((currentFilters.page - 1) * 10) + 1} to {Math.min(currentFilters.page * 10, historyData.pagination.totalCount)} of {historyData.pagination.totalCount} results
