@@ -23,7 +23,8 @@ import {
   User,
   FileText,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  DollarSign
 } from "lucide-react";
 import {
   Select,
@@ -464,14 +465,18 @@ export function ApprovalHistoryView({
                           </div>
                         </div>
                       ) : isOvertimeRequest(request) ? (
-                        <div className="space-y-1">
-                          <div className="text-sm">
-                            {format(new Date(request.startTime), 'MMM dd, HH:mm')} - {format(new Date(request.endTime), 'HH:mm')}
+                        request.startTime && request.endTime ? (
+                          <div className="space-y-1">
+                            <div className="text-sm">
+                              {format(new Date(request.startTime), 'MMM dd, HH:mm')} - {format(new Date(request.endTime), 'HH:mm')}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {request.hours} hours
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {request.hours} hours
-                          </div>
-                        </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">Invalid date</div>
+                        )
                       ) : isMaterialRequest(request) ? (
                         <div className="space-y-1">
                           <div className="text-sm font-medium">
@@ -610,50 +615,68 @@ export function ApprovalHistoryView({
                     </div>
                   </div>
                   
-                  {request.type === 'leave' ? (
+                  {isLeaveRequest(request) ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         {(() => {
-                          const Icon = getLeaveTypeIcon((request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name);
+                          const Icon = getLeaveTypeIcon(request.leaveType.name);
                           return <Icon className="h-4 w-4 text-muted-foreground" />;
                         })()}
-                        <span className="font-medium">{(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).leaveType.name} LEAVE</span>
+                        <span className="font-medium">{request.leaveType.name} LEAVE</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
                           {(() => {
-                            const leaveReq = request as ApprovalHistoryLeaveRequest & { type: 'leave' };
-                            const isMultiDay = leaveReq.startDate.getTime() !== leaveReq.endDate.getTime();
+                            const isMultiDay = request.startDate.getTime() !== request.endDate.getTime();
                             return isMultiDay 
-                              ? `${format(leaveReq.startDate, 'MMM dd')} - ${format(leaveReq.endDate, 'MMM dd, yyyy')}`
-                              : format(leaveReq.startDate, 'MMM dd, yyyy');
+                              ? `${format(request.startDate, 'MMM dd')} - ${format(request.endDate, 'MMM dd, yyyy')}`
+                              : format(request.startDate, 'MMM dd, yyyy');
                           })()}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock3 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).days} {(request as ApprovalHistoryLeaveRequest & { type: 'leave' }).days === 1 ? 'day' : 'days'} • {getSessionDisplay((request as ApprovalHistoryLeaveRequest & { type: 'leave' }).session)}</span>
+                        <span className="text-sm">{request.days} {request.days === 1 ? 'day' : 'days'} • {getSessionDisplay(request.session)}</span>
                       </div>
                     </div>
-                  ) : (
+                  ) : isOvertimeRequest(request) ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">OVERTIME REQUEST</span>
                       </div>
+                      {request.startTime && request.endTime ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">
+                              {format(new Date(request.startTime), 'MMM dd, HH:mm')} - {format(new Date(request.endTime), 'HH:mm')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock3 className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{request.hours} hours</span>
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : isMaterialRequest(request) ? (
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {format(new Date((request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).startTime), 'MMM dd, HH:mm')} - {format(new Date((request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).endTime), 'HH:mm')}
-                        </span>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">MATERIAL REQUEST</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock3 className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{(request as ApprovalHistoryOvertimeRequest & { type: 'overtime' }).hours} hours</span>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{request.docNo}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{request.requestType} • ₱{request.total.toLocaleString()}</span>
                       </div>
                     </div>
-                  )}
+                  ) : null}
                   
                   <div className="space-y-2">
                     <div>
@@ -702,12 +725,12 @@ export function ApprovalHistoryView({
                       </div>
                     )}
                     
-                    {actionDate && (
+                    {actionDate ? (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock3 className="h-4 w-4" />
                         <span>Action taken on {format(new Date(actionDate), 'MMM dd, yyyy HH:mm')}</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
