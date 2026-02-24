@@ -24,7 +24,8 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  DollarSign
+  DollarSign,
+  ExternalLink
 } from "lucide-react";
 import {
   Select,
@@ -35,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { ApprovalHistoryResponse, ApprovalHistoryLeaveRequest, ApprovalHistoryOvertimeRequest, ApprovalHistoryMaterialRequest } from "@/lib/actions/approval-actions";
 
 // Create wrapper types with discriminator
@@ -120,6 +122,19 @@ function isOvertimeRequest(request: CombinedRequest): request is OvertimeRequest
 
 function isMaterialRequest(request: CombinedRequest): request is MaterialRequestWithType {
   return request.type === 'material-request';
+}
+
+// Helper function to get the detail page URL for a request
+function getRequestDetailUrl(request: CombinedRequest, businessUnitId: string): string {
+  if (isLeaveRequest(request)) {
+    return `/${businessUnitId}/leave-requests/${request.id}`;
+  } else if (isOvertimeRequest(request)) {
+    // Overtime requests don't have a dedicated detail page, so link to the list page
+    return `/${businessUnitId}/overtime-requests`;
+  } else if (isMaterialRequest(request)) {
+    return `/${businessUnitId}/material-requests/${request.id}`;
+  }
+  return '#';
 }
 
 const typeOptions = [
@@ -380,12 +395,13 @@ export function ApprovalHistoryView({
               <TableHead>Your Action</TableHead>
               <TableHead>Comments</TableHead>
               <TableHead>Action Date</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRequests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+                <TableCell colSpan={10} className="text-center py-8">
                   <div className="flex flex-col items-center gap-2">
                     <FileText className="h-8 w-8 text-muted-foreground" />
                     <p className="text-muted-foreground">
@@ -400,8 +416,14 @@ export function ApprovalHistoryView({
                   ? request.reviewedAt 
                   : (request.approvedAt || request.rejectedAt);
                 
+                const detailUrl = getRequestDetailUrl(request, businessUnitId);
+                
                 return (
-                  <TableRow key={`${request.type}-${request.id}`}>
+                  <TableRow 
+                    key={`${request.type}-${request.id}`}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => window.location.href = detailUrl}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 rounded-md">
@@ -554,6 +576,14 @@ export function ApprovalHistoryView({
                         '-'
                       )}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Link href={detailUrl}>
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          <span>View</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -580,8 +610,11 @@ export function ApprovalHistoryView({
               ? request.reviewedAt 
               : (request.approvedAt || request.rejectedAt);
             
+            const detailUrl = getRequestDetailUrl(request, businessUnitId);
+            
             return (
-              <Card key={`${request.type}-${request.id}`}>
+              <Link key={`${request.type}-${request.id}`} href={detailUrl}>
+                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -734,6 +767,7 @@ export function ApprovalHistoryView({
                   </div>
                 </CardContent>
               </Card>
+            </Link>
             );
           })
         )}
